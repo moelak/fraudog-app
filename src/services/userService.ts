@@ -20,7 +20,8 @@ interface UserResponse {
 }
 
 class UserService {
-  private baseUrl = '/api/users';
+private baseUrl = 'https://your-api-domain.com/api/users';
+
 
   async syncUser(payload: CreateUserPayload, token: string): Promise<UserResponse> {
     const response = await fetch(`${this.baseUrl}/sync`, {
