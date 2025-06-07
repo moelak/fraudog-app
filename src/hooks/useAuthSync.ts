@@ -14,6 +14,7 @@ export const useAuthSync = () => {
   const { user, isLoaded } = useUser();
 
   useEffect(() => {
+    console.log("user=>", user)
     const syncUserWithBackend = async () => {
       if (!user || !isLoaded) return;
 
