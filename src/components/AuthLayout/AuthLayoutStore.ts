@@ -12,7 +12,6 @@ interface User {
 export class AuthLayoutStore {
   user: User | null = null;
   isUserSynced = false;
-  syncError: string | null = null;
 
   constructor() {
     makeAutoObservable(this);
@@ -26,14 +25,9 @@ export class AuthLayoutStore {
     this.isUserSynced = synced;
   }
 
-  setSyncError(error: string | null) {
-    this.syncError = error;
-  }
-
   clearUser() {
     this.user = null;
     this.isUserSynced = false;
-    this.syncError = null;
   }
 
   get fullName() {

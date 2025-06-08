@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite';
-import { useAuthSync } from '../../hooks/useAuthSync';
+import { useUser } from '@clerk/clerk-react';
 import { authLayoutStore } from './AuthLayoutStore';
 
 interface AuthLayoutProps {
@@ -7,7 +7,7 @@ interface AuthLayoutProps {
 }
 
 const AuthLayout = observer(({ children }: AuthLayoutProps) => {
-  const { user, isLoaded } = useAuthSync();
+  const { user, isLoaded } = useUser();
 
   // Update store with user data
   if (isLoaded && user && !authLayoutStore.isUserSynced) {

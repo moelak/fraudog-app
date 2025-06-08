@@ -12,11 +12,9 @@ import Reports from '../Reports/Reports';
 import Settings from '../Settings/Settings';
 import { dashboardStore } from './DashboardStore';
 import { authLayoutStore } from '../AuthLayout/AuthLayoutStore';
-import { useUserSync } from '../../hooks/useUserSync';
 
 const Dashboard = observer(() => {
   const location = useLocation();
-  const { error: syncError, retrySync } = useUserSync();
 
   const navigation = [
     { name: 'Overview', href: '/dashboard', icon: HomeIcon },
@@ -27,42 +25,8 @@ const Dashboard = observer(() => {
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
-      {/* Sync Error Banner */}
-      {syncError && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-red-50 border-b border-red-200 p-3">
-          <div className="flex items-center justify-between max-w-7xl mx-auto">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-800">
-                  Failed to sync user data: {syncError}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={retrySync}
-                className="text-sm text-red-800 hover:text-red-900 underline"
-              >
-                Retry
-              </button>
-              <button className="text-red-400 hover:text-red-500">
-                <span className="sr-only">Dismiss</span>
-                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform ${dashboardStore.isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${syncError ? 'mt-16' : ''}`}>
+      <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform ${dashboardStore.isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0`}>
         <div className="flex h-full flex-col">
           <div className="flex h-16 items-center justify-between px-4 bg-gradient-to-r from-blue-600 to-blue-700">
             <span className="text-2xl font-bold text-white">Frud-dog</span>
@@ -108,7 +72,7 @@ const Dashboard = observer(() => {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className={`sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm ${syncError ? 'mt-16' : ''}`}>
+        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
             <button
               className="text-gray-500 lg:hidden"
