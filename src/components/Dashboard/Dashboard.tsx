@@ -78,7 +78,6 @@ const Dashboard = observer(() => {
             })}
           </nav>
           <div className="flex items-center justify-between p-4 border-t bg-gray-50">
-            <UserButton afterSignOutUrl="/" />
             <span className="text-sm text-gray-500">v1.0.0</span>
           </div>
         </div>
@@ -97,6 +96,7 @@ const Dashboard = observer(() => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
               </svg>
             </button>
+            
             <div className="flex items-center gap-4">
               <div className="text-sm">
                 <span className="text-gray-500">Welcome back, </span>
@@ -104,6 +104,78 @@ const Dashboard = observer(() => {
                   {authLayoutStore.displayName || 'Fraud Fighter!'}
                 </span>
               </div>
+              
+              {/* Notification Bell */}
+              <div className="relative">
+                <button
+                  onClick={dashboardStore.toggleNotifications}
+                  className="relative p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full transition-colors"
+                >
+                  <span className="sr-only">View notifications</span>
+                  <BellIcon className="h-6 w-6" />
+                  {dashboardStore.unreadNotifications > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs font-medium rounded-full flex items-center justify-center">
+                      {dashboardStore.unreadNotifications > 9 ? '9+' : dashboardStore.unreadNotifications}
+                    </span>
+                  )}
+                </button>
+                
+                {/* Notification Dropdown */}
+                {dashboardStore.showNotifications && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                    <div className="p-4 border-b border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-medium text-gray-900">Notifications</h3>
+                        {dashboardStore.unreadNotifications > 0 && (
+                          <button
+                            onClick={dashboardStore.markAllAsRead}
+                            className="text-sm text-blue-600 hover:text-blue-800"
+                          >
+                            Mark all as read
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      {dashboardStore.notifications.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500">
+                          No notifications
+                        </div>
+                      ) : (
+                        dashboardStore.notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
+                              !notification.read ? 'bg-blue-50' : ''
+                            }`}
+                            onClick={() => dashboardStore.markAsRead(notification.id)}
+                          >
+                            <div className="flex items-start">
+                              <div className={`flex-shrink-0 w-2 h-2 rounded-full mt-2 ${
+                                !notification.read ? 'bg-blue-500' : 'bg-gray-300'
+                              }`} />
+                              <div className="ml-3 flex-1">
+                                <p className="text-sm font-medium text-gray-900">
+                                  {notification.title}
+                                </p>
+                                <p className="text-sm text-gray-500 mt-1">
+                                  {notification.message}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1">
+                                  {notification.timestamp}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* User Avatar */}
+              <UserButton afterSignOutUrl="/" />
             </div>
           </div>
         </div>
@@ -125,6 +197,14 @@ const Dashboard = observer(() => {
           </div>
         </main>
       </div>
+      
+      {/* Overlay for mobile sidebar */}
+      {dashboardStore.isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden"
+          onClick={dashboardStore.closeSidebar}
+        />
+      )}
     </div>
   );
 });
