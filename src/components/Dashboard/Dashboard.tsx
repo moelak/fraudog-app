@@ -21,7 +21,6 @@ import Monitoring from '../Monitoring/Monitoring';
 import Chargebacks from '../Chargebacks/Chargebacks';
 import ChatAssistant from '../ChatAssistant/ChatAssistant';
 import { dashboardStore } from './DashboardStore';
-import { authLayoutStore } from '../AuthLayout/AuthLayoutStore';
 
 const Dashboard = observer(() => {
   const location = useLocation();
@@ -98,16 +97,8 @@ const Dashboard = observer(() => {
               </svg>
             </button>
             
-            {/* Right side - Welcome message, notifications, and user button */}
-            <div className="flex items-center gap-6 ml-auto">
-              {/* Welcome message */}
-              <div className="text-sm hidden sm:block">
-                <span className="text-gray-500">Welcome back, </span>
-                <span className="font-medium text-gray-900">
-                  {authLayoutStore.displayName || 'Fraud Fighter!'}
-                </span>
-              </div>
-              
+            {/* Right side - Notifications and user button */}
+            <div className="flex items-center gap-4 ml-auto">
               {/* Notification Bell */}
               <div className="relative">
                 <button
