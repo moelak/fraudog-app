@@ -6,10 +6,20 @@ import {
   DocumentTextIcon,
   Cog6ToothIcon,
   HomeIcon,
+  ShieldCheckIcon,
+  EyeIcon,
+  BellIcon,
+  CreditCardIcon,
+  ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline';
 import Overview from '../Overview/Overview';
 import Reports from '../Reports/Reports';
 import Settings from '../Settings/Settings';
+import RuleManagement from '../RuleManagement/RuleManagement';
+import Visualization from '../Visualization/Visualization';
+import Monitoring from '../Monitoring/Monitoring';
+import Chargebacks from '../Chargebacks/Chargebacks';
+import ChatAssistant from '../ChatAssistant/ChatAssistant';
 import { dashboardStore } from './DashboardStore';
 import { authLayoutStore } from '../AuthLayout/AuthLayoutStore';
 
@@ -17,9 +27,13 @@ const Dashboard = observer(() => {
   const location = useLocation();
 
   const navigation = [
-    { name: 'Overview', href: '/dashboard', icon: HomeIcon },
+    { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
+    { name: 'Rule Management', href: '/dashboard/rules', icon: ShieldCheckIcon },
+    { name: 'Visualization', href: '/dashboard/visualization', icon: ChartBarIcon },
+    { name: 'Monitoring', href: '/dashboard/monitoring', icon: EyeIcon },
+    { name: 'Chargebacks', href: '/dashboard/chargebacks', icon: CreditCardIcon },
     { name: 'Reports', href: '/dashboard/reports', icon: DocumentTextIcon },
-    { name: 'Analytics', href: '/dashboard/analytics', icon: ChartBarIcon },
+    { name: 'Chat Assistant', href: '/dashboard/assistant', icon: ChatBubbleLeftRightIcon },
     { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
   ];
 
@@ -99,7 +113,12 @@ const Dashboard = observer(() => {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <Routes>
                 <Route path="/" element={<Overview />} />
+                <Route path="/rules" element={<RuleManagement />} />
+                <Route path="/visualization" element={<Visualization />} />
+                <Route path="/monitoring" element={<Monitoring />} />
+                <Route path="/chargebacks" element={<Chargebacks />} />
                 <Route path="/reports" element={<Reports />} />
+                <Route path="/assistant" element={<ChatAssistant />} />
                 <Route path="/settings" element={<Settings />} />
               </Routes>
             </div>
