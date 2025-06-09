@@ -87,6 +87,7 @@ const Dashboard = observer(() => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+            {/* Left side - Mobile menu button */}
             <button
               className="text-gray-500 lg:hidden"
               onClick={dashboardStore.openSidebar}
@@ -97,8 +98,10 @@ const Dashboard = observer(() => {
               </svg>
             </button>
             
-            <div className="flex items-center gap-4">
-              <div className="text-sm">
+            {/* Right side - Welcome message, notifications, and user button */}
+            <div className="flex items-center gap-6 ml-auto">
+              {/* Welcome message */}
+              <div className="text-sm hidden sm:block">
                 <span className="text-gray-500">Welcome back, </span>
                 <span className="font-medium text-gray-900">
                   {authLayoutStore.displayName || 'Fraud Fighter!'}
