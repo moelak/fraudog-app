@@ -1,9 +1,10 @@
 import { makeAutoObservable } from "mobx";
 
-interface Rule {
+export interface Rule {
   id: number;
   name: string;
   description: string;
+  category: string;
   condition: string;
   severity: 'low' | 'medium' | 'high';
   status: 'active' | 'inactive';
@@ -17,6 +18,7 @@ export class RuleManagementStore {
       id: 1,
       name: 'High Transaction Amount',
       description: 'Flag transactions over $10,000',
+      category: 'Payment Method',
       condition: 'transaction.amount > 10000',
       severity: 'high',
       status: 'active',
@@ -27,6 +29,7 @@ export class RuleManagementStore {
       id: 2,
       name: 'Multiple Failed Attempts',
       description: 'Flag accounts with more than 3 failed login attempts',
+      category: 'Behavioral',
       condition: 'user.failed_attempts > 3',
       severity: 'medium',
       status: 'active',
@@ -37,11 +40,23 @@ export class RuleManagementStore {
       id: 3,
       name: 'Unusual Location',
       description: 'Flag transactions from unusual geographic locations',
+      category: 'Technical',
       condition: 'location.distance_from_usual > 500',
       severity: 'medium',
       status: 'active',
       createdAt: '2024-01-08',
       updatedAt: '2024-01-08'
+    },
+    {
+      id: 4,
+      name: 'Identity Verification Failed',
+      description: 'Flag when identity verification fails multiple times',
+      category: 'Identity',
+      condition: 'identity.verification_failures >= 2',
+      severity: 'high',
+      status: 'inactive',
+      createdAt: '2024-01-05',
+      updatedAt: '2024-01-06'
     }
   ];
 
@@ -66,12 +81,23 @@ export class RuleManagementStore {
     if (rule) {
       this.editingRule = rule;
       this.isEditModalOpen = true;
+      // For now, just log the action
+      console.log('Editing rule:', rule.name);
     }
   }
 
   closeEditModal() {
     this.isEditModalOpen = false;
     this.editingRule = null;
+  }
+
+  viewRuleHistory(id: number) {
+    const rule = this.rules.find(r => r.id === id);
+    if (rule) {
+      // For now, just log the action
+      console.log('Viewing history for rule:', rule.name);
+      // In a real app, this would open a history modal or navigate to a history page
+    }
   }
 
   deleteRule(id: number) {
@@ -102,6 +128,18 @@ export class RuleManagementStore {
       Object.assign(rule, updates);
       rule.updatedAt = new Date().toISOString().split('T')[0];
     }
+  }
+
+  getRulesByCategory(category: string) {
+    return this.rules.filter(rule => rule.category === category);
+  }
+
+  getRulesByStatus(status: 'active' | 'inactive') {
+    return this.rules.filter(rule => rule.status === status);
+  }
+
+  getRulesBySeverity(severity: 'low' | 'medium' | 'high') {
+    return this.rules.filter(rule => rule.severity === severity);
   }
 }
 
