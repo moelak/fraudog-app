@@ -5,9 +5,14 @@ import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 const AIChatButton = observer(() => {
   if (aiChatStore.isOpen) return null;
 
+  const handleClick = () => {
+    console.log('AI Chat button clicked'); // Debug log
+    aiChatStore.openChat();
+  };
+
   return (
     <button
-      onClick={aiChatStore.openChat}
+      onClick={handleClick}
       className="fixed bottom-4 right-4 z-40 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 hover:scale-110 group"
     >
       <ChatBubbleLeftRightIcon className="h-6 w-6" />

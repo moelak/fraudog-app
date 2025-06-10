@@ -34,12 +34,12 @@ export class AIChatStore {
     makeAutoObservable(this);
   }
 
-  openChat() {
+  openChat = () => {
     this.isOpen = true;
     this.isMinimized = false;
   }
 
-  closeChat() {
+  closeChat = () => {
     this.isOpen = false;
     this.isMinimized = false;
     // Reset chat session
@@ -54,19 +54,19 @@ export class AIChatStore {
     this.currentMessage = '';
   }
 
-  minimizeChat() {
+  minimizeChat = () => {
     this.isMinimized = true;
   }
 
-  restoreChat() {
+  restoreChat = () => {
     this.isMinimized = false;
   }
 
-  setCurrentMessage(message: string) {
+  setCurrentMessage = (message: string) => {
     this.currentMessage = message;
   }
 
-  sendMessage() {
+  sendMessage = () => {
     if (!this.currentMessage.trim()) return;
 
     // Add user message
