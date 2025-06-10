@@ -68,15 +68,15 @@ export class RuleManagementStore {
     makeAutoObservable(this);
   }
 
-  openCreateModal() {
+  openCreateModal = () => {
     this.isCreateModalOpen = true;
   }
 
-  closeCreateModal() {
+  closeCreateModal = () => {
     this.isCreateModalOpen = false;
   }
 
-  editRule(id: number) {
+  editRule = (id: number) => {
     const rule = this.rules.find(r => r.id === id);
     if (rule) {
       this.editingRule = rule;
@@ -86,12 +86,12 @@ export class RuleManagementStore {
     }
   }
 
-  closeEditModal() {
+  closeEditModal = () => {
     this.isEditModalOpen = false;
     this.editingRule = null;
   }
 
-  viewRuleHistory(id: number) {
+  viewRuleHistory = (id: number) => {
     const rule = this.rules.find(r => r.id === id);
     if (rule) {
       // For now, just log the action
@@ -100,11 +100,11 @@ export class RuleManagementStore {
     }
   }
 
-  deleteRule(id: number) {
+  deleteRule = (id: number) => {
     this.rules = this.rules.filter(rule => rule.id !== id);
   }
 
-  toggleRuleStatus(id: number) {
+  toggleRuleStatus = (id: number) => {
     const rule = this.rules.find(r => r.id === id);
     if (rule) {
       rule.status = rule.status === 'active' ? 'inactive' : 'active';
@@ -112,7 +112,7 @@ export class RuleManagementStore {
     }
   }
 
-  addRule(ruleData: Omit<Rule, 'id' | 'createdAt' | 'updatedAt'>) {
+  addRule = (ruleData: Omit<Rule, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newRule: Rule = {
       ...ruleData,
       id: Math.max(...this.rules.map(r => r.id)) + 1,
@@ -122,7 +122,7 @@ export class RuleManagementStore {
     this.rules.unshift(newRule);
   }
 
-  updateRule(id: number, updates: Partial<Rule>) {
+  updateRule = (id: number, updates: Partial<Rule>) => {
     const rule = this.rules.find(r => r.id === id);
     if (rule) {
       Object.assign(rule, updates);
@@ -130,15 +130,15 @@ export class RuleManagementStore {
     }
   }
 
-  getRulesByCategory(category: string) {
+  getRulesByCategory = (category: string) => {
     return this.rules.filter(rule => rule.category === category);
   }
 
-  getRulesByStatus(status: 'active' | 'inactive') {
+  getRulesByStatus = (status: 'active' | 'inactive') => {
     return this.rules.filter(rule => rule.status === status);
   }
 
-  getRulesBySeverity(severity: 'low' | 'medium' | 'high') {
+  getRulesBySeverity = (severity: 'low' | 'medium' | 'high') => {
     return this.rules.filter(rule => rule.severity === severity);
   }
 }
