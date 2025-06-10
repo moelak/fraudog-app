@@ -79,6 +79,7 @@ const Dashboard = observer(() => {
             })}
           </nav>
           <div className="flex items-center justify-between p-4 border-t bg-gray-50">
+            <UserButton afterSignOutUrl="/" />
             <span className="text-sm text-gray-500">v1.0.0</span>
           </div>
         </div>
