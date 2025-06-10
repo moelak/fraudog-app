@@ -79,7 +79,7 @@ const CreateRuleModal = observer(() => {
       description: formData.description,
       category: formData.category,
       condition: formData.condition,
-      status: formData.status as 'active' | 'inactive',
+      status: formData.status,
       severity: 'medium' // Default severity
     });
 
