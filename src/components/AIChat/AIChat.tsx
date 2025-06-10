@@ -28,11 +28,11 @@ const AIChat = observer(() => {
       />
       
       {/* Chat Panel */}
-      <div className={`fixed right-0 top-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
+      <div className={`fixed right-0 top-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
         aiChatStore.isMinimized ? 'translate-x-full' : 'translate-x-0'
       }`}>
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center">
             <div className="h-8 w-8 rounded-full bg-white bg-opacity-20 flex items-center justify-center mr-3">
               <ChatBubbleLeftRightIcon className="h-5 w-5 text-white" />
@@ -58,8 +58,8 @@ const AIChat = observer(() => {
           </div>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 h-[calc(100vh-140px)]">
+        {/* Messages Container */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {aiChatStore.messages.map((message) => (
             <div
               key={message.id}
@@ -114,8 +114,9 @@ const AIChat = observer(() => {
         </div>
 
         {/* Quick Actions */}
-        <div className="border-t border-gray-200 p-3 bg-gray-50">
-          <div className="flex flex-wrap gap-1 mb-3">
+        <div className="border-t border-gray-200 p-3 bg-gray-50 flex-shrink-0">
+          <p className="text-xs text-gray-600 mb-2">Quick actions:</p>
+          <div className="flex flex-wrap gap-1">
             {aiChatStore.quickActions.map((action) => (
               <button
                 key={action}
@@ -128,21 +129,21 @@ const AIChat = observer(() => {
           </div>
         </div>
 
-        {/* Input */}
-        <div className="border-t border-gray-200 p-3">
-          <form onSubmit={handleSendMessage} className="flex space-x-2">
+        {/* Input Section */}
+        <div className="border-t border-gray-200 p-4 bg-white flex-shrink-0">
+          <form onSubmit={handleSendMessage} className="flex space-x-3">
             <input
               type="text"
               value={aiChatStore.currentMessage}
               onChange={(e) => aiChatStore.setCurrentMessage(e.target.value)}
-              placeholder="Ask me anything..."
+              placeholder="Ask me anything about fraud detection..."
               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               disabled={aiChatStore.isTyping}
             />
             <button
               type="submit"
               disabled={!aiChatStore.currentMessage.trim() || aiChatStore.isTyping}
-              className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
             >
               <PaperAirplaneIcon className="h-4 w-4" />
             </button>
