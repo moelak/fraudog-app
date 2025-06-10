@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import { useState, useRef, useEffect } from 'react';
-import { ruleManagementStore, Rule } from './RuleManagementStore';
+import { ruleManagementStore } from './RuleManagementStore';
 import {
   EllipsisVerticalIcon,
   PencilIcon,
@@ -10,7 +10,11 @@ import {
 } from '@heroicons/react/24/outline';
 
 interface RuleActionsMenuProps {
-  rule: Rule;
+  rule: {
+    id: number;
+    name: string;
+    status: 'active' | 'inactive';
+  };
 }
 
 const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
