@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import { useState, useRef, useEffect } from 'react';
-import { ruleManagementStore, Rule } from './RuleManagementStore';
+import { ruleManagementStore } from './RuleManagementStore';
 import {
   EllipsisVerticalIcon,
   PencilIcon,
