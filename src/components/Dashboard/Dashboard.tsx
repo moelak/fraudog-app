@@ -20,6 +20,8 @@ import Visualization from '../Visualization/Visualization';
 import Monitoring from '../Monitoring/Monitoring';
 import Chargebacks from '../Chargebacks/Chargebacks';
 import ChatAssistant from '../ChatAssistant/ChatAssistant';
+import AIChat from '../AIChat/AIChat';
+import AIChatButton from '../AIChat/AIChatButton';
 import { dashboardStore } from './DashboardStore';
 
 const Dashboard = observer(() => {
@@ -199,6 +201,10 @@ const Dashboard = observer(() => {
           onClick={dashboardStore.closeSidebar}
         />
       )}
+
+      {/* AI Chat Components */}
+      <AIChatButton />
+      <AIChat />
     </div>
   );
 });
