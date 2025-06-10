@@ -10,7 +10,17 @@ import {
 } from '@heroicons/react/24/outline';
 
 interface RuleActionsMenuProps {
-  rule: Rule;
+  rule: {
+  id: number;
+  name: string;
+  description: string;
+  category: string;
+  condition: string;
+  severity: 'low' | 'medium' | 'high';
+  status: 'active' | 'inactive';
+  createdAt: string;
+  updatedAt: string;
+}
 }
 
 const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
