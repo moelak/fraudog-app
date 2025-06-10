@@ -44,7 +44,7 @@ const Dashboard = observer(() => {
       <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform ${dashboardStore.isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0`}>
         <div className="flex h-full flex-col">
           <div className="flex h-16 items-center justify-between px-4 bg-gradient-to-r from-blue-600 to-blue-700">
-            <span className="text-2xl font-bold text-white">Frud-dog</span>
+            <span className="text-2xl font-bold text-white">Fraud-dog</span>
             <button
               className="lg:hidden text-white"
               onClick={dashboardStore.closeSidebar}
