@@ -182,18 +182,7 @@ const Dashboard = observer(() => {
         <main className="flex-1 overflow-y-auto bg-transparent">
           <div className="py-6">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-              <Routes>
-                <Route path="/" element={<Overview />} />
-                <Route path="/rules" element={<RuleManagement />} />
-                <Route path="/visualization" element={<Visualization />} />
-                <Route path="/monitoring" element={<Monitoring />} />
-                <Route path="/chargebacks" element={<Chargebacks />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/assistant" element={<ChatAssistant />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/ai-chat" element={<AIChat />} />
-                <Route path="/file-upload" element={<Outlet />} />
-              </Routes>
+              <Outlet />
             </div>
           </div>
         </main>
