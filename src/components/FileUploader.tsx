@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { uploadFile } from '@/utils/fileUpload';
+import { uploadFile } from '../utils/fileUpload';
 
 const FileUploader = () => {
   const [file, setFile] = useState<File | null>(null);

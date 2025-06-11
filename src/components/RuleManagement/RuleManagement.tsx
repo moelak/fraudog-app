@@ -12,10 +12,12 @@ import {
 } from '@heroicons/react/24/outline';
 
 const RuleManagement = observer(() => {
-  const tabs = [
-    { id: 'active', name: 'Active Rules', count: ruleManagementStore.activeRulesCount },
-    { id: 'all', name: 'All Rules', count: ruleManagementStore.rules.length },
-    { id: 'attention', name: 'Needs Attention', count: ruleManagementStore.needsAttentionCount },
+  type TabId = 'active' | 'all' | 'attention';
+  
+  const tabs: { id: TabId; name: string; count: number }[] = [
+    { id: 'active' as const, name: 'Active Rules', count: ruleManagementStore.activeRulesCount },
+    { id: 'all' as const, name: 'All Rules', count: ruleManagementStore.rules.length },
+    { id: 'attention' as const, name: 'Needs Attention', count: ruleManagementStore.needsAttentionCount },
   ];
 
   return (
@@ -52,7 +54,7 @@ const RuleManagement = observer(() => {
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => ruleManagementStore.setActiveTab(tab.id)}
+                  onClick={() => ruleManagementStore.setActiveTab(tab.id as 'active' | 'all' | 'attention')}
                   className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                     ruleManagementStore.activeTab === tab.id
                       ? 'border-blue-500 text-blue-600'
@@ -194,7 +196,7 @@ const RuleManagement = observer(() => {
                           }`}
                         />
                       </button>
-                      <RuleActionsMenu rule={rule} />
+                      <RuleActionsMenu rule={{...rule, status: rule.status === 'warning' ? 'inactive' : rule.status as 'active' | 'inactive'}} />
                     </div>
                   </td>
                 </tr>

@@ -1,11 +1,10 @@
 import { observer } from 'mobx-react-lite';
 import { monitoringStore } from './MonitoringStore';
-import {
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  EyeIcon,
+import { 
+  ExclamationTriangleIcon, 
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
+// Icons: ClockIcon, EyeIcon are available if needed
 
 const Monitoring = observer(() => {
   return (

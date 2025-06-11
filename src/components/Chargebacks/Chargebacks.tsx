@@ -1,11 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import { chargebacksStore } from './ChargebacksStore';
-import {
-  CreditCardIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-  ClockIcon,
-} from '@heroicons/react/24/outline';
+// Icons: ExclamationTriangleIcon, CheckCircleIcon, ClockIcon are available if needed
+import { CreditCardIcon } from '@heroicons/react/24/outline';
 
 const Chargebacks = observer(() => {
   return (
@@ -20,8 +16,8 @@ const Chargebacks = observer(() => {
         {chargebacksStore.stats.map((stat) => (
           <div key={stat.name} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
             <div className="flex items-center">
-              <div className={`flex-shrink-0 rounded-md p-3 bg-${stat.color}-100`}>
-                <stat.icon className={`h-6 w-6 text-${stat.color}-600`} />
+              <div className="flex-shrink-0">
+                <CreditCardIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
               </div>
               <div className="ml-4">
                 <dt className="text-sm font-medium text-gray-500">{stat.name}</dt>

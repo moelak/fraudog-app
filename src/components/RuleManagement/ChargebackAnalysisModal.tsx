@@ -14,7 +14,6 @@ const ChargebackAnalysisModal = observer(() => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [csvPreview, setCsvPreview] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisComplete, setAnalysisComplete] = useState(false);
   const [generatedRules, setGeneratedRules] = useState<any[]>([]);
   
   // Filter states
@@ -84,7 +83,8 @@ const ChargebackAnalysisModal = observer(() => {
       });
 
       if (response.ok) {
-        const result = await response.json();
+        // Process the response
+        await response.json();
         
         // Mock generated rules based on analysis
         const mockRules = [
@@ -118,7 +118,6 @@ const ChargebackAnalysisModal = observer(() => {
         ];
 
         setGeneratedRules(mockRules);
-        setAnalysisComplete(true);
         setActiveTab('rules');
         
         // Show success toast
@@ -138,7 +137,6 @@ const ChargebackAnalysisModal = observer(() => {
     setSelectedFile(null);
     setCsvPreview([]);
     setIsAnalyzing(false);
-    setAnalysisComplete(false);
     setGeneratedRules([]);
     setActiveTab('analysis');
     ruleManagementStore.closeChargebackAnalysis();
@@ -338,7 +336,8 @@ const ChargebackAnalysisModal = observer(() => {
                         <svg viewBox="0 0 200 200" className="w-full h-full">
                           {pieChartData.map((segment, index) => {
                             const total = pieChartData.reduce((sum, item) => sum + item.value, 0);
-                            const percentage = (segment.value / total) * 100;
+                            // Calculate percentage (unused in UI but kept for reference)
+                            // const _percentage = (segment.value / total) * 100;
                             const angle = (segment.value / total) * 360;
                             const startAngle = pieChartData.slice(0, index).reduce((sum, item) => sum + (item.value / total) * 360, 0);
                             
