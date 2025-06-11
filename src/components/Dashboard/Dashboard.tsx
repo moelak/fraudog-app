@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import { UserButton } from '@clerk/clerk-react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, Outlet } from 'react-router-dom';
 import {
   ChartBarIcon,
   DocumentTextIcon,
@@ -11,6 +11,7 @@ import {
   BellIcon,
   CreditCardIcon,
   ChatBubbleLeftRightIcon,
+  CloudArrowUpIcon,
 } from '@heroicons/react/24/outline';
 import Overview from '../Overview/Overview';
 import Reports from '../Reports/Reports';
@@ -29,6 +30,7 @@ const Dashboard = observer(() => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
+    { name: 'File Upload', href: '/dashboard/file-upload', icon: CloudArrowUpIcon },
     { name: 'Rule Management', href: '/dashboard/rules', icon: ShieldCheckIcon },
     { name: 'Visualization', href: '/dashboard/visualization', icon: ChartBarIcon },
     { name: 'Monitoring', href: '/dashboard/monitoring', icon: EyeIcon },
@@ -189,6 +191,8 @@ const Dashboard = observer(() => {
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/assistant" element={<ChatAssistant />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/ai-chat" element={<AIChat />} />
+                <Route path="/file-upload" element={<Outlet />} />
               </Routes>
             </div>
           </div>
