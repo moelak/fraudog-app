@@ -107,6 +107,7 @@ export class RuleManagementStore {
   searchQuery = '';
   isCreateModalOpen = false;
   isEditModalOpen = false;
+  isChargebackAnalysisOpen = false;
   editingRule: Rule | null = null;
 
   constructor() {
@@ -127,6 +128,14 @@ export class RuleManagementStore {
 
   closeCreateModal = () => {
     this.isCreateModalOpen = false;
+  }
+
+  openChargebackAnalysis = () => {
+    this.isChargebackAnalysisOpen = true;
+  }
+
+  closeChargebackAnalysis = () => {
+    this.isChargebackAnalysisOpen = false;
   }
 
   editRule = (id: number) => {

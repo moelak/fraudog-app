@@ -1,12 +1,14 @@
 import { observer } from 'mobx-react-lite';
 import { ruleManagementStore } from './RuleManagementStore';
 import CreateRuleModal from './CreateRuleModal';
+import ChargebackAnalysisModal from './ChargebackAnalysisModal';
 import RuleActionsMenu from './RuleActionsMenu';
 import {
   PlusIcon,
   ShieldCheckIcon,
   ExclamationTriangleIcon,
   MagnifyingGlassIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline';
 
 const RuleManagement = observer(() => {
@@ -23,13 +25,22 @@ const RuleManagement = observer(() => {
           <h1 className="text-3xl font-bold text-gray-900">Rule Management</h1>
           <p className="mt-2 text-gray-600">Create and manage fraud detection rules</p>
         </div>
-        <button
-          onClick={ruleManagementStore.openCreateModal}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Create New Rule
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={ruleManagementStore.openChargebackAnalysis}
+            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
+          >
+            <ChartBarIcon className="h-5 w-5 mr-2" />
+            Chargeback Analysis
+          </button>
+          <button
+            onClick={ruleManagementStore.openCreateModal}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Create New Rule
+          </button>
+        </div>
       </div>
 
       {/* Tabs and Search */}
@@ -220,8 +231,9 @@ const RuleManagement = observer(() => {
         )}
       </div>
 
-      {/* Create Rule Modal */}
+      {/* Modals */}
       <CreateRuleModal />
+      <ChargebackAnalysisModal />
     </div>
   );
 });
