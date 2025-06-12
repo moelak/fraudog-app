@@ -4,9 +4,12 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './components/Dashboard/Dashboard';
 import LandingPage from './components/LandingPage/LandingPage';
 import AuthLayout from './components/AuthLayout/AuthLayout';
-import FileUploader from './components/FileUploader';
+import { useSyncClerkWithSupabase } from './hooks/useSyncClerkWithSupabase';
 
 const App = observer(() => {
+  // Initialize the sync hook at the app level
+  useSyncClerkWithSupabase();
+
   return (
     <>
       <SignedIn>
