@@ -1,6 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import { useUser } from '@clerk/clerk-react';
 import { authLayoutStore } from './AuthLayoutStore';
+import { useSyncClerkWithSupabase } from '../../hooks/useSyncClerkWithSupabase';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -8,6 +9,7 @@ interface AuthLayoutProps {
 
 const AuthLayout = observer(({ children }: AuthLayoutProps) => {
   const { user, isLoaded } = useUser();
+  const { syncStatus, supabaseUser } = useSyncClerkWithSupabase();
 
   // Update store with user data
   if (isLoaded && user && !authLayoutStore.isUserSynced) {
@@ -31,6 +33,11 @@ const AuthLayout = observer(({ children }: AuthLayoutProps) => {
         </div>
       </div>
     );
+  }
+
+  // Show sync status if there's an error
+  if (syncStatus === 'error') {
+    console.warn('Failed to sync user data with Supabase');
   }
 
   return <>{children}</>;
