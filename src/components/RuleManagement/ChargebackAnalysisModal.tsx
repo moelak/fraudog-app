@@ -100,48 +100,47 @@ const ChargebackAnalysisModal = observer(() => {
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type === 'text/csv') {
+    if (!file) {
+      setError('No file selected');
+      return;
+    }
+    
+    if (file.type === 'text/csv') {
       try {
-        // Upload file to Supabase
-        const uploadResult = await uploadFile(file);
-        
-        if (!uploadResult.success) {
-          throw new Error(uploadResult.error || 'Failed to upload file');
-        }
-
         // Set the file and preview
         setSelectedFile(file);
-        setCsvPreview([]); // Clear preview while processing
+        setError(null);
         setIsProcessing(true);
+        
+        // Generate CSV preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = e.target?.result as string;
+          if (text) {
+            const lines = text.split('\n').slice(0, 5); // Show first 5 lines as preview
+            setCsvPreview(lines);
+          }
+        };
+        reader.readAsText(file);
+        
+        // Upload file to Supabase
+        const filePath = `uploads/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('user-file-upload')
+          .upload(filePath, file);
 
-        // Wait for AI model response
-        const response = await supabase.storage
-          .from('AI-model-response')
-          .list(file.name);
-
-        if (response.error) {
-          throw response.error;
+        if (uploadError) {
+          throw new Error(`Failed to upload file: ${uploadError.message}`);
         }
-
-        // Process the response
-        const responseFile = response.data[0];
-        const responseContent = await supabase.storage
-          .from('AI-model-response')
-          .download(responseFile.name);
-
-        if (responseContent.error) {
-          throw responseContent.error;
-        }
-
-        // Update state with processed data
-        const processedData = JSON.parse(responseContent.data.toString());
-        setAnalysisResults(processedData);
+        
+        setIsProcessing(false);
       } catch (error) {
         console.error('Error processing file:', error);
         setError(error instanceof Error ? error.message : 'Failed to process file');
-      } finally {
         setIsProcessing(false);
       }
+    } else {
+      setError('Please select a CSV file');
     }
   };
 
@@ -149,19 +148,51 @@ const ChargebackAnalysisModal = observer(() => {
     e.preventDefault();
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
-    if (file && file.type === 'text/csv') {
-      setSelectedFile(file);
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        const lines = text.split('\n').slice(0, 3);
-        setCsvPreview(lines);
-      };
-      reader.readAsText(file);
+    
+    if (!file) {
+      setError('No file dropped');
+      return;
+    }
+    
+    if (file.type === 'text/csv') {
+      try {
+        // Set the file and preview
+        setSelectedFile(file);
+        setError(null);
+        setIsProcessing(true);
+        
+        // Generate CSV preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = e.target?.result as string;
+          if (text) {
+            const lines = text.split('\n').slice(0, 5); // Show first 5 lines as preview
+            setCsvPreview(lines);
+          }
+        };
+        reader.readAsText(file);
+        
+        // Upload file to Supabase
+        const filePath = `uploads/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('user-file-upload')
+          .upload(filePath, file);
+
+        if (uploadError) {
+          throw new Error(`Failed to upload file: ${uploadError.message}`);
+        }
+        
+        setIsProcessing(false);
+      } catch (error) {
+        console.error('Error processing file:', error);
+        setError(error instanceof Error ? error.message : 'Failed to process file');
+        setIsProcessing(false);
+      }
+    } else {
+      setError('Please drop a CSV file');
     }
   };
 
