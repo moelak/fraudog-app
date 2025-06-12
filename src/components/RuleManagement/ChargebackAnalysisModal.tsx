@@ -1,20 +1,30 @@
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
+import { supabase } from '../../lib/supabase';
+import { uploadFile } from '../../utils/fileUpload';
 import { ruleManagementStore } from './RuleManagementStore';
 import {
   XMarkIcon,
   CloudArrowUpIcon,
-  DocumentTextIcon,
-  ChartPieIcon,
-  SparklesIcon,
+  DocumentIcon
 } from '@heroicons/react/24/outline';
+
+interface AnalysisResult {
+  fraudScore: number;
+  riskLevel: string;
+  recommendations: string[];
+  [key: string]: any;
+}
 
 const ChargebackAnalysisModal = observer(() => {
   const [activeTab, setActiveTab] = useState<'analysis' | 'rules'>('analysis');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [csvPreview, setCsvPreview] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [generatedRules, setGeneratedRules] = useState<any[]>([]);
+  const [generatedRules, setGeneratedRules] = useState<Record<string, any>[]>([]);
   
   // Filter states
   const [dateType, setDateType] = useState('Transaction Date');
@@ -31,19 +41,50 @@ const ChargebackAnalysisModal = observer(() => {
     { label: '$1000+', value: 17, color: '#EF4444' },
   ];
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type === 'text/csv') {
-      setSelectedFile(file);
-      
-      // Read first few lines for preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        const lines = text.split('\n').slice(0, 3);
-        setCsvPreview(lines);
-      };
-      reader.readAsText(file);
+      try {
+        // Upload file to Supabase
+        const uploadResult = await uploadFile(file);
+        
+        if (!uploadResult.success) {
+          throw new Error(uploadResult.error || 'Failed to upload file');
+        }
+
+        // Set the file and preview
+        setSelectedFile(file);
+        setCsvPreview([]); // Clear preview while processing
+        setIsProcessing(true);
+
+        // Wait for AI model response
+        const response = await supabase.storage
+          .from('AI-model-response')
+          .list(file.name);
+
+        if (response.error) {
+          throw response.error;
+        }
+
+        // Process the response
+        const responseFile = response.data[0];
+        const responseContent = await supabase.storage
+          .from('AI-model-response')
+          .download(responseFile.name);
+
+        if (responseContent.error) {
+          throw responseContent.error;
+        }
+
+        // Update state with processed data
+        const processedData = JSON.parse(responseContent.data.toString());
+        setAnalysisResults(processedData);
+      } catch (error) {
+        console.error('Error processing file:', error);
+        setError(error instanceof Error ? error.message : 'Failed to process file');
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -227,20 +268,77 @@ const ChargebackAnalysisModal = observer(() => {
                   >
                     <CloudArrowUpIcon className="mx-auto h-12 w-12 text-gray-400" />
                     <div className="mt-4">
-                      <label htmlFor="csv-upload" className="cursor-pointer">
-                        <span className="mt-2 block text-sm font-medium text-gray-900">
-                          Drop your CSV file here, or{' '}
-                          <span className="text-blue-600 hover:text-blue-500">browse</span>
-                        </span>
-                        <input
-                          id="csv-upload"
-                          type="file"
-                          accept=".csv"
-                          onChange={handleFileSelect}
-                          className="sr-only"
-                        />
-                      </label>
-                      <p className="mt-1 text-xs text-gray-500">CSV files only</p>
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-center gap-2">
+                          <DocumentIcon className="h-5 w-5 text-gray-400" />
+                          <span className="text-sm text-gray-500">Drag CSV file here or click to upload</span>
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                            <input
+                              type="file"
+                              accept=".csv"
+                              onChange={handleFileSelect}
+                              className="hidden"
+                              id="file-upload"
+                            />
+                            <label
+                              htmlFor="file-upload"
+                              className="cursor-pointer text-sm text-violet-600 hover:text-violet-700"
+                            >
+                              Choose file
+                            </label>
+                          </div>
+                          {selectedFile && (
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <span>{selectedFile.name}</span>
+                                <button
+                                  onClick={() => {
+                                    setSelectedFile(null);
+                                    setCsvPreview([]);
+                                  }}
+                                  className="text-red-500 hover:text-red-600"
+                                >
+                                  <XMarkIcon className="h-4 w-4" />
+                                </button>
+                              </div>
+                              {isProcessing ? (
+                                <div className="flex items-center gap-2 text-sm text-blue-500">
+                                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                    <circle
+                                      className="opacity-25"
+                                      cx="12"
+                                      cy="12"
+                                      r="10"
+                                      stroke="currentColor"
+                                      strokeWidth="4"
+                                    />
+                                    <path
+                                      className="opacity-75"
+                                      fill="currentColor"
+                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    />
+                                  </svg>
+                                  Processing...
+                                </div>
+                              ) : error ? (
+                                <div className="text-sm text-red-500">{error}</div>
+                              ) : null}
+                              
+                              {analysisResults && (
+                                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                                  <h3 className="text-sm font-semibold mb-2">Analysis Results</h3>
+                                  <pre className="text-xs whitespace-pre-wrap">
+                                    {JSON.stringify(analysisResults, null, 2)}
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
 

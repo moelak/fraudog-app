@@ -15,15 +15,11 @@ const App = observer(() => {
       <SignedIn>
         <AuthLayout>
           <Routes>
-            <Route path="/dashboard" element={<Dashboard />}>
-              <Route path="file-upload" element={<FileUploader />} />
-              <Route index element={<Navigate to="file-upload" replace />} />
-            </Route>
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </AuthLayout>
       </SignedIn>
-      
       <SignedOut>
         <Routes>
           <Route path="/" element={<LandingPage />} />
