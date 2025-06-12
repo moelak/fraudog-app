@@ -30,7 +30,6 @@ const Dashboard = observer(() => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-    { name: 'File Upload', href: '/dashboard/file-upload', icon: CloudArrowUpIcon },
     { name: 'Rule Management', href: '/dashboard/rules', icon: ShieldCheckIcon },
     { name: 'Visualization', href: '/dashboard/visualization', icon: ChartBarIcon },
     { name: 'Monitoring', href: '/dashboard/monitoring', icon: EyeIcon },

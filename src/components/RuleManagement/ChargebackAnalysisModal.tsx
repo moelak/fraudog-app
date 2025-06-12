@@ -3,28 +3,85 @@ import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { uploadFile } from '../../utils/fileUpload';
 import { ruleManagementStore } from './RuleManagementStore';
-import {
-  XMarkIcon,
-  CloudArrowUpIcon,
-  DocumentIcon
+import { 
+  XMarkIcon, 
+  CloudArrowUpIcon, 
+  DocumentTextIcon, 
+  ChartPieIcon, 
+  SparklesIcon 
 } from '@heroicons/react/24/outline';
 
 interface AnalysisResult {
-  fraudScore: number;
-  riskLevel: string;
-  recommendations: string[];
+  id: string;
+  status: string;
+  result?: {
+    analysis: string;
+    confidence: number;
+    riskLevel: string;
+    fraudScore: number;
+    recommendations: string[];
+    [key: string]: any;
+  };
+}
+
+interface AnalysisSummary {
+  totalRecords: number;
+  riskScore: number;
+  highRiskCount: number;
+  mediumRiskCount: number;
+  lowRiskCount: number;
+}
+
+interface Recommendation {
+  id: string;
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  action: string;
+}
+
+interface Rule {
+  id: number;
+  name: string;
+  description: string;
+  category: string;
+  condition: string;
+  status: string;
+  severity: string;
+  confidence: number;
+  expectedCatches: number;
+  estimatedFalsePositives: number;
   [key: string]: any;
 }
 
+// Remove unused interfaces
+/*
+interface AnalysisSummary {
+  totalRecords: number;
+  riskScore: number;
+  highRiskCount: number;
+  mediumRiskCount: number;
+  lowRiskCount: number;
+}
+
+interface Recommendation {
+  id: string;
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  action: string;
+}
+*/
+
 const ChargebackAnalysisModal = observer(() => {
   const [activeTab, setActiveTab] = useState<'analysis' | 'rules'>('analysis');
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [csvPreview, setCsvPreview] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [analysisResults, setAnalysisResults] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [generatedRules, setGeneratedRules] = useState<Record<string, any>[]>([]);
+  const [csvPreview, setCsvPreview] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [generatedRules, setGeneratedRules] = useState<Rule[]>([]);
   
   // Filter states
   const [dateType, setDateType] = useState('Transaction Date');
@@ -128,13 +185,16 @@ const ChargebackAnalysisModal = observer(() => {
         await response.json();
         
         // Mock generated rules based on analysis
-        const mockRules = [
+        const mockRules: Rule[] = [
           {
             id: Date.now() + 1,
             name: 'High-Risk Transaction Pattern',
             description: 'Transactions over $500 from new accounts with mismatched billing addresses',
+            category: 'risk',
             condition: 'transaction.amount > 500 && account.age < 30 && billing.address_match === false',
-            confidence: 92,
+            status: 'active',
+            severity: 'high',
+            confidence: 0.92,
             expectedCatches: 156,
             estimatedFalsePositives: 12
           },
@@ -142,8 +202,11 @@ const ChargebackAnalysisModal = observer(() => {
             id: Date.now() + 2,
             name: 'Geographic Anomaly Detection',
             description: 'Transactions from countries with high chargeback rates for this merchant',
+            category: 'geography',
             condition: 'transaction.country in ["XX", "YY"] && merchant.chargeback_rate > 0.05',
-            confidence: 87,
+            status: 'active',
+            severity: 'medium',
+            confidence: 0.87,
             expectedCatches: 89,
             estimatedFalsePositives: 8
           },
@@ -151,8 +214,11 @@ const ChargebackAnalysisModal = observer(() => {
             id: Date.now() + 3,
             name: 'Device Fingerprint Risk',
             description: 'Multiple failed attempts from same device followed by successful transaction',
+            category: 'device',
             condition: 'device.failed_attempts > 2 && transaction.success === true && timeWindow < 1800',
-            confidence: 78,
+            status: 'active',
+            severity: 'high',
+            confidence: 0.78,
             expectedCatches: 67,
             estimatedFalsePositives: 15
           }
@@ -160,8 +226,7 @@ const ChargebackAnalysisModal = observer(() => {
 
         setGeneratedRules(mockRules);
         setActiveTab('rules');
-        
-        // Show success toast
+                // Show success toast
         alert('Analysis complete! Generated rules are now available in the Generated Rules tab.');
       } else {
         throw new Error('Analysis failed');
@@ -270,7 +335,7 @@ const ChargebackAnalysisModal = observer(() => {
                     <div className="mt-4">
                       <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2">
-                          <DocumentIcon className="h-5 w-5 text-gray-400" />
+                          <DocumentTextIcon className="h-5 w-5 text-gray-400" />
                           <span className="text-sm text-gray-500">Drag CSV file here or click to upload</span>
                         </div>
 
