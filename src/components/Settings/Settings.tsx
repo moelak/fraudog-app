@@ -1,11 +1,21 @@
 import { observer } from 'mobx-react-lite';
 import { settingsStore } from './SettingsStore';
+import UserProfile from '../UserProfile/UserProfile';
 
 const Settings = observer(() => {
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+        <p className="mt-2 text-gray-600">Manage your account and application preferences</p>
+      </div>
+
+      {/* User Profile Section */}
+      <UserProfile />
+
+      {/* Application Settings */}
       <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Settings</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Application Settings</h2>
         
         <div className="space-y-6">
           {/* Notification Settings */}
