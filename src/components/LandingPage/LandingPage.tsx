@@ -228,10 +228,10 @@ const LandingPage = observer(() => {
       </section>
 
       {/* Section 3: About / Use Case */}
-      <section id="about" className="py-20 relative">
+      <section id="about" className=" py-20 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left Visual - Robot in Data Environment */}
-          <div className="relative flex justify-center lg:justify-start">
+          <div className="hidden lg:flex  relative  justify-center lg:justify-start">
             <div className="relative w-80 h-80">
               {/* Data Warehouse Background */}
               <div className="absolute inset-0  rounded-2xl  backdrop-blur-sm">
@@ -249,7 +249,7 @@ const LandingPage = observer(() => {
               </div>
 
               {/* Robot Image in Container */}
-              <div className="hidden lg:flex  absolute inset-0 items-center justify-center">  
+              <div className="absolute inset-0 flex items-center justify-center">  
                 <div className="relative">
                   {/* Subtle glow effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-full blur-2xl"></div>
