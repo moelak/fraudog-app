@@ -172,7 +172,7 @@ const LandingPage = observer(() => {
                     }}
                   />
               {/* Outer Ring */}
-<div className="absolute top-1/2 left-2/5 w-[640px] h-[640px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-purple-400/10 animate-pulse"></div>
+<div className="absolute top-1/2 left-1/2  w-[640px] h-[640px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-purple-400/10 animate-pulse"></div>
 
 {/* Inner Ring */}
 <div className="absolute top-1/2 left-1/2 w-[600px] h-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-400/20 animate-pulse"></div>
