@@ -153,7 +153,6 @@ const LandingPage = observer(() => {
 
           {/* Right Visual - Robot Image (2x Larger, No White Dots) */}
         <div className="hidden md:flex relative justify-center lg:justify-end">
-
             <div className="relative">
               {/* Robot Image with Effects - Made 2x Larger */}
                 <div className="relative">
