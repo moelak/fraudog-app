@@ -232,7 +232,7 @@ const LandingPage = observer(() => {
           <div className="relative flex justify-center lg:justify-start">
             <div className="relative w-80 h-80">
               {/* Data Warehouse Background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 to-blue-900/20 rounded-2xl ">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20  rounded-2xl  backdrop-blur-sm">
                 {/* Data Streams */}
                 {[...Array(6)].map((_, i) => (
                   <div
