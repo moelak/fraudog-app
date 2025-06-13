@@ -129,7 +129,7 @@ const LandingPage = observer(() => {
               Sniffing Out Fraud in Real Time
             </h1>
             <p className="text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed">
-              Our AI agents follow every transaction trail </ln>before fraud strikes.
+              Our AI agents follow every transaction trail </br>before fraud strikes.
             </p>
             
             {/* Email Signup Form */}
