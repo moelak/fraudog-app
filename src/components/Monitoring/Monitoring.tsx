@@ -3,8 +3,6 @@ import { monitoringStore } from './MonitoringStore';
 import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
-  ClockIcon,
-  EyeIcon,
 } from '@heroicons/react/24/outline';
 
 const Monitoring = observer(() => {
@@ -27,10 +25,10 @@ const Monitoring = observer(() => {
               }`}>
                 {metric.status === 'healthy' ? (
                   <CheckCircleIcon className="h-6 w-6 text-green-600" />
-                ) : metric.status === 'warning' ? (
-                  <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600" />
                 ) : (
-                  <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
+                  <ExclamationTriangleIcon className={`h-6 w-6 ${
+                    metric.status === 'warning' ? 'text-yellow-600' : 'text-red-600'
+                  }`} />
                 )}
               </div>
               <div className="ml-4">

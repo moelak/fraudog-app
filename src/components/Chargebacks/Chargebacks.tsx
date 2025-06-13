@@ -2,9 +2,6 @@ import { observer } from 'mobx-react-lite';
 import { chargebacksStore } from './ChargebacksStore';
 import {
   CreditCardIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-  ClockIcon,
 } from '@heroicons/react/24/outline';
 
 const Chargebacks = observer(() => {
