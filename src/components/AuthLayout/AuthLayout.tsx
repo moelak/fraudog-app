@@ -9,7 +9,7 @@ interface AuthLayoutProps {
 
 const AuthLayout = observer(({ children }: AuthLayoutProps) => {
   const { user, isLoaded } = useUser();
-  const { syncStatus, supabaseUser } = useSyncClerkWithSupabase();
+  const { syncStatus } = useSyncClerkWithSupabase();
 
   // Update store with user data
   if (isLoaded && user && !authLayoutStore.isUserSynced) {

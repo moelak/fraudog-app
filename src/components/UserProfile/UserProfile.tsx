@@ -12,7 +12,7 @@ import {
 
 const UserProfile = observer(() => {
   const { user } = useUser();
-  const { syncStatus, supabaseUser, isLoading } = useSyncClerkWithSupabase();
+  const { syncStatus, supabaseUser } = useSyncClerkWithSupabase();
 
   if (!user) return null;
 

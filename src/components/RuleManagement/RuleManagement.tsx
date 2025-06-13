@@ -13,9 +13,9 @@ import {
 
 const RuleManagement = observer(() => {
   const tabs = [
-    { id: 'active', name: 'Active Rules', count: ruleManagementStore.activeRulesCount },
-    { id: 'all', name: 'All Rules', count: ruleManagementStore.rules.length },
-    { id: 'attention', name: 'Needs Attention', count: ruleManagementStore.needsAttentionCount },
+    { id: 'active' as const, name: 'Active Rules', count: ruleManagementStore.activeRulesCount },
+    { id: 'all' as const, name: 'All Rules', count: ruleManagementStore.rules.length },
+    { id: 'attention' as const, name: 'Needs Attention', count: ruleManagementStore.needsAttentionCount },
   ];
 
   return (
