@@ -152,11 +152,10 @@ const LandingPage = observer(() => {
           </div>
 
           {/* Right Visual - Robot Image (2x Larger, No White Dots) */}
-         <div className="relative flex justify-center">
-
+          <div className="relative flex justify-center lg:justify-end">
             <div className="relative">
               {/* Robot Image with Effects - Made 2x Larger */}
-              <div className="relative w-[768px] h-[768px] mx-auto flex items-center justify-center">
+<div className="relative w-[300px] h-[300px] sm:w-[400px] sm:h-[400px] md:w-[512px] md:h-[512px] lg:w-[768px] lg:h-[768px] mx-auto flex items-center justify-center">
                 <div className="relative">
                   {/* Glowing background effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full blur-3xl scale-150"></div>
