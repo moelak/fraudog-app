@@ -164,7 +164,7 @@ const LandingPage = observer(() => {
                   <img 
                     src="/src/assets/images/robo.png" 
                     alt="AI Fraud Detection Robot" 
-                    className="relative z-10 w-[640px] h-[640px] object-contain drop-shadow-2xl"
+                    className="relative z-10 w-[540px] h-[540px] object-contain drop-shadow-2xl"
                     style={{
                       filter: 'drop-shadow(0 0 30px rgba(147, 51, 234, 0.3))'
                     }}
