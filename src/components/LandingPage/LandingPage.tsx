@@ -172,7 +172,7 @@ const LandingPage = observer(() => {
                    
                   {/* Animated glow rings */}
                   {/* <div className="absolute inset-0 rounded-full border-2 border-purple-400/30 animate-ping"></div> */} 
-             <div className="absolute top-1/2 left-1/2 w-[640px] h-[640px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-400/20 animate-pulse"></div>
+                  <div className="absolute inset-4 rounded-full border border-blue-400/20 animate-pulse"></div> 
                 </div>
               </div>
             </div>
