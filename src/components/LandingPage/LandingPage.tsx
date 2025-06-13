@@ -151,7 +151,7 @@ const LandingPage = observer(() => {
             </form>
           </div>
 
-          {/* Right Visual - Robot with Dog */}
+          {/* Right Visual - Robot Image */}
           <div className="relative flex justify-center lg:justify-end">
             <div className="relative">
               {/* Fraud Trail Animation */}
@@ -171,42 +171,26 @@ const LandingPage = observer(() => {
                 ))}
               </div>
 
-              {/* Robot and Dog Illustration */}
-              <div className="relative w-96 h-96 mx-auto">
-                {/* Robot */}
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-40 bg-gradient-to-b from-gray-700 to-gray-800 rounded-2xl border border-purple-500/30 shadow-lg shadow-purple-500/20">
-                  {/* Robot Head */}
-                  <div className="w-24 h-24 bg-gradient-to-b from-gray-600 to-gray-700 rounded-xl mx-auto mt-2 relative border border-purple-400/20">
-                    {/* LED Eyes */}
-                    <div className="flex justify-center items-center h-full space-x-3">
-                      <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse shadow-lg shadow-blue-400/50"></div>
-                      <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse shadow-lg shadow-blue-400/50" style={{ animationDelay: '0.5s' }}></div>
-                    </div>
-                  </div>
-                  {/* Robot Body */}
-                  <div className="w-20 h-12 bg-gradient-to-b from-gray-700 to-gray-800 rounded-lg mx-auto mt-2 border border-purple-400/20">
-                    <div className="w-2 h-2 bg-green-400 rounded-full mx-auto mt-2 animate-pulse"></div>
-                  </div>
+              {/* Robot Image with Effects */}
+              <div className="relative w-96 h-96 mx-auto flex items-center justify-center">
+                <div className="relative">
+                  {/* Glowing background effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full blur-3xl scale-150"></div>
+                  
+                  {/* Robot Image */}
+                  <img 
+                    src="/src/assets/images/robo.png" 
+                    alt="AI Fraud Detection Robot" 
+                    className="relative z-10 w-80 h-80 object-contain drop-shadow-2xl"
+                    style={{
+                      filter: 'drop-shadow(0 0 30px rgba(147, 51, 234, 0.3))'
+                    }}
+                  />
+                  
+                  {/* Animated glow rings */}
+                  <div className="absolute inset-0 rounded-full border-2 border-purple-400/30 animate-ping"></div>
+                  <div className="absolute inset-4 rounded-full border border-blue-400/20 animate-pulse"></div>
                 </div>
-
-                {/* Robotic Dog */}
-                <div className="absolute bottom-0 right-8 w-24 h-16 bg-gradient-to-r from-gray-600 to-gray-700 rounded-lg border border-purple-500/30 shadow-lg shadow-purple-500/20">
-                  {/* Dog Head */}
-                  <div className="w-8 h-8 bg-gradient-to-b from-gray-500 to-gray-600 rounded-lg absolute -top-2 left-2 border border-purple-400/20">
-                    <div className="w-1 h-1 bg-red-400 rounded-full absolute top-2 left-2 animate-pulse"></div>
-                    <div className="w-1 h-1 bg-red-400 rounded-full absolute top-2 right-2 animate-pulse"></div>
-                  </div>
-                  {/* Dog Body */}
-                  <div className="w-full h-full rounded-lg relative">
-                    <div className="absolute bottom-1 left-1 w-2 h-4 bg-gray-500 rounded"></div>
-                    <div className="absolute bottom-1 left-4 w-2 h-4 bg-gray-500 rounded"></div>
-                    <div className="absolute bottom-1 right-4 w-2 h-4 bg-gray-500 rounded"></div>
-                    <div className="absolute bottom-1 right-1 w-2 h-4 bg-gray-500 rounded"></div>
-                  </div>
-                </div>
-
-                {/* Connecting Line */}
-                <div className="absolute top-32 left-1/2 w-px h-16 bg-gradient-to-b from-purple-400 to-transparent"></div>
               </div>
             </div>
           </div>
@@ -259,7 +243,7 @@ const LandingPage = observer(() => {
       {/* Section 3: About / Use Case */}
       <section id="about" className="py-20 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Left Visual - Relaxed Robot */}
+          {/* Left Visual - Robot in Data Environment */}
           <div className="relative flex justify-center lg:justify-start">
             <div className="relative w-80 h-80">
               {/* Data Warehouse Background */}
@@ -277,21 +261,22 @@ const LandingPage = observer(() => {
                 ))}
               </div>
 
-              {/* Relaxed Robot in Container */}
-              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-32 h-32 bg-gradient-to-b from-gray-600 to-gray-700 rounded-2xl border border-purple-500/30 shadow-lg shadow-purple-500/20">
-                {/* Robot Head */}
-                <div className="w-20 h-20 bg-gradient-to-b from-gray-500 to-gray-600 rounded-xl mx-auto mt-2 relative border border-purple-400/20">
-                  {/* Curious LED Eyes */}
-                  <div className="flex justify-center items-center h-full space-x-2">
-                    <div className="w-3 h-4 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
-                    <div className="w-3 h-4 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50" style={{ animationDelay: '0.3s' }}></div>
-                  </div>
-                  {/* Smile */}
-                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-purple-400 rounded-full"></div>
+              {/* Robot Image in Container */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative">
+                  {/* Subtle glow effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-full blur-2xl"></div>
+                  
+                  {/* Smaller robot image for this section */}
+                  <img 
+                    src="/src/assets/images/robo.png" 
+                    alt="AI Assistant Robot" 
+                    className="relative z-10 w-48 h-48 object-contain opacity-80"
+                    style={{
+                      filter: 'drop-shadow(0 0 20px rgba(34, 197, 94, 0.2))'
+                    }}
+                  />
                 </div>
-                {/* Robot Arms (relaxed position) */}
-                <div className="absolute -left-2 top-8 w-4 h-8 bg-gray-600 rounded-lg rotate-12"></div>
-                <div className="absolute -right-2 top-8 w-4 h-8 bg-gray-600 rounded-lg -rotate-12"></div>
               </div>
             </div>
           </div>
