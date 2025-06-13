@@ -6,7 +6,7 @@ import { landingPageStore } from './LandingPageStore';
 const LandingPage = observer(() => {
   const [email, setEmail] = useState('');
   const [activeSection, setActiveSection] = useState('home');
- 
+
   useEffect(() => {
     const handleScroll = () => {
       const sections = ['home', 'features', 'about', 'blog'];
@@ -152,9 +152,10 @@ const LandingPage = observer(() => {
           </div>
 
           {/* Right Visual - Robot Image (2x Larger, No White Dots) */}
-        <div className="hidden md:flex relative justify-center lg:justify-end">
+          <div className="relative flex justify-center lg:justify-end">
             <div className="relative">
               {/* Robot Image with Effects - Made 2x Larger */}
+              <div className="relative w-[768px] h-[768px] mx-auto flex items-center justify-center">
                 <div className="relative">
                   {/* Glowing background effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full blur-3xl scale-150"></div>
@@ -168,10 +169,10 @@ const LandingPage = observer(() => {
                       filter: 'drop-shadow(0 0 30px rgba(147, 51, 234, 0.3))'
                     }}
                   />
-                  
+                   
                   {/* Animated glow rings */}
-                  {/* <div className="absolute inset-0 rounded-full border-2 border-purple-400/30 animate-ping"></div>
-                  <div className="absolute inset-4 rounded-full border border-blue-400/20 animate-pulse"></div> */}
+                  <div className="absolute inset-0 rounded-full border-2 border-purple-400/30 animate-ping"></div>
+                  <div className="absolute inset-4 rounded-full border border-blue-400/20 animate-pulse"></div>
                 </div>
               </div>
             </div>
