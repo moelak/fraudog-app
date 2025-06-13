@@ -151,37 +151,20 @@ const LandingPage = observer(() => {
             </form>
           </div>
 
-          {/* Right Visual - Robot Image */}
+          {/* Right Visual - Robot Image (2x Larger, No White Dots) */}
           <div className="relative flex justify-center lg:justify-end">
             <div className="relative">
-              {/* Fraud Trail Animation */}
-              <div className="absolute inset-0 overflow-hidden">
-                {[...Array(8)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-4 h-4 opacity-60"
-                    style={{
-                      left: `${20 + i * 60}px`,
-                      top: `${200 + Math.sin(i * 0.5) * 50}px`,
-                      animation: `fadeInOut 3s infinite ${i * 0.3}s`
-                    }}
-                  >
-                    <div className="w-full h-full bg-white rounded-full shadow-lg shadow-white/50"></div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Robot Image with Effects */}
-              <div className="relative w-96 h-96 mx-auto flex items-center justify-center">
+              {/* Robot Image with Effects - Made 2x Larger */}
+              <div className="relative w-[768px] h-[768px] mx-auto flex items-center justify-center">
                 <div className="relative">
                   {/* Glowing background effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full blur-3xl scale-150"></div>
                   
-                  {/* Robot Image */}
+                  {/* Robot Image - 2x Larger (was 320px, now 640px) */}
                   <img 
                     src="/src/assets/images/robo.png" 
                     alt="AI Fraud Detection Robot" 
-                    className="relative z-10 w-80 h-80 object-contain drop-shadow-2xl"
+                    className="relative z-10 w-[640px] h-[640px] object-contain drop-shadow-2xl"
                     style={{
                       filter: 'drop-shadow(0 0 30px rgba(147, 51, 234, 0.3))'
                     }}
@@ -374,11 +357,6 @@ const LandingPage = observer(() => {
 
       {/* Custom Styles */}
       <style jsx>{`
-        @keyframes fadeInOut {
-          0%, 100% { opacity: 0; transform: scale(0.8); }
-          50% { opacity: 1; transform: scale(1); }
-        }
-        
         @keyframes slideRight {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(100%); }
