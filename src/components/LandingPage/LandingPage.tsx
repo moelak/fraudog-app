@@ -142,12 +142,14 @@ const LandingPage = observer(() => {
                 className="flex-1 px-4 py-3 bg-white/10 border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm"
                 required
               /> */} 
+              <SignUpButton mode="modal">
               <button
                 type="submit"
                 className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-purple-500/25 font-medium"
               >
                 Get Started
               </button>
+              </SignUpButton>
             </form>
           </div>
 
