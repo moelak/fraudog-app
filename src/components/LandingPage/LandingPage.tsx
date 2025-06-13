@@ -75,7 +75,7 @@ const LandingPage = observer(() => {
             {/* Logo */}
             <div className="flex items-center">
               <div className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                Catech.AI
+               Fraud-dog
               </div>
             </div>
 
@@ -346,7 +346,7 @@ const LandingPage = observer(() => {
       <footer className="py-12 border-t border-purple-500/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent mb-4">
-            Catech.AI
+           Fraud-dog
           </div>
           <p className="text-gray-400 mb-6">
             Protecting your business with intelligent fraud detection
