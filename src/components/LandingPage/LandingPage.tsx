@@ -247,7 +247,7 @@ const LandingPage = observer(() => {
               </div>
 
               {/* Robot Image in Container */}
-              <div className="absolute inset-0 flex items-center justify-center">
+              <div className="">
                 <div className="relative">
                   {/* Subtle glow effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-full blur-2xl"></div>
