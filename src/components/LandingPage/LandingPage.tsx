@@ -256,7 +256,7 @@ const LandingPage = observer(() => {
                   <img 
                     src="/src/assets/images/robo-thumbs-up.png" 
                     alt="AI Assistant Robot" 
-                    className="relative z-10 w-48 h-48 object-contain opacity-80"
+                    className="relative z-10 w-58 h-58 object-contain opacity-80"
                     style={{
                       filter: 'drop-shadow(0 0 20px rgba(34, 197, 94, 0.2))'
                     }}
