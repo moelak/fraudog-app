@@ -145,7 +145,8 @@ const LandingPage = observer(() => {
               <SignUpButton mode="modal">
               <button
                 type="submit"
-                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-purple-500/25 font-medium"
+            className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-purple-500/25 font-medium
+             mx-auto md:mx-auto lg:mx-0 block"
               >
                 Get Started
               </button>
