@@ -172,41 +172,11 @@ const LandingPage = observer(() => {
                       filter: 'drop-shadow(0 0 30px rgba(147, 51, 234, 0.3))'
                     }}
                   />
-  {/* Step 1 */}
-<img
-  src="/src/assets/footsteps.svg"
-  alt="Footsteps"
-  className="absolute z-0 bottom-20 left-[60%] -translate-x-1/2 w-20 opacity-80"
-/>
-
-{/* Step 2 */}
-<img
-  src="/src/assets/footsteps.svg"
-  alt="Footsteps"
-  className="absolute z-0 bottom-28 left-[52%] -translate-x-1/2 w-16 opacity-70"
-/>
-
-{/* Step 3 */}
-<img
-  src="/src/assets/footsteps.svg"
-  alt="Footsteps"
-  className="absolute z-0 bottom-36 left-[45%] -translate-x-1/2 w-14 opacity-60"
-/>
-
-{/* Step 4 */}
-<img
-  src="/src/assets/footsteps.svg"
-  alt="Footsteps"
-  className="absolute z-0 bottom-44 left-[38%] -translate-x-1/2 w-12 opacity-50"
-/>
-
-{/* Step 5 */}
-<img
-  src="/src/assets/footsteps.svg"
-  alt="Footsteps"
-  className="absolute z-0 bottom-52 left-[32%] -translate-x-1/2 w-10 opacity-40"
-/>
-
+                     <img
+      src="/src/assets/footsteps.svg"
+      alt="Footsteps"
+      className="absolute z-0 bottom-32 left-1/2 transform -translate-x-1/2 translate-y-12 w-24 opacity-80"
+    /> 
               {/* Outer Ring */}
 {/* <div className="absolute top-1/2  md:left-[75%] lg:left-[70%] md:w-[540px] md:h-[540px]   lg:w-[640px] lg:h-[640px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-purple-400/10 animate-pulse"></div> */}
 
