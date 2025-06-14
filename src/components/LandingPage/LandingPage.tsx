@@ -205,7 +205,7 @@ const LandingPage = observer(() => {
                     alt="Footsteps"
                     className="absolute z-0 w-24 opacity-80 animate-fadeIn"
                     style={{
-                      top: `${75 + idx * 15}%`, 
+                      top: `${65 + idx * 15}%`, 
                       right: `${50 + idx * 15}%`,
                       // transform: `translate(-50%, 0) `,
                       animationDelay: `${idx * 0.4}s`,
