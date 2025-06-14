@@ -28,6 +28,30 @@ const LandingPage = observer(() => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+  const steps = document.querySelectorAll('.footstep');
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate');
+        }
+      });
+    },
+    {
+      threshold: 0.6, // Adjust if needed
+    }
+  );
+
+  steps.forEach((step) => observer.observe(step));
+
+  return () => {
+    steps.forEach((step) => observer.unobserve(step));
+  };
+}, []);
+
+
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
