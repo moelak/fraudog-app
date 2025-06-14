@@ -318,7 +318,7 @@ const LandingPage = observer(() => {
           <div className="text-4xl mb-4">{feature.icon}</div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-purple-200 mb-2">
             {feature.title}
-          </h3>
+          </h3> 
           <p className="text-gray-600 dark:text-gray-300 text-sm">{feature.description}</p>
         </div>
       ))}
