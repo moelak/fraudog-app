@@ -178,7 +178,6 @@ const LandingPage = observer(() => {
       className="absolute z-0 bottom-32 left-1/2 transform -translate-x-1/2 translate-y-12 w-24 opacity-80"
      style={{
                  
-               
                       animationDelay: `${0.4}s`,
                       animationDuration: '1s',
                       animationFillMode: 'forwards',
