@@ -527,54 +527,7 @@ const LandingPage = observer(() => {
         </div>
       </section>
 
-      {/* Section 4: Blog Preview */}
-      <section id="blog" className="py-20 relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-              Latest Insights
-            </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Stay updated with the latest trends in AI fraud detection and cybersecurity.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                title: "The Future of AI in Fraud Detection",
-                excerpt: "Exploring how machine learning is revolutionizing fraud prevention...",
-                date: "Dec 15, 2024"
-              },
-              {
-                title: "Real-Time Analytics: A Game Changer",
-                excerpt: "How instant data processing is transforming security protocols...",
-                date: "Dec 12, 2024"
-              },
-              {
-                title: "Building Resilient Financial Systems",
-                excerpt: "Best practices for implementing robust fraud detection systems...",
-                date: "Dec 10, 2024"
-              }
-            ].map((post, index) => (
-              <article
-                key={index}
-                className="bg-white/5 backdrop-blur-sm border border-purple-500/20 rounded-xl p-6 hover:bg-white/10 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/20"
-              >
-                <h3 className="text-xl font-semibold mb-3 text-purple-300">{post.title}</h3>
-                <p className="text-gray-300 mb-4">{post.excerpt}</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">{post.date}</span>
-                  <button className="text-purple-400 hover:text-purple-300 transition-colors">
-                    Read More →
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
+    
       {/* Footer */}
       <footer className="py-12 border-t border-purple-500/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
