@@ -1,7 +1,6 @@
 import { observer } from 'mobx-react-lite';
-import { SignInButton, SignUpButton, SignedOut } from '@clerk/clerk-react';
+import { SignUpButton } from '@clerk/clerk-react';
 import { useState, useEffect } from 'react';
-import { landingPageStore } from './LandingPageStore';
 
 const LandingPage = observer(() => {
   const [email, setEmail] = useState('');
@@ -55,6 +54,13 @@ const LandingPage = observer(() => {
               Fraudsters iterate in minutes; ChargeGuard AI responds in seconds. Our lightning-fast, explainable platform turns new attacks into instant countermeasures, slashing chargebacks while shielding growth of valuable customers.
             </p>
             <form onSubmit={handleGetStarted} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto lg:mx-0">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="flex-1 px-4 py-3 bg-white/10 border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-300"
+              />
               <SignUpButton mode="modal">
                 <button
                   type="submit"
@@ -71,8 +77,6 @@ const LandingPage = observer(() => {
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full blur-3xl scale-150"></div>
                 <img
-                  src="/src/assets/images/robo.png"
-                  alt="AI Fraud Detection Robot"
                   src="/src/assets/images/robo.png"
                   alt="AI Fraud Detection Robot"
                   className="relative z-10 w-[580px] h-[580px] object-contain drop-shadow-2xl"
@@ -98,7 +102,7 @@ const LandingPage = observer(() => {
       </section>
 
       {/* Add animation style */}
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
