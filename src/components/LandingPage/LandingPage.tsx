@@ -193,7 +193,7 @@ const LandingPage = observer(() => {
        style={{
                  
                       animationDelay: `${0.8}s`,
-                      animationDuration: '1s',
+                      animationDuration: '3s',
                       animationFillMode: 'forwards',
                       animationTimingFunction: 'ease-out'
                     }}
