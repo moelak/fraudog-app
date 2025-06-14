@@ -216,18 +216,7 @@ const LandingPage = observer(() => {
 />
 
 
-                  <img
-  src="/src/assets/footsteps-1.svg"
-  alt="Footsteps"
-  className="absolute  z-0 w-24  opacity-0 top-[128%] right-[120%] transform -translate-x-1/2 translate-y-12 rotate-[-5deg]"
-/>
-
-                  <img
-  src="/src/assets/footsteps-1.svg" 
-  alt="Footsteps"
-  className="absolute  z-0 w-24  opacity-0 top-[148%] right-[130%] transform -translate-x-1/2 translate-y-12 rotate-[-5deg]"
-/>
-                  
+           
         
               {/* Outer Ring */}
 {/* <div className="absolute top-1/2  md:left-[75%] lg:left-[70%] md:w-[540px] md:h-[540px]   lg:w-[640px] lg:h-[640px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-purple-400/10 animate-pulse"></div> */}
