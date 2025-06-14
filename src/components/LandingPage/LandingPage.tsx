@@ -573,18 +573,39 @@ style={{ animationDelay: '2s' }}
       </footer>
 
       {/* Custom Styles */}
-    <style jsx>{`
+<style jsx>{`
   @keyframes fadeStep {
-    from { opacity: 0; transform: translateY(20px) scale(0.9); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
-  .animate-step {
-    animation-name: fadeStep;
-    animation-duration: 0.8s;
-    animation-fill-mode: forwards;
-    animation-timing-function: ease-out;
+
+  .step-1 {
+    animation: fadeStep 0.8s ease-out forwards;
+    animation-delay: 0s;
+  }
+
+  .step-2 {
+    animation: fadeStep 0.8s ease-out forwards;
+    animation-delay: 2s;
+  }
+
+  .step-3 {
+    animation: fadeStep 0.8s ease-out forwards;
+    animation-delay: 4s;
+  }
+
+  .step-4 {
+    animation: fadeStep 0.8s ease-out forwards;
+    animation-delay: 6s;
   }
 `}</style>
+
 
     </div>
   );
