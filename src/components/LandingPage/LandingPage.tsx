@@ -128,7 +128,7 @@ const LandingPage = observer(() => {
             <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-purple-400 via-blue-400 to-purple-600 bg-clip-text text-transparent leading-tight">
              24/7 Gen-AI co-pilot that stops fraud, not customers
             </h1>
-            <p className="text-left  text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed">
+            <p className="text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed">
              Fraudsters iterate in minutes; ChargeGuard AI responds in seconds.<br/>
 
 Our lightning-fast, explainable platform turns new attacks into instant countermeasures, slashing chargebacks while shielding growth of valuable customers.
