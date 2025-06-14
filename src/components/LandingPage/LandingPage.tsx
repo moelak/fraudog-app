@@ -491,28 +491,34 @@ const LandingPage = observer(() => {
           </div>
 
           {/* Right Content */}
-          <div className="text-center lg:text-left">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-              Built for Analysts, Loved by Engineers
-            </h2>
-            <p className="text-xl text-gray-300 mb-8 leading-relaxed">
-              Let our AI handle the complexity while you focus on decisions that matter. Our intuitive interface makes fraud detection accessible to everyone.
-            </p>
-            
-            <div className="space-y-4">
-              {[
-                "Automated threat detection and response",
-                "Customizable rules and thresholds",
-                "Comprehensive reporting and analytics",
-                "Seamless integration with existing systems"
-              ].map((feature, index) => (
-                <div key={index} className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                  <span className="text-gray-300">{feature}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+
+
+   {/* Right Content */}
+    <div className="text-white">
+      <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+        <span className="text-purple-300">Built for Analysts</span>,{" "}
+        <span className="text-blue-400">Loved by Engineers</span>
+      </h2>
+      <p className="text-lg text-gray-300 mb-6">
+        Let our AI handle the complexity while you focus on decisions that matter.
+        Our intuitive interface makes fraud detection accessible to everyone.
+      </p>
+      <ul className="space-y-4 text-base text-gray-200">
+        {[
+          "Automated threat detection and response",
+          "Customizable rules and thresholds",
+          "Comprehensive reporting and analytics",
+          "Seamless integration with existing systems",
+        ].map((item, index) => (
+          <li key={index} className="flex items-start">
+            <span className="w-2 h-2 mt-2 mr-3 bg-purple-400 rounded-full shrink-0" />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+
+          
         </div>
       </section>
 
