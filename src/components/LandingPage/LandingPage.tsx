@@ -176,13 +176,7 @@ const LandingPage = observer(() => {
       src="/src/assets/footsteps-1.svg" 
       alt="Footsteps"
       className="absolute z-0 bottom-32 left-1/2 transform -translate-x-1/2 translate-y-12 w-24 opacity-80"
-     style={{
-                 
-                      animationDelay: `${0.4}s`,
-                      animationDuration: '1s',
-                      animationFillMode: 'forwards',
-                      animationTimingFunction: 'ease-out'
-                    }}
+ 
      
     /> 
 
@@ -190,13 +184,7 @@ const LandingPage = observer(() => {
       src="/src/assets/footsteps-1.svg" 
       alt="Footsteps"
       className="absolute z-0 top-[75%] right-[50%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[5deg]"
-       style={{
-                  
-                      animationDelay: `${0.8}s`,
-                      animationDuration: '3s',
-                      animationFillMode: 'forwards',
-                      animationTimingFunction: 'ease-out'
-                    }}
+
     />  
 
    <img
@@ -581,15 +569,19 @@ const LandingPage = observer(() => {
       </footer>
 
       {/* Custom Styles */}
-          <style jsx>{`
-          @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          .animate-fadeIn {
-            animation-name: fadeIn;
-          }
-        `}</style> 
+    <style jsx>{`
+  @keyframes fadeStep {
+    from { opacity: 0; transform: translateY(20px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .animate-step {
+    animation-name: fadeStep;
+    animation-duration: 0.8s;
+    animation-fill-mode: forwards;
+    animation-timing-function: ease-out;
+  }
+`}</style>
+
     </div>
   );
 });
