@@ -630,7 +630,7 @@ const LandingPage = observer(() => {
 
     .step-5 {
     animation: fadeStep 0.8s ease-out forwards;
-    animation-delay: 5s;
+    animation-delay: 0.6s;
   }
 `}</style>
 
