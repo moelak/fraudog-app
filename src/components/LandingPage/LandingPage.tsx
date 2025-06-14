@@ -175,8 +175,7 @@ const LandingPage = observer(() => {
    <img
       src="/src/assets/footsteps-1.svg" 
       alt="Footsteps"
-      className="absolute z-0 bottom-32 left-1/2 transform -translate-x-1/2 translate-y-12 w-24 opacity-80"
- style={{ animationDelay: '0s' }}
+      className="absolute z-0 bottom-32 left-1/2 transform -translate-x-1/2 translate-y-12 w-24 opacity-80 step-1"
 
      
     /> 
@@ -184,23 +183,21 @@ const LandingPage = observer(() => {
 <img
       src="/src/assets/footsteps-1.svg" 
       alt="Footsteps"
-      className="absolute z-0 top-[75%] right-[50%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[5deg]"
-style={{ animationDelay: '2s' }}
+      className="absolute z-0 top-[75%] right-[50%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[5deg] step-2"
     />  
 
    <img
       src="/src/assets/footsteps-1.svg" 
       alt="Footsteps"
-      className="absolute z-0 top-[90%] right-[68%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80"
-       style={{ animationDelay: '4s' }}
+      className="absolute z-0 top-[90%] right-[68%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 step-3"
 
     />  
 
   <img
       src="/src/assets/footsteps-1.svg" 
       alt="Footsteps"
-      className="absolute z-0 top-[108%] right-[80%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[-5deg]" 
-     style={{ animationDelay: '6s' }}
+      className="absolute z-0 top-[108%] right-[80%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[-5deg] step-4" 
+    
     />  
  
 
