@@ -603,7 +603,7 @@ const LandingPage = observer(() => {
     }
   }
 
-    .footstep {
+    .footstep { 
     opacity: 0;
   }
 
