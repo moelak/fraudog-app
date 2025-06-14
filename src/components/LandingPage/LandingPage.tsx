@@ -546,12 +546,15 @@ const LandingPage = observer(() => {
       </footer>
 
       {/* Custom Styles */}
-      <style jsx>{`
-        @keyframes slideRight {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-      `}</style>
+          <style jsx>{`
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .animate-fadeIn {
+            animation-name: fadeIn;
+          }
+        `}</style>
     </div>
   );
 });
