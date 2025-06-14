@@ -585,7 +585,7 @@ style={{ animationDelay: '2s' }}
     }
   }
 
-  .step-1 {
+  .step-1 { 
     animation: fadeStep 0.8s ease-out forwards;
     animation-delay: 0s;
   }
