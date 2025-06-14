@@ -574,11 +574,11 @@ const LandingPage = observer(() => {
   @keyframes fadeStep {
     from {
       opacity: 0;
-      transform: translateY(20px) scale(0.9); 
+      transform: translateY(20px) ; 
     }
     to {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translateY(0) ;
     }
   }
 
