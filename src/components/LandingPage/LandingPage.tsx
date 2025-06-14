@@ -176,7 +176,7 @@ const LandingPage = observer(() => {
     src="/src/assets/footsteps.svg"
     alt="Footsteps"
     className="absolute bottom-4 left-1/2 -translate-x-1/2 w-24 opacity-80"
-  />> 
+  /> 
               {/* Outer Ring */}
 {/* <div className="absolute top-1/2  md:left-[75%] lg:left-[70%] md:w-[540px] md:h-[540px]   lg:w-[640px] lg:h-[640px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-purple-400/10 animate-pulse"></div> */}
 
