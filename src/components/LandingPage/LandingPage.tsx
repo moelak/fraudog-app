@@ -228,7 +228,7 @@ const LandingPage = observer(() => {
       style={{
         top: `${65 + idx * 13}%`,
         right: `${45 + (isEven ? idx * 4 : idx * 2)}%`,
-        transform: `translate(-50%, 0) rotate(${isEven ? -15 : 15}deg)`,
+        // transform: `translate(-50%, 0) rotate(${isEven ? -15 : 15}deg)`, 
         animationDelay: `${idx * 0.4}s`,
         animationDuration: '1s',
         animationFillMode: 'forwards',
