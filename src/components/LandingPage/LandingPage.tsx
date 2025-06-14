@@ -172,6 +172,11 @@ const LandingPage = observer(() => {
                       filter: 'drop-shadow(0 0 30px rgba(147, 51, 234, 0.3))'
                     }}
                   />
+                     <img
+      src="/src/assets/images/footsteps.svg"
+      alt="Footsteps"
+      className="absolute z-0 bottom-0 left-1/2 transform -translate-x-1/2 translate-y-12 w-56 opacity-80"
+    />
               {/* Outer Ring */}
 {/* <div className="absolute top-1/2  md:left-[75%] lg:left-[70%] md:w-[540px] md:h-[540px]   lg:w-[640px] lg:h-[640px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-purple-400/10 animate-pulse"></div> */}
 
