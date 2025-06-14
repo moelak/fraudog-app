@@ -210,16 +210,16 @@ const LandingPage = observer(() => {
       </section>
 
       {/* Section 2: Features */}
-<section id="features" className="py-20 bg-gray-100 dark:bg-[#0b0c2a]">
+<section id="features" className="py-20 bg-[#120e2b] relative text-white">
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div className="text-center mb-16">
-      <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">
-        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-500">
+      <h2 className="text-4xl md:text-5xl font-bold text-white">
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
           AI-Powered Features
         </span>{" "}
         to Supercharge Fraud Teams
       </h2>
-      <p className="mt-4 text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+      <p className="mt-4 text-lg text-gray-300 max-w-3xl mx-auto">
         Our comprehensive platform combines advanced AI with industry expertise to help you win
         more disputes and maintain healthy finances.
       </p>
@@ -266,13 +266,13 @@ const LandingPage = observer(() => {
       ].map((feature, index) => (
         <div
           key={index}
-          className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-300 border border-gray-200 dark:border-purple-500/20"
+          className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:bg-white/10 hover:shadow-md hover:scale-[1.02] transition-all duration-300"
         >
           <div className="text-4xl mb-4">{feature.icon}</div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-purple-200 mb-2">
+          <h3 className="text-lg font-semibold text-purple-200 mb-2">
             {feature.title}
           </h3>
-          <p className="text-gray-600 dark:text-gray-300 text-sm">{feature.description}</p>
+          <p className="text-gray-300 text-sm">{feature.description}</p>
         </div>
       ))}
     </div>
