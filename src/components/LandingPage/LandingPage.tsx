@@ -355,6 +355,12 @@ const LandingPage = observer(() => {
       className="absolute z-0 top-[75%] right-[45%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[-30deg]"
     />  
 
+                       <img
+      src="/src/assets/footsteps-1.svg" 
+      alt="Footsteps"
+      className="absolute z-0 top-[75%] right-[45%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[-30deg]"
+    />  
+
         </div>
       </section>
 
