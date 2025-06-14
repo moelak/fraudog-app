@@ -187,7 +187,7 @@ const LandingPage = observer(() => {
                                                          <img
       src="/src/assets/footsteps-1.svg" 
       alt="Footsteps"
-      className="absolute z-0 top-[95%] right-[65%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80"
+      className="absolute z-0 top-[95%] right-[68%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80"
     />  
         
               {/* Outer Ring */}
