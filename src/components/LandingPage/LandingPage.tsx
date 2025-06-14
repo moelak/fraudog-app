@@ -368,7 +368,7 @@ const LandingPage = observer(() => {
         },
       ].map((item, index) => (
         <div key={index} className="flex items-start mb-6">
-          <div className="w-7 h-7 flex items-center justify-center rounded-full  text-white font-bold mr-4">
+          <div className="w-8 h-8 flex items-center justify-center rounded-full  text-white font-bold mr-4">
             {index + 1}
           </div>
           <div>
