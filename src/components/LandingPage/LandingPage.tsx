@@ -210,75 +210,47 @@ const LandingPage = observer(() => {
       </section>
 
       {/* Section 2: Features */}
-<section id="features" className="py-20 bg-[#120e2b] relative text-white">
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div className="text-center mb-16">
-      <h2 className="text-4xl md:text-5xl font-bold text-white">
-        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-          AI-Powered Features
-        </span>{" "}
-        to Supercharge Fraud Teams
-      </h2>
-      <p className="mt-4 text-lg text-gray-300 max-w-3xl mx-auto">
-        Our comprehensive platform combines advanced AI with industry expertise to help you win
-        more disputes and maintain healthy finances.
-      </p>
-    </div>
+      <section id="features" className="py-20 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+              Advanced AI Detection
+            </h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              Our cutting-edge algorithms analyze patterns, behaviors, and anomalies in real-time to protect your business.
+            </p>
+          </div>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {[
-        {
-          title: "Rule Generation Service",
-          description:
-            "Ship fraud rules in minutes. Generate, simulate, and deploy with one API call, turning hours into minutes when deploying new defenses.",
-          icon: "🛠️",
-        },
-        {
-          title: "Memory Service + Gateway",
-          description:
-            "See every signal, stop every scam. Unified 360° context in a single API response, eliminating data silos and speeding up investigations.",
-          icon: "🧠",
-        },
-        {
-          title: "Real-Time Risk Score API",
-          description:
-            "Predict fraud before it settles. Blocks bad actors before transactions settle with industry-leading response times (≤150 ms p95).",
-          icon: "⏱️",
-        },
-        {
-          title: "Chargeback Management Service",
-          description:
-            "Turn disputes into dollars. Auto-compile, file, and track disputes for a >50% win-rate uplift, saving analyst hours.",
-          icon: "🛡️",
-        },
-        {
-          title: "Friction Analysis",
-          description:
-            "Protect customers, not conversions. Quantifies false-positive cost and recommends the least-intrusive step-up authentication.",
-          icon: "📊",
-        },
-        {
-          title: "Performance Metrics",
-          description:
-            "Achieve industry-leading benchmarks with our false positive rate of 3%, and 90% rule deployment automation.",
-          icon: "📈",
-        },
-      ].map((feature, index) => (
-        <div
-          key={index}
-          className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:bg-white/10 hover:shadow-md hover:scale-[1.02] transition-all duration-300"
-        >
-          <div className="text-4xl mb-4">{feature.icon}</div>
-          <h3 className="text-lg font-semibold text-purple-200 mb-2">
-            {feature.title}
-          </h3>
-          <p className="text-gray-300 text-sm">{feature.description}</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                title: "Real-Time Monitoring",
+                description: "24/7 surveillance of all transactions with instant alerts",
+                icon: "🔍"
+              },
+              {
+                title: "Pattern Recognition",
+                description: "Advanced ML models detect subtle fraud patterns",
+                icon: "🧠"
+              },
+              {
+                title: "Predictive Analytics",
+                description: "Prevent fraud before it happens with predictive insights",
+                icon: "🔮"
+              }
+            ].map((feature, index) => (
+              <div
+                key={index}
+                className="bg-white/5 backdrop-blur-sm border border-purple-500/20 rounded-xl p-8 hover:bg-white/10 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/20"
+              >
+                <div className="text-4xl mb-4">{feature.icon}</div>
+                <h3 className="text-xl font-semibold mb-4 text-purple-300">{feature.title}</h3>
+                <p className="text-gray-300">{feature.description}</p>
+              </div>
+            ))}
+          </div>
         </div>
-      ))}
-    </div>
-  </div>
-</section>
-
+      </section>
 
       {/* Section 3: About / Use Case */}
       <section id="about" className=" py-20 relative">
