@@ -281,6 +281,69 @@ const LandingPage = observer(() => {
         </div>
       </section>
 
+
+      <section id="about" className=" py-20 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+ <h2 className="text-3xl md:text-4xl font-bold mb-4">
+      Real Results for{" "}
+      <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-500">
+        Fintech Leaders
+      </span>
+    </h2>
+    <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-12">
+      Our customers experience significant improvements in key performance indicators across their chargeback management workflow.
+    </p>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {[
+        {
+          value: "78%",
+          label: "Average Recovery Rate",
+          change: "+18%",
+        },
+        {
+          value: "3.2x",
+          label: "ROI on Platform Investment",
+          change: "+24%",
+        },
+        {
+          value: "92%",
+          label: "Faster Resolution Times",
+          change: "+35%",
+        },
+        {
+          value: "47%",
+          label: "Reduction in False Declines",
+          change: "+12%",
+        },
+      ].map((item, index) => (
+        <div
+          key={index}
+          className="bg-white dark:bg-white/5 shadow-sm rounded-xl px-6 py-8 border border-gray-200 dark:border-white/10"
+        >
+          <h3 className="text-3xl font-bold mb-2">{item.value}</h3>
+          <p className="text-gray-700 dark:text-gray-300 mb-3 text-sm">{item.label}</p>
+          <div className="flex items-center justify-center text-green-500 font-medium text-sm">
+            <svg
+              className="w-4 h-4 mr-1"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M5 10a1 1 0 011.707-.707L10 12.586l3.293-3.293A1 1 0 0115 10v6a1 1 0 11-2 0v-4.586l-2.293 2.293a1 1 0 01-1.414 0L7 11.414V16a1 1 0 11-2 0v-6z"
+                clipRule="evenodd"
+              />
+            </svg>
+            {item.change}
+          </div>
+        </div>
+      ))}
+    </div>
+
+        </div>
+      </section>
+
       {/* Section 3: About / Use Case */}
       <section id="about" className=" py-20 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
