@@ -212,14 +212,18 @@ const LandingPage = observer(() => {
       {/* Section 2: Features */}
       <section id="features" className="py-20 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-              Advanced AI Detection
-            </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Our cutting-edge algorithms analyze patterns, behaviors, and anomalies in real-time to protect your business.
-            </p>
-          </div>
+ <div className="text-center mb-16">
+      <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-500">
+          AI-Powered Features
+        </span>{" "}
+        to Supercharge Fraud Teams
+      </h2>
+      <p className="mt-4 text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+        Our comprehensive platform combines advanced AI with industry expertise to help you win
+        more disputes and maintain healthy finances.
+      </p>
+    </div>
 
 
 
