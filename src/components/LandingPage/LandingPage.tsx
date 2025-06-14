@@ -172,28 +172,28 @@ const LandingPage = observer(() => {
                       filter: 'drop-shadow(0 0 30px rgba(147, 51, 234, 0.3))'
                     }}
                   />
-                     <img
+   <img
       src="/src/assets/footsteps-1.svg" 
       alt="Footsteps"
       className="absolute z-0 bottom-32 left-1/2 transform -translate-x-1/2 translate-y-12 w-24 opacity-80"
     /> 
 
-                                       <img
+<img
       src="/src/assets/footsteps-1.svg" 
       alt="Footsteps"
-      className="absolute z-0 top-[80%] right-[45%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[-25deg]"
+      className="absolute z-0 top-[75%] right-[50%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80"
     />  
 
-                                                         <img
+   <img
       src="/src/assets/footsteps-1.svg" 
       alt="Footsteps"
-      className="absolute z-0 top-[95%] right-[60%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[-25deg]"
+      className="absolute z-0 top-[90%] right-[68%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80"
     />  
 
-                                                                           <img
+  <img
       src="/src/assets/footsteps-1.svg" 
       alt="Footsteps"
-      className="absolute z-0 top-[118%] right-[60%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[-25deg]"
+      className="absolute z-0 top-[108%] right-[80%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[-25deg]"
     />  
         
         
