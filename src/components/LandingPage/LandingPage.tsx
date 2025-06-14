@@ -167,14 +167,36 @@ const LandingPage = observer(() => {
                 required
               /> */} 
               <SignUpButton mode="modal">
-              <button
+              {/* <button
                 type="submit"
             className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-purple-500/25 font-medium
              mx-auto md:mx-auto lg:mx-0 block"
               >
                 Get Started
               </button>
-              </SignUpButton>
+              </SignUpButton> */}
+                {/* Badge Buttons */}
+<div className="flex flex-wrap gap-3 mb-8">
+  <div className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium shadow-md">
+    <svg className="w-4 h-4 mr-2 text-green-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+    Reduce Fraud Losses
+  </div>
+  <div className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium shadow-md">
+    <svg className="w-4 h-4 mr-2 text-cyan-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M3 6h18M3 18h18" />
+    </svg>
+    Stabilize Revenue
+  </div>
+  <div className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium shadow-md">
+    <svg className="w-4 h-4 mr-2 text-yellow-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+    </svg>
+    Zero Added Friction
+  </div>
+</div>
+
             </form>
           </div>
 
