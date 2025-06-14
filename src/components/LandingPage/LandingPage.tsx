@@ -326,7 +326,7 @@ const LandingPage = observer(() => {
              <img
       src="/src/assets/footsteps-1.svg" 
       alt="Footsteps"
-      className="absolute  z-0 top-[90%]  right-[45%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[-50deg]" 
+      className="absolute footstep z-0 top-[90%]  right-[45%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[-50deg]" 
     />  
 
           
@@ -608,27 +608,27 @@ const LandingPage = observer(() => {
   }
 
 
-  .step-1 { 
+  .step-1.animate  { 
     animation: fadeStep 0.8s ease-out forwards;
     animation-delay: 0s;
   }
 
-  .step-2 {
+  .step-2.animate  {
     animation: fadeStep 0.8s ease-out forwards;
     animation-delay: 1s;
   }
 
-  .step-3 {
+  .step-3.animate  {
     animation: fadeStep 0.8s ease-out forwards;
     animation-delay: 2s;
   }
 
-  .step-4 {
+  .step-4.animate  {
     animation: fadeStep 0.8s ease-out forwards;
     animation-delay: 3s;
   } 
 
-    .step-5 {
+    .step-5.animate  {
     animation: fadeStep 0.8s ease-out forwards;
     animation-delay: 0.6s;
   }
