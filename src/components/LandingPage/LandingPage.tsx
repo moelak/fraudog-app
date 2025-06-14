@@ -571,15 +571,15 @@ const LandingPage = observer(() => {
 
       {/* Custom Styles */}
 <style jsx>{`
-  @keyframes fadeStep { 
-    // from {
-    //   opacity: 0;
-    //   transform: translateY(20px) scale(0.9);
-    // }
-    // to {
-    //   opacity: 1;
-    //   transform: translateY(0) scale(1);
-    // }
+  @keyframes fadeStep {
+    from {
+      opacity: 0;
+      transform:  scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform:  scale(1);
+    }
   }
 
   .step-1 { 
