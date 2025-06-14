@@ -344,6 +344,91 @@ const LandingPage = observer(() => {
         </div>
       </section>
 
+
+         <section id="about" className=" py-20 relative">
+<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+    
+    {/* Left Content */}
+    <div>
+      <h2 className="text-2xl md:text-3xl font-bold mb-6">
+        Why Customers Choose Us
+      </h2>
+      {[
+        {
+          title: "Increase win back rates and lower fraud losses",
+          desc: "Our AI algorithms identify patterns and build evidence packages that increase your win rates against fraud and non-fraud chargebacks.",
+        },
+        {
+          title: "Improve stability of fraud budgets",
+          desc: "Accurately forecast chargeback trends and maintain stable financial planning with predictive analytics.",
+        },
+        {
+          title: "Reduce false positive frictions on good users",
+          desc: "Intelligent user behavior analysis prevents legitimate customers from experiencing unnecessary restrictions.",
+        },
+      ].map((item, index) => (
+        <div key={index} className="flex items-start mb-6">
+          <div className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-600 text-white font-bold mr-4">
+            {index + 1}
+          </div>
+          <div>
+            <h3 className="font-semibold text-base mb-1">{item.title}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300">{item.desc}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Right Stats */}
+    <div className="bg-blue-50 dark:bg-white/5 rounded-xl p-8 shadow-sm">
+      <p className="text-sm text-gray-500 dark:text-gray-300 uppercase font-medium mb-2">
+        Average Client Results
+      </p>
+      <h3 className="text-3xl font-bold text-blue-600 mb-1">$2.4M</h3>
+      <p className="text-sm text-gray-700 dark:text-gray-300 mb-6">
+        Additional revenue recovered annually
+      </p>
+
+      {/* Bars */}
+      <div className="space-y-4">
+        {/* Recovery Rate */}
+        <div>
+          <div className="flex justify-between text-sm font-medium mb-1">
+            <span>Recovery Rate</span>
+            <span>78%</span>
+          </div>
+          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-600 rounded-full w-[78%]"></div>
+          </div>
+        </div>
+
+        {/* False Positive Reduction */}
+        <div>
+          <div className="flex justify-between text-sm font-medium mb-1">
+            <span>False Positive Reduction</span>
+            <span>47%</span>
+          </div>
+          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-600 rounded-full w-[47%]"></div>
+          </div>
+        </div>
+
+        {/* Implementation Time */}
+        <div>
+          <div className="flex justify-between text-sm font-medium mb-1">
+            <span>Implementation Time</span>
+            <span>2 weeks</span>
+          </div>
+          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-full bg-green-400 rounded-full w-[20%]"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+         </section>
+
       {/* Section 3: About / Use Case */}
       <section id="about" className=" py-20 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
