@@ -191,7 +191,7 @@ const LandingPage = observer(() => {
       alt="Footsteps"
       className="absolute z-0 top-[75%] right-[50%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[5deg]"
        style={{
-                 
+                  
                       animationDelay: `${0.8}s`,
                       animationDuration: '3s',
                       animationFillMode: 'forwards',
