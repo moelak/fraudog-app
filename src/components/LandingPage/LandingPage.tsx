@@ -172,10 +172,18 @@ const LandingPage = observer(() => {
                       filter: 'drop-shadow(0 0 30px rgba(147, 51, 234, 0.3))'
                     }}
                   />
-   {/* <img
+   <img
       src="/src/assets/footsteps-1.svg" 
       alt="Footsteps"
       className="absolute z-0 bottom-32 left-1/2 transform -translate-x-1/2 translate-y-12 w-24 opacity-80"
+     style={{
+                 
+               
+                      animationDelay: `${0.4}s`,
+                      animationDuration: '1s',
+                      animationFillMode: 'forwards',
+                      animationTimingFunction: 'ease-out'
+                    }}
      
     /> 
 
@@ -195,10 +203,10 @@ const LandingPage = observer(() => {
       src="/src/assets/footsteps-1.svg" 
       alt="Footsteps"
       className="absolute z-0 top-[108%] right-[80%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[-5deg]"
-    />   */}
+    />  
  
 
-                         {[...Array(4)].map((_, idx) => (
+                         {/* {[...Array(4)].map((_, idx) => (
                   <img 
                     key={idx}
                     src="/src/assets/footsteps-1.svg"
@@ -215,7 +223,7 @@ const LandingPage = observer(() => {
                     }}
                   />
                 ))} 
-
+ */}
                   
         
               {/* Outer Ring */}
