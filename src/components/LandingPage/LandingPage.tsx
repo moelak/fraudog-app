@@ -215,6 +215,29 @@ const LandingPage = observer(() => {
                     }}
                   />
                 ))}
+
+                  {[...Array(4)].map((_, idx) => {
+  const isEven = idx % 2 === 0;
+
+  return (
+    <img 
+      key={idx}
+      src="/src/assets/footsteps-1.svg"
+      alt="Footsteps"
+      className="absolute z-0 w-24 opacity-80 animate-fadeIn"
+      style={{
+        top: `${65 + idx * 13}%`,
+        right: `${45 + (isEven ? idx * 4 : idx * 2)}%`,
+        transform: `translate(-50%, 0) rotate(${isEven ? -15 : 15}deg)`,
+        animationDelay: `${idx * 0.4}s`,
+        animationDuration: '1s',
+        animationFillMode: 'forwards',
+        animationTimingFunction: 'ease-out'
+      }}
+    />
+  );
+})}
+
         
               {/* Outer Ring */}
 {/* <div className="absolute top-1/2  md:left-[75%] lg:left-[70%] md:w-[540px] md:h-[540px]   lg:w-[640px] lg:h-[640px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-purple-400/10 animate-pulse"></div> */}
