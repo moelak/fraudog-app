@@ -283,7 +283,10 @@ const LandingPage = observer(() => {
 
 
       <section id="about" className=" py-20 relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <div className="
+          max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center
+          
+          ">
  <h2 className="text-3xl md:text-4xl font-bold mb-4">
       Real Results for{" "}
       <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-500">
