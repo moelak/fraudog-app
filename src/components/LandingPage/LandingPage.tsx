@@ -172,11 +172,11 @@ const LandingPage = observer(() => {
                       filter: 'drop-shadow(0 0 30px rgba(147, 51, 234, 0.3))'
                     }}
                   />
-<img
-  src="/src/assets/footsteps-1.svg"
+{/* <img
+  src="/src/assets/footsteps-1.svg" 
   alt="Footsteps"
-  className="absolute z-0 w-24 step-1 opacity-0 bottom-32 top-[65%]  transform -translate-x-1/2 translate-y-12" 
-/>
+  className="absolute z-0 w-24 step-1 opacity-0 bottom-32 top-[75%]  transform -translate-x-1/2 translate-y-12" 
+/> */}
 
 <img
   src="/src/assets/footsteps-1.svg"
