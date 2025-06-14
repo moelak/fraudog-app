@@ -198,7 +198,7 @@ const LandingPage = observer(() => {
     />   */}
  
 
-                         {[...Array(4)].map((_, idx) => (
+                         {/* {[...Array(4)].map((_, idx) => (
                   <img 
                     key={idx}
                     src="/src/assets/footsteps-1.svg"
@@ -214,11 +214,11 @@ const LandingPage = observer(() => {
                       animationTimingFunction: 'ease-out'
                     }}
                   />
-                ))}
+                ))} */}
 
                   {[...Array(4)].map((_, idx) => {
   const isEven = idx % 2 === 0;
-
+ 
   return (
     <img 
       key={idx}
