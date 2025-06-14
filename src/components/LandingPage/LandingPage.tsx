@@ -172,33 +172,30 @@ const LandingPage = observer(() => {
                       filter: 'drop-shadow(0 0 30px rgba(147, 51, 234, 0.3))'
                     }}
                   />
-   <img
-      src="/src/assets/footsteps-1.svg" 
-      alt="Footsteps"
-      className="absolute z-0 bottom-32 left-1/2 transform -translate-x-1/2 translate-y-12 w-24 opacity-80 step-1"
-
-     
-    /> 
+<img
+  src="/src/assets/footsteps-1.svg"
+  alt="Footsteps"
+  className="absolute z-0 w-24 step-1 opacity-0 bottom-32 left-1/2 transform -translate-x-1/2 translate-y-12"
+/>
 
 <img
-      src="/src/assets/footsteps-1.svg" 
-      alt="Footsteps"
-      className="absolute z-0 top-[75%] right-[50%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[5deg] step-2"
-    />  
+  src="/src/assets/footsteps-1.svg"
+  alt="Footsteps"
+  className="absolute z-0 w-24 step-2 opacity-0 top-[75%] right-[50%] transform -translate-x-1/2 translate-y-12 rotate-[5deg]"
+/>
 
-   <img
-      src="/src/assets/footsteps-1.svg" 
-      alt="Footsteps"
-      className="absolute z-0 top-[90%] right-[68%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 step-3"
+<img
+  src="/src/assets/footsteps-1.svg"
+  alt="Footsteps"
+  className="absolute z-0 w-24 step-3 opacity-0 top-[90%] right-[68%] transform -translate-x-1/2 translate-y-12"
+/>
 
-    />  
+<img
+  src="/src/assets/footsteps-1.svg"
+  alt="Footsteps"
+  className="absolute z-0 w-24 step-4 opacity-0 top-[108%] right-[80%] transform -translate-x-1/2 translate-y-12 rotate-[-5deg]"
+/>
 
-  <img
-      src="/src/assets/footsteps-1.svg" 
-      alt="Footsteps"
-      className="absolute z-0 top-[108%] right-[80%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[-5deg] step-4" 
-    
-    />  
  
 
                          {/* {[...Array(4)].map((_, idx) => (
