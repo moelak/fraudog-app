@@ -223,41 +223,21 @@ const LandingPage = observer(() => {
 <img
   src="/src/assets/footsteps-1.svg"
   alt="Footsteps"
-  className="absolute  footstep z-0 w-16 step-2 opacity-0 top-[65%] right-[50%] transform -translate-x-1/2 translate-y-12 rotate-[5deg]"
+  className="absolute  footstep z-0 w-24 step-2 opacity-0 top-[75%] right-[50%] transform -translate-x-1/2 translate-y-12 rotate-[5deg]"
 /> 
 
 <img
-  src="/src/assets/footsteps-1.svg" 
+  src="/src/assets/footsteps-1.svg"
   alt="Footsteps" 
-  className="absolute footstep z-0 w-16 step-3 opacity-0 top-[75%] right-[55%] transform -translate-x-1/2 translate-y-12"
+  className="absolute footstep z-0 w-24 step-3 opacity-0 top-[90%] right-[68%] transform -translate-x-1/2 translate-y-12"
 />
 
 <img
   src="/src/assets/footsteps-1.svg"
   alt="Footsteps"
-  className="absolute  footstep z-0 w-16 step-4 opacity-0 top-[108%] right-[80%] transform -translate-x-1/2 translate-y-12 rotate-[-5deg]"
+  className="absolute  footstep z-0 w-24 step-4 opacity-0 top-[108%] right-[80%] transform -translate-x-1/2 translate-y-12 rotate-[-5deg]"
 />
-
-                  
-<img
-  src="/src/assets/footsteps-1.svg"
-  alt="Footsteps"
-  className="absolute  footstep z-0 w-16  step-4 opacity-0 top-[125%] right-[90%] transform -translate-x-1/2 translate-y-12 rotate-[-5deg]"
-/>
-
-                  <img
-  src="/src/assets/footsteps-1.svg"
-  alt="Footsteps"
-  className="absolute  footstep z-0 w-16  step-4 opacity-0 top-[125%] right-[90%] transform -translate-x-1/2 translate-y-12 rotate-[-5deg]"
-/>
-
-
-                  <img
-  src="/src/assets/footsteps-1.svg"
-  alt="Footsteps"
-  className="absolute  footstep z-0 w-16  step-4 opacity-0 top-[125%] right-[90%] transform -translate-x-1/2 translate-y-12 rotate-[-5deg]"
-/>
-
+ 
 
            
         
@@ -345,11 +325,12 @@ const LandingPage = observer(() => {
              <img
       src="/src/assets/footsteps-1.svg" 
       alt="Footsteps"
-      className=" hidden lg:flex absolute footstep  step-5 z-0 top-[95%] right-[45%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80  " 
+      className=" hidden lg:flex absolute footstep  step-5 z-0 top-[95%] right-[45%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 
+               " 
     />   
 
           
- 
+
   </div>
         
       </section>
@@ -622,9 +603,9 @@ const LandingPage = observer(() => {
     }
   }
 
-  //   .footstep { 
-  //   opacity: 0;
-  // }
+    .footstep { 
+    opacity: 0;
+  }
 
 
   .step-1.animate  { 
