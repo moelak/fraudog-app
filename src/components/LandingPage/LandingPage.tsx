@@ -608,6 +608,10 @@ const LandingPage = observer(() => {
       transform: translateY(0) scale(1);
     }
   }
+
+  //   .footstep { 
+  //   opacity: 0;
+  // }
  
 
   .step-1.animate  { 
