@@ -253,29 +253,25 @@ const LandingPage = observer(() => {
         </div>
       </section>
 
-
-
-
-{/* Section 2: Features */}
-<section id="features" className="py-20 relative">
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    
-    {/* Title aligned to left */}
-    <div className="mb-16 text-left max-w-3xl">
-      <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">
+      {/* Section 2: Features */}
+      <section id="features" className="py-20 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="text-center mb-16">
+      <h2 className="text-4xl lg:px-52 md:text-5xl font-bold text-gray-900 dark:text-white">
         <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-500">
           AI-Powered Features
         </span>{" "}
         to Supercharge Fraud Teams
       </h2>
-      <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
+      <p className="mt-4 text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
         Our comprehensive platform combines advanced AI with industry expertise to help you win
         more disputes and maintain healthy finances.
       </p>
     </div>
 
-    {/* Grid with more spacing between cards */}
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-20 relative z-10">
+
+
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {[
         {
           title: "Rule Generation Service",
@@ -326,24 +322,19 @@ const LandingPage = observer(() => {
         </div>
       ))}
     </div>
-
-    {/* Footsteps image */}
-    <img
-      src="/src/assets/footsteps-1.svg"
+             <img
+      src="/src/assets/footsteps-1.svg" 
       alt="Footsteps"
-      className="hidden lg:block absolute z-0 top-[85%] left-[50%] transform -translate-x-1/2 translate-y-0 w-24 opacity-80"
-    />
+      className=" hidden lg:flex absolute footstep  step-5 z-0 top-[95%] right-[45%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 
+               " 
+    />   
 
+          
+ 
   </div>
-</section>
+        
+      </section>
 
-
-
-
-
-
-
-      
 
       <section id="about" className=" py-20 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
