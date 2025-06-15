@@ -609,10 +609,6 @@ const LandingPage = observer(() => {
     }
   }
 
-  //   .footstep { 
-  //   opacity: 0;
-  // }
-
 
   .step-1.animate  { 
     animation: fadeStep 0.8s ease-out forwards;
