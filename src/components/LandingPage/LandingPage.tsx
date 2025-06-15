@@ -28,28 +28,28 @@ const LandingPage = observer(() => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-  const steps = document.querySelectorAll('.footstep');
+//   useEffect(() => {
+//   const steps = document.querySelectorAll('.footstep');
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('animate');
-        }
-      });
-    },
-    {
-      threshold: 0.6, // Adjust if needed
-    }
-  );
+//   const observer = new IntersectionObserver(
+//     (entries) => {
+//       entries.forEach((entry) => {
+//         if (entry.isIntersecting) {
+//           entry.target.classList.add('animate');
+//         }
+//       });
+//     },
+//     {
+//       threshold: 0.6, // Adjust if needed
+//     }
+//   );
 
-  steps.forEach((step) => observer.observe(step));
+//   steps.forEach((step) => observer.observe(step));
 
-  return () => {
-    steps.forEach((step) => observer.unobserve(step));
-  };
-}, []);
+//   return () => {
+//     steps.forEach((step) => observer.unobserve(step));
+//   };
+// }, []);
 
 
   const scrollToSection = (sectionId: string) => {
@@ -223,7 +223,7 @@ const LandingPage = observer(() => {
 <img
   src="/src/assets/footsteps-1.svg"
   alt="Footsteps"
-  className="absolute  footstep z-0 w-18 step-2 opacity-0 top-[75%] right-[50%] transform -translate-x-1/2 translate-y-12 rotate-[5deg]"
+  className="absolute  footstep z-0 w-16 step-2 opacity-0 top-[75%] right-[50%] transform -translate-x-1/2 translate-y-12 rotate-[5deg]"
 /> 
 
 <img
