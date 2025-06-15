@@ -242,7 +242,7 @@ const LandingPage = observer(() => {
 <img
   src="/src/assets/footsteps-1.svg"
   alt="Footsteps"
-  className="absolute  footstep z-0 w-24 step-4 opacity-0 top-[125%] right-[70%] transform -translate-x-1/2 translate-y-12 rotate-[-5deg]"
+  className="absolute  footstep z-0 w-24 step-4 opacity-0 top-[125%] right-[90%] transform -translate-x-1/2 translate-y-12 rotate-[-5deg]"
 />
 
 
