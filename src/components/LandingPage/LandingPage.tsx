@@ -608,7 +608,7 @@ const LandingPage = observer(() => {
       transform: translateY(0) scale(1);
     }
   }
-
+ 
 
   .step-1.animate  { 
     animation: fadeStep 0.8s ease-out forwards;
