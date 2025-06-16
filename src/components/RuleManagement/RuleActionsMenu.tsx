@@ -11,16 +11,19 @@ import {
 
 interface RuleActionsMenuProps {
   rule: {
-  id: number;
-  name: string;
-  description: string;
-  category: string;
-  condition: string;
-  severity: 'low' | 'medium' | 'high';
-  status: 'active' | 'inactive';
-  createdAt: string;
-  updatedAt: string;
-}
+    id: number;
+    name: string;
+    description: string;
+    category: string;
+    condition: string;
+    severity: 'low' | 'medium' | 'high';
+    status: 'active' | 'inactive' | 'warning';
+    createdAt: string;
+    updatedAt: string;
+    catches: number;
+    falsePositives: number;
+    effectiveness: number;
+  }
 }
 
 const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {

@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import { UserButton } from '@clerk/clerk-react';
-import { Routes, Route, Link, useLocation, Outlet } from 'react-router-dom';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import {
   ChartBarIcon,
   DocumentTextIcon,
@@ -11,7 +11,6 @@ import {
   BellIcon,
   CreditCardIcon,
   ChatBubbleLeftRightIcon,
-  CloudArrowUpIcon,
 } from '@heroicons/react/24/outline';
 import Overview from '../Overview/Overview';
 import Reports from '../Reports/Reports';
@@ -181,7 +180,16 @@ const Dashboard = observer(() => {
         <main className="flex-1 overflow-y-auto bg-transparent">
           <div className="py-6">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-              <Outlet />
+              <Routes>
+                <Route path="/" element={<Overview />} />
+                <Route path="/rules" element={<RuleManagement />} />
+                <Route path="/visualization" element={<Visualization />} />
+                <Route path="/monitoring" element={<Monitoring />} />
+                <Route path="/chargebacks" element={<Chargebacks />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/assistant" element={<ChatAssistant />} />
+                <Route path="/settings" element={<Settings />} />
+              </Routes>
             </div>
           </div>
         </main>

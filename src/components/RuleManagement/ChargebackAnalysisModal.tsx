@@ -1,87 +1,20 @@
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
-import { supabase } from '../../lib/supabase';
-import { uploadFile } from '../../utils/fileUpload';
 import { ruleManagementStore } from './RuleManagementStore';
-import { 
-  XMarkIcon, 
-  CloudArrowUpIcon, 
-  DocumentTextIcon, 
-  ChartPieIcon, 
-  SparklesIcon 
+import {
+  XMarkIcon,
+  CloudArrowUpIcon,
+  DocumentTextIcon,
+  ChartPieIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
-
-interface AnalysisResult {
-  id: string;
-  status: string;
-  result?: {
-    analysis: string;
-    confidence: number;
-    riskLevel: string;
-    fraudScore: number;
-    recommendations: string[];
-    [key: string]: any;
-  };
-}
-
-interface AnalysisSummary {
-  totalRecords: number;
-  riskScore: number;
-  highRiskCount: number;
-  mediumRiskCount: number;
-  lowRiskCount: number;
-}
-
-interface Recommendation {
-  id: string;
-  title: string;
-  description: string;
-  priority: 'high' | 'medium' | 'low';
-  action: string;
-}
-
-interface Rule {
-  id: number;
-  name: string;
-  description: string;
-  category: string;
-  condition: string;
-  status: string;
-  severity: string;
-  confidence: number;
-  expectedCatches: number;
-  estimatedFalsePositives: number;
-  [key: string]: any;
-}
-
-// Remove unused interfaces
-/*
-interface AnalysisSummary {
-  totalRecords: number;
-  riskScore: number;
-  highRiskCount: number;
-  mediumRiskCount: number;
-  lowRiskCount: number;
-}
-
-interface Recommendation {
-  id: string;
-  title: string;
-  description: string;
-  priority: 'high' | 'medium' | 'low';
-  action: string;
-}
-*/
 
 const ChargebackAnalysisModal = observer(() => {
   const [activeTab, setActiveTab] = useState<'analysis' | 'rules'>('analysis');
-  const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [csvPreview, setCsvPreview] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [generatedRules, setGeneratedRules] = useState<Rule[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [generatedRules, setGeneratedRules] = useState<any[]>([]);
   
   // Filter states
   const [dateType, setDateType] = useState('Transaction Date');
@@ -98,49 +31,19 @@ const ChargebackAnalysisModal = observer(() => {
     { label: '$1000+', value: 17, color: '#EF4444' },
   ];
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) {
-      setError('No file selected');
-      return;
-    }
-    
-    if (file.type === 'text/csv') {
-      try {
-        // Set the file and preview
-        setSelectedFile(file);
-        setError(null);
-        setIsProcessing(true);
-        
-        // Generate CSV preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const text = e.target?.result as string;
-          if (text) {
-            const lines = text.split('\n').slice(0, 5); // Show first 5 lines as preview
-            setCsvPreview(lines);
-          }
-        };
-        reader.readAsText(file);
-        
-        // Upload file to Supabase
-        const filePath = `uploads/${Date.now()}_${file.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from('user-file-upload')
-          .upload(filePath, file);
-
-        if (uploadError) {
-          throw new Error(`Failed to upload file: ${uploadError.message}`);
-        }
-        
-        setIsProcessing(false);
-      } catch (error) {
-        console.error('Error processing file:', error);
-        setError(error instanceof Error ? error.message : 'Failed to process file');
-        setIsProcessing(false);
-      }
-    } else {
-      setError('Please select a CSV file');
+    if (file && file.type === 'text/csv') {
+      setSelectedFile(file);
+      
+      // Read first few lines for preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        const lines = text.split('\n').slice(0, 3);
+        setCsvPreview(lines);
+      };
+      reader.readAsText(file);
     }
   };
 
@@ -148,51 +51,19 @@ const ChargebackAnalysisModal = observer(() => {
     e.preventDefault();
   };
 
-  const handleDrop = async (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
-    
-    if (!file) {
-      setError('No file dropped');
-      return;
-    }
-    
-    if (file.type === 'text/csv') {
-      try {
-        // Set the file and preview
-        setSelectedFile(file);
-        setError(null);
-        setIsProcessing(true);
-        
-        // Generate CSV preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const text = e.target?.result as string;
-          if (text) {
-            const lines = text.split('\n').slice(0, 5); // Show first 5 lines as preview
-            setCsvPreview(lines);
-          }
-        };
-        reader.readAsText(file);
-        
-        // Upload file to Supabase
-        const filePath = `uploads/${Date.now()}_${file.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from('user-file-upload')
-          .upload(filePath, file);
-
-        if (uploadError) {
-          throw new Error(`Failed to upload file: ${uploadError.message}`);
-        }
-        
-        setIsProcessing(false);
-      } catch (error) {
-        console.error('Error processing file:', error);
-        setError(error instanceof Error ? error.message : 'Failed to process file');
-        setIsProcessing(false);
-      }
-    } else {
-      setError('Please drop a CSV file');
+    if (file && file.type === 'text/csv') {
+      setSelectedFile(file);
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        const lines = text.split('\n').slice(0, 3);
+        setCsvPreview(lines);
+      };
+      reader.readAsText(file);
     }
   };
 
@@ -212,20 +83,16 @@ const ChargebackAnalysisModal = observer(() => {
       });
 
       if (response.ok) {
-        // Process the response
         await response.json();
         
         // Mock generated rules based on analysis
-        const mockRules: Rule[] = [
+        const mockRules = [
           {
             id: Date.now() + 1,
             name: 'High-Risk Transaction Pattern',
             description: 'Transactions over $500 from new accounts with mismatched billing addresses',
-            category: 'risk',
             condition: 'transaction.amount > 500 && account.age < 30 && billing.address_match === false',
-            status: 'active',
-            severity: 'high',
-            confidence: 0.92,
+            confidence: 92,
             expectedCatches: 156,
             estimatedFalsePositives: 12
           },
@@ -233,11 +100,8 @@ const ChargebackAnalysisModal = observer(() => {
             id: Date.now() + 2,
             name: 'Geographic Anomaly Detection',
             description: 'Transactions from countries with high chargeback rates for this merchant',
-            category: 'geography',
             condition: 'transaction.country in ["XX", "YY"] && merchant.chargeback_rate > 0.05',
-            status: 'active',
-            severity: 'medium',
-            confidence: 0.87,
+            confidence: 87,
             expectedCatches: 89,
             estimatedFalsePositives: 8
           },
@@ -245,11 +109,8 @@ const ChargebackAnalysisModal = observer(() => {
             id: Date.now() + 3,
             name: 'Device Fingerprint Risk',
             description: 'Multiple failed attempts from same device followed by successful transaction',
-            category: 'device',
             condition: 'device.failed_attempts > 2 && transaction.success === true && timeWindow < 1800',
-            status: 'active',
-            severity: 'high',
-            confidence: 0.78,
+            confidence: 78,
             expectedCatches: 67,
             estimatedFalsePositives: 15
           }
@@ -257,7 +118,8 @@ const ChargebackAnalysisModal = observer(() => {
 
         setGeneratedRules(mockRules);
         setActiveTab('rules');
-                // Show success toast
+        
+        // Show success toast
         alert('Analysis complete! Generated rules are now available in the Generated Rules tab.');
       } else {
         throw new Error('Analysis failed');
@@ -364,77 +226,20 @@ const ChargebackAnalysisModal = observer(() => {
                   >
                     <CloudArrowUpIcon className="mx-auto h-12 w-12 text-gray-400" />
                     <div className="mt-4">
-                      <div className="flex flex-col gap-4">
-                        <div className="flex items-center gap-2">
-                          <DocumentTextIcon className="h-5 w-5 text-gray-400" />
-                          <span className="text-sm text-gray-500">Drag CSV file here or click to upload</span>
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                            <input
-                              type="file"
-                              accept=".csv"
-                              onChange={handleFileSelect}
-                              className="hidden"
-                              id="file-upload"
-                            />
-                            <label
-                              htmlFor="file-upload"
-                              className="cursor-pointer text-sm text-violet-600 hover:text-violet-700"
-                            >
-                              Choose file
-                            </label>
-                          </div>
-                          {selectedFile && (
-                            <div className="flex flex-col gap-2">
-                              <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <span>{selectedFile.name}</span>
-                                <button
-                                  onClick={() => {
-                                    setSelectedFile(null);
-                                    setCsvPreview([]);
-                                  }}
-                                  className="text-red-500 hover:text-red-600"
-                                >
-                                  <XMarkIcon className="h-4 w-4" />
-                                </button>
-                              </div>
-                              {isProcessing ? (
-                                <div className="flex items-center gap-2 text-sm text-blue-500">
-                                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                    <circle
-                                      className="opacity-25"
-                                      cx="12"
-                                      cy="12"
-                                      r="10"
-                                      stroke="currentColor"
-                                      strokeWidth="4"
-                                    />
-                                    <path
-                                      className="opacity-75"
-                                      fill="currentColor"
-                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                    />
-                                  </svg>
-                                  Processing...
-                                </div>
-                              ) : error ? (
-                                <div className="text-sm text-red-500">{error}</div>
-                              ) : null}
-                              
-                              {analysisResults && (
-                                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                                  <h3 className="text-sm font-semibold mb-2">Analysis Results</h3>
-                                  <pre className="text-xs whitespace-pre-wrap">
-                                    {JSON.stringify(analysisResults, null, 2)}
-                                  </pre>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                      <label htmlFor="csv-upload" className="cursor-pointer">
+                        <span className="mt-2 block text-sm font-medium text-gray-900">
+                          Drop your CSV file here, or{' '}
+                          <span className="text-blue-600 hover:text-blue-500">browse</span>
+                        </span>
+                        <input
+                          id="csv-upload"
+                          type="file"
+                          accept=".csv"
+                          onChange={handleFileSelect}
+                          className="sr-only"
+                        />
+                      </label>
+                      <p className="mt-1 text-xs text-gray-500">CSV files only</p>
                     </div>
                   </div>
 
@@ -530,8 +335,6 @@ const ChargebackAnalysisModal = observer(() => {
                         <svg viewBox="0 0 200 200" className="w-full h-full">
                           {pieChartData.map((segment, index) => {
                             const total = pieChartData.reduce((sum, item) => sum + item.value, 0);
-                            // Calculate percentage (unused in UI but kept for reference)
-                            // const _percentage = (segment.value / total) * 100;
                             const angle = (segment.value / total) * 360;
                             const startAngle = pieChartData.slice(0, index).reduce((sum, item) => sum + (item.value / total) * 360, 0);
                             

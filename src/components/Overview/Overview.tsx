@@ -11,7 +11,6 @@ import {
   ArcElement,
 } from 'chart.js';
 import { Line, Doughnut } from 'react-chartjs-2';
-// Icons: ShieldCheckIcon, ExclamationTriangleIcon, ClockIcon, CheckCircleIcon are available if needed
 import { overviewStore } from './OverviewStore';
 
 ChartJS.register(
