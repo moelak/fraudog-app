@@ -20,6 +20,10 @@ export function useLinkClerkToSupabase() {
         const token = await getToken({ template: 'supabase' });
  console.log("token=>", token);
         if (token) {
+  const payload = JSON.parse(atob(token.split('.')[1]));
+  console.log("🧾 Decoded JWT payload:", payload);
+}
+        if (token) {
           // Set the session in Supabase using Clerk's token
           const { data, error } = await supabase.auth.setSession({
             access_token: token,
