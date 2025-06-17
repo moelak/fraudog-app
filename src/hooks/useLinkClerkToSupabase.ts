@@ -4,10 +4,12 @@ import { supabase } from '../lib/supabase';
 
 export function useLinkClerkToSupabase() {
   const { getToken, isSignedIn } = useAuth();
-      console.log("token=>>")
+
   useEffect(() => {
     const linkSession = async () => {
       if (!isSignedIn) {
+                console.log("🔌 Clerk user not signed in — clearing Supabase session");
+
         // Clear Supabase session if user is not signed in to Clerk
         await supabase.auth.signOut();
         return;
