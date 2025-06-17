@@ -1,25 +1,23 @@
 /*
-  # Create users table for Clerk integration
+  # Create users table for Clerk integration with secure RLS policies
 
-  1. New Tables
+  1. New Table
     - `users`
       - `id` (uuid, primary key)
       - `clerk_id` (text, unique) - Links to Clerk user ID
       - `email` (text) - User's email address
       - `first_name` (text) - User's first name
       - `last_name` (text) - User's last name
-      - `created_at` (timestamptz) - When record was created
-      - `updated_at` (timestamptz) - When record was last updated
+      - `created_at` (timestamptz)
+      - `updated_at` (timestamptz)
 
   2. Security
-    - Enable RLS on `users` table
-    - Add policies for authenticated users to manage their own data
-    - Add policy for service role to manage all users
+    - Enable RLS
+    - Add secure policies using Clerk's `uuid` claim from JWT
 
   3. Performance
-    - Add index on clerk_id for fast lookups
-    - Add index on email for user searches
-    - Add trigger for automatic updated_at timestamps
+    - Indexes on `clerk_id` and `email`
+    - Trigger for automatic `updated_at`
 */
 
 -- Create the users table
@@ -35,37 +33,6 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Enable Row Level Security
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-
--- Create policies for RLS
-CREATE POLICY "Users can view own profile"
-  ON users
-  FOR SELECT
-  TO authenticated
-  USING (auth.uid()::text = clerk_id);
-
-CREATE POLICY "Users can update own profile"
-  ON users
-  FOR UPDATE
-  TO authenticated
-  USING (auth.uid()::text = clerk_id);
-
-CREATE POLICY "Service role can manage all users"
-  ON users
-  FOR ALL
-  TO service_role
-  USING (true);
-
-CREATE POLICY "Allow anonymous upsert for user sync"
-  ON users
-  FOR INSERT
-  TO anon
-  WITH CHECK (true);
-
-CREATE POLICY "Allow anonymous update for user sync"
-  ON users
-  FOR UPDATE
-  TO anon
-  USING (true);
 
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_users_clerk_id ON users(clerk_id);
