@@ -5,9 +5,13 @@ import Dashboard from './components/Dashboard/Dashboard';
 import LandingPage from './components/LandingPage/LandingPage';
 import AuthLayout from './components/AuthLayout/AuthLayout';
 import { useSyncClerkWithSupabase } from './hooks/useSyncClerkWithSupabase';
+import { useLinkClerkToSupabase } from './hooks/useLinkClerkToSupabase';
 
 const App = observer(() => {
-  // Initialize the sync hook at the app level
+  // 1. Authenticate Supabase using Clerk JWT
+  useLinkClerkToSupabase();
+
+  // 2. Then sync user to Supabase `users` table
   useSyncClerkWithSupabase();
 
   return (
