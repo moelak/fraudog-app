@@ -11,6 +11,7 @@ import {
   BellIcon,
   CreditCardIcon,
   ChatBubbleLeftRightIcon,
+  UsersIcon,
 } from '@heroicons/react/24/outline';
 import Overview from '../Overview/Overview';
 import Reports from '../Reports/Reports';
@@ -20,6 +21,7 @@ import Visualization from '../Visualization/Visualization';
 import Monitoring from '../Monitoring/Monitoring';
 import Chargebacks from '../Chargebacks/Chargebacks';
 import ChatAssistant from '../ChatAssistant/ChatAssistant';
+import UserManagement from '../UserManagement/UserManagement';
 import AIChat from '../AIChat/AIChat';
 import AIChatButton from '../AIChat/AIChatButton';
 import { dashboardStore } from './DashboardStore';
@@ -35,6 +37,7 @@ const Dashboard = observer(() => {
     { name: 'Chargebacks', href: '/dashboard/chargebacks', icon: CreditCardIcon },
     { name: 'Reports', href: '/dashboard/reports', icon: DocumentTextIcon },
     { name: 'Chat Assistant', href: '/dashboard/assistant', icon: ChatBubbleLeftRightIcon },
+    { name: 'User Management', href: '/dashboard/users', icon: UsersIcon },
     { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
   ];
 
@@ -188,6 +191,7 @@ const Dashboard = observer(() => {
                 <Route path="/chargebacks" element={<Chargebacks />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/assistant" element={<ChatAssistant />} />
+                <Route path="/users" element={<UserManagement />} />
                 <Route path="/settings" element={<Settings />} />
               </Routes>
             </div>

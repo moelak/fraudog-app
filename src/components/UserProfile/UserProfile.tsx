@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import { useUser } from '@clerk/clerk-react';
-import { useSyncClerkWithSupabase } from '../../hooks/useSyncClerkWithSupabase';
+import { useSupabaseUserSync } from '../../hooks/useSupabaseUserSync';
 import { 
   UserIcon, 
   EnvelopeIcon, 
@@ -12,34 +12,32 @@ import {
 
 const UserProfile = observer(() => {
   const { user } = useUser();
-  const { syncStatus, supabaseUser } = useSyncClerkWithSupabase();
+  const { supabaseUser, isLoading, error, syncUserToSupabase } = useSupabaseUserSync();
 
   if (!user) return null;
 
   const getSyncStatusIcon = () => {
-    switch (syncStatus) {
-      case 'success':
-        return <CheckCircleIcon className="h-5 w-5 text-green-600" />;
-      case 'error':
-        return <ExclamationTriangleIcon className="h-5 w-5 text-red-600" />;
-      case 'syncing':
-        return <ArrowPathIcon className="h-5 w-5 text-blue-600 animate-spin" />;
-      default:
-        return null;
+    if (isLoading) {
+      return <ArrowPathIcon className="h-5 w-5 text-blue-600 animate-spin" />;
     }
+    if (error) {
+      return <ExclamationTriangleIcon className="h-5 w-5 text-red-600" />;
+    }
+    if (supabaseUser) {
+      return <CheckCircleIcon className="h-5 w-5 text-green-600" />;
+    }
+    return <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600" />;
   };
 
   const getSyncStatusText = () => {
-    switch (syncStatus) {
-      case 'success':
-        return 'Synced with database';
-      case 'error':
-        return 'Sync failed - check console for details';
-      case 'syncing':
-        return 'Syncing...';
-      default:
-        return 'Not synced';
-    }
+    if (isLoading) return 'Syncing...';
+    if (error) return `Sync failed: ${error}`;
+    if (supabaseUser) return 'Synced with database';
+    return 'Not synced';
+  };
+
+  const handleManualSync = () => {
+    syncUserToSupabase();
   };
 
   return (
@@ -49,13 +47,21 @@ const UserProfile = observer(() => {
         <div className="flex items-center space-x-2">
           {getSyncStatusIcon()}
           <span className={`text-sm ${
-            syncStatus === 'success' ? 'text-green-600' :
-            syncStatus === 'error' ? 'text-red-600' :
-            syncStatus === 'syncing' ? 'text-blue-600' :
-            'text-gray-500'
+            isLoading ? 'text-blue-600' :
+            error ? 'text-red-600' :
+            supabaseUser ? 'text-green-600' :
+            'text-yellow-600'
           }`}>
             {getSyncStatusText()}
           </span>
+          {error && (
+            <button
+              onClick={handleManualSync}
+              className="ml-2 px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            >
+              Retry Sync
+            </button>
+          )}
         </div>
       </div>
 
@@ -110,47 +116,51 @@ const UserProfile = observer(() => {
                 <UserIcon className="h-4 w-4 text-gray-400" />
                 <span className="text-gray-600">DB ID: {supabaseUser.id}</span>
               </div>
-              {supabaseUser.clerk_id && (
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-600">Clerk ID: {supabaseUser.clerk_id}</span>
-                </div>
-              )}
-              {supabaseUser.created_at && (
-                <div className="flex items-center space-x-2">
-                  <CalendarIcon className="h-4 w-4 text-gray-400" />
-                  <span className="text-gray-600">
-                    Created: {new Date(supabaseUser.created_at).toLocaleDateString()}
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-600">Clerk ID: {supabaseUser.clerk_id}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <EnvelopeIcon className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-600">{supabaseUser.email}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <CalendarIcon className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-600">
+                  Created: {new Date(supabaseUser.created_at).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <CalendarIcon className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-600">
+                  Updated: {new Date(supabaseUser.updated_at).toLocaleDateString()}
+                </span>
+              </div>
             </div>
           ) : (
             <div className="text-sm text-gray-500">
-              {syncStatus === 'error' ? 'Failed to load database record' : 'Loading...'}
+              {isLoading ? 'Loading...' : error ? 'Failed to load database record' : 'No database record found'}
             </div>
           )}
         </div>
       </div>
 
       {/* Debug Info (only show if there's an error) */}
-      {syncStatus === 'error' && (
+      {error && (
         <div className="mt-6 pt-6 border-t border-gray-100">
           <details className="text-sm">
             <summary className="cursor-pointer text-gray-700 font-medium">
               Debug Information
             </summary>
             <div className="mt-2 p-3 bg-red-50 rounded-lg">
-              <p className="text-red-700">
-                Sync failed. This might be because:
-              </p>
-              <ul className="mt-2 text-red-600 text-xs list-disc list-inside space-y-1">
-                <li>The users table doesn't have a 'clerk_id' column</li>
-                <li>Row Level Security (RLS) is preventing access</li>
-                <li>The table structure is different than expected</li>
+              <p className="text-red-700 font-medium">Error Details:</p>
+              <p className="text-red-600 text-xs mt-1">{error}</p>
+              <p className="text-red-700 mt-2">Possible causes:</p>
+              <ul className="mt-1 text-red-600 text-xs list-disc list-inside space-y-1">
+                <li>Row Level Security (RLS) policies are too restrictive</li>
+                <li>Missing environment variables for Supabase</li>
+                <li>Network connectivity issues</li>
+                <li>Database table structure mismatch</li>
               </ul>
-              <p className="mt-2 text-red-600 text-xs">
-                Check the browser console for detailed error messages.
-              </p>
             </div>
           </details>
         </div>
