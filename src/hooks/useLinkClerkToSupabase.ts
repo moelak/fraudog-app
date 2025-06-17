@@ -14,10 +14,13 @@ export function useLinkClerkToSupabase() {
       }
 
       try {
+
+        
         // Get the JWT token from Clerk with the Supabase template
         const token = await getToken({ template: 'supabase' });
 
         if (token) {
+        
           // Set the session in Supabase using Clerk's token
           const { data, error } = await supabase.auth.setSession({
             access_token: token,
