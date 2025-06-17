@@ -44,7 +44,7 @@ CREATE POLICY "Users can update own profile"
 -- Otherwise, insert via server using service role
 CREATE POLICY "Allow anonymous insert for user sync"
   ON users
-  FOR INSERT
+  FOR INSERT 
   TO anon
   WITH CHECK ((auth.jwt() ->> 'uuid') = clerk_id);
 
