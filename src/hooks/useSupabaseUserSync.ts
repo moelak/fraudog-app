@@ -22,7 +22,7 @@ export function useSupabaseUserSync() {
   const ensureSupabaseSession = async () => {
     try {
       const supabaseToken = await getToken({ template: 'supabase' });
-      
+        console.log('Clerk Supabase JWT:1', supabaseToken);
       if (!supabaseToken) {
         throw new Error('Failed to get Supabase token from Clerk');
       }
