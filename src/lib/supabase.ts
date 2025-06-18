@@ -9,10 +9,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    // Don't persist session since we're using Clerk for auth
-    persistSession: false,
-    // Don't auto refresh since Clerk handles token refresh
-    autoRefreshToken: false,
+    // Enable session persistence for better reliability
+    persistSession: true,
+    // Enable auto refresh to handle token expiration
+    autoRefreshToken: true,
+    // Detect session in URL for OAuth flows
+    detectSessionInUrl: true,
   }
 });
 

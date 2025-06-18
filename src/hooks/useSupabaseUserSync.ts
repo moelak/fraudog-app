@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useUser } from '@clerk/clerk-react';
+import { useAuth, useUser } from '@clerk/clerk-react';
 import { supabase } from '../lib/supabase';
 
 interface SupabaseUser {
@@ -13,10 +13,38 @@ interface SupabaseUser {
 }
 
 export function useSupabaseUserSync() {
+  const { getToken } = useAuth();
   const { user } = useUser();
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const ensureSupabaseSession = async () => {
+    try {
+      const supabaseToken = await getToken({ template: 'supabase' });
+      
+      if (!supabaseToken) {
+        throw new Error('Failed to get Supabase token from Clerk');
+      }
+
+      const { error: authError } = await supabase.auth.setSession({
+        access_token: supabaseToken,
+        refresh_token: '',
+      });
+
+      if (authError) {
+        throw new Error(`Supabase auth error: ${authError.message}`);
+      }
+
+      // Wait for session to be established
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to establish Supabase session:', error);
+      throw error;
+    }
+  };
 
   const syncUserToSupabase = async () => {
     if (!user) return;
@@ -25,6 +53,9 @@ export function useSupabaseUserSync() {
     setError(null);
 
     try {
+      // Ensure we have a valid Supabase session
+      await ensureSupabaseSession();
+
       const userData = {
         clerk_id: user.id,
         email: user.primaryEmailAddress?.emailAddress || null,
@@ -62,6 +93,9 @@ export function useSupabaseUserSync() {
     setError(null);
 
     try {
+      // Ensure we have a valid Supabase session
+      await ensureSupabaseSession();
+
       const { data, error: fetchError } = await supabase
         .from('users')
         .select('*')
