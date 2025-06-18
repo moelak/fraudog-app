@@ -9,7 +9,7 @@ interface AuthLayoutProps {
 
 const AuthLayout = observer(({ children }: AuthLayoutProps) => {
   const { user, isLoaded } = useUser();
-  const { syncStatus } = useSyncClerkWithSupabase();
+  const syncStatus = useSyncClerkWithSupabase();
 
   // Update store with user data
   if (isLoaded && user && !authLayoutStore.isUserSynced) {
@@ -36,8 +36,8 @@ const AuthLayout = observer(({ children }: AuthLayoutProps) => {
   }
 
   // Show sync status if there's an error
-  if (syncStatus === 'error') {
-    console.warn('Failed to sync user data with Supabase');
+  if (syncStatus.status === 'error') {
+    console.warn('Failed to sync user data with Supabase:', syncStatus.error);
   }
 
   return <>{children}</>;
