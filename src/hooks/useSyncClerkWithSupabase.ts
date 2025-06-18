@@ -23,7 +23,7 @@ export function useSyncClerkWithSupabase() {
 
         // Get the Supabase token from Clerk
         const supabaseToken = await getToken({ template: 'supabase' });
-        
+          console.log('Clerk Supabase JWT2:', supabaseToken);
         if (!supabaseToken) {
           throw new Error('Failed to get Supabase token from Clerk. Make sure you have configured the Supabase JWT template in Clerk.');
         }
