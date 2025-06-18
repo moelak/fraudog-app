@@ -1,6 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 import { ruleManagementStore } from './RuleManagementStore';
+import { uploadFile } from '../../utils/fileUpload';
 import {
   XMarkIcon,
   CloudArrowUpIcon,
@@ -73,60 +74,56 @@ const ChargebackAnalysisModal = observer(() => {
     setIsAnalyzing(true);
     
     try {
-      const formData = new FormData();
-      formData.append('account_id', '123');
-      formData.append('csv', selectedFile);
-
-      const response = await fetch('https://52ce-149-88-113-238.ngrok-free.app/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        await response.json();
-        
-        // Mock generated rules based on analysis
-        const mockRules = [
-          {
-            id: Date.now() + 1,
-            name: 'High-Risk Transaction Pattern',
-            description: 'Transactions over $500 from new accounts with mismatched billing addresses',
-            condition: 'transaction.amount > 500 && account.age < 30 && billing.address_match === false',
-            confidence: 92,
-            expectedCatches: 156,
-            estimatedFalsePositives: 12
-          },
-          {
-            id: Date.now() + 2,
-            name: 'Geographic Anomaly Detection',
-            description: 'Transactions from countries with high chargeback rates for this merchant',
-            condition: 'transaction.country in ["XX", "YY"] && merchant.chargeback_rate > 0.05',
-            confidence: 87,
-            expectedCatches: 89,
-            estimatedFalsePositives: 8
-          },
-          {
-            id: Date.now() + 3,
-            name: 'Device Fingerprint Risk',
-            description: 'Multiple failed attempts from same device followed by successful transaction',
-            condition: 'device.failed_attempts > 2 && transaction.success === true && timeWindow < 1800',
-            confidence: 78,
-            expectedCatches: 67,
-            estimatedFalsePositives: 15
-          }
-        ];
-
-        setGeneratedRules(mockRules);
-        setActiveTab('rules');
-        
-        // Show success toast
-        alert('Analysis complete! Generated rules are now available in the Generated Rules tab.');
-      } else {
-        throw new Error('Analysis failed');
+      // Upload file to Supabase storage using the uploadFile utility
+      // This will trigger the file-processor Edge Function via the storage webhook
+      const uploadResult = await uploadFile(selectedFile);
+      
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || 'File upload failed');
       }
+      
+      console.log('File uploaded successfully:', uploadResult);
+      
+      // Mock generated rules based on analysis
+      // In a real implementation, you might want to poll for results or use a webhook callback
+      const mockRules = [
+        {
+          id: Date.now() + 1,
+          name: 'High-Risk Transaction Pattern',
+          description: 'Identifies transactions with high-risk characteristics based on historical chargeback data.',
+          condition: 'amount > 500 AND country NOT IN ("US", "CA", "UK") AND card_age < 30',
+          confidence: 92,
+          expectedCatches: 124,
+          estimatedFalsePositives: 8
+        },
+        {
+          id: Date.now() + 2,
+          name: 'Multiple Rapid Transactions',
+          description: 'Detects when a customer makes multiple purchases in a short time period.',
+          condition: 'transaction_count > 3 AND time_between_transactions < 300 AND different_shipping_addresses > 1',
+          confidence: 85,
+          expectedCatches: 92,
+          estimatedFalsePositives: 12
+        },
+        {
+          id: Date.now() + 3,
+          name: 'Billing/Shipping Mismatch',
+          description: 'Identifies orders where billing and shipping addresses are in different countries.',
+          condition: 'billing_country != shipping_country AND amount > 200',
+          confidence: 78,
+          expectedCatches: 67,
+          estimatedFalsePositives: 15
+        }
+      ];
+
+      setGeneratedRules(mockRules);
+      setActiveTab('rules');
+      
+      // Show success toast
+      alert(`File uploaded successfully! The file-processor function will process it automatically. Generated rules are now available in the Generated Rules tab.`);
     } catch (error) {
       console.error('Analysis error:', error);
-      alert('Analysis failed. Please try again or check your connection.');
+      alert(`File upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`); 
     } finally {
       setIsAnalyzing(false);
     }

@@ -1,0 +1,6 @@
+transaction_id,amount,timestamp,user_id,status
+TX123456,100.50,2025-06-18T12:30:45Z,user_001,completed
+TX123457,75.25,2025-06-18T12:35:12Z,user_002,completed
+TX123458,200.00,2025-06-18T12:40:33Z,user_003,pending
+TX123459,50.75,2025-06-18T12:45:21Z,user_001,completed
+TX123460,300.25,2025-06-18T12:50:08Z,user_004,failed
