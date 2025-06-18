@@ -4,7 +4,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './components/Dashboard/Dashboard';
 import LandingPage from './components/LandingPage/LandingPage';
 import AuthLayout from './components/AuthLayout/AuthLayout';
-import { useSyncClerkWithSupabase } from './hooks/useSyncClerkWithSupabase';
 
 const App = observer(() => {
 
