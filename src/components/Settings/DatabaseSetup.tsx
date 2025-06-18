@@ -2,7 +2,7 @@ import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 import { createUsersTable, createUsersTableAlternative } from '../../utils/createUsersTable';
 import { 
-  DatabaseIcon, 
+  CircleStackIcon, 
   PlayIcon, 
   CheckCircleIcon, 
   ExclamationTriangleIcon,
@@ -42,7 +42,7 @@ const DatabaseSetup = observer(() => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <div className="flex items-center mb-6">
-        <DatabaseIcon className="h-6 w-6 text-blue-600 mr-3" />
+        <CircleStackIcon className="h-6 w-6 text-blue-600 mr-3" />
         <h2 className="text-lg font-medium text-gray-900">Database Setup</h2>
       </div>
 
