@@ -1,6 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import { settingsStore } from './SettingsStore';
 import UserProfile from '../UserProfile/UserProfile';
+import DatabaseSetup from './DatabaseSetup';
 
 const Settings = observer(() => {
   return (
@@ -9,6 +10,9 @@ const Settings = observer(() => {
         <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
         <p className="mt-2 text-gray-600">Manage your account and application preferences</p>
       </div>
+
+      {/* Database Setup Section */}
+      <DatabaseSetup />
 
       {/* User Profile Section */}
       <UserProfile />
