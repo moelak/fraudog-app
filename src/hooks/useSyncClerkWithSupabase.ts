@@ -27,14 +27,14 @@ export function useSyncClerkWithSupabase() {
         if (!supabaseToken) {
           throw new Error('Failed to get Supabase token from Clerk. Make sure you have configured the Supabase JWT template in Clerk.');
         }
-
+console.log('Clerk Supabase JWT2:', supabaseToken);
         // Set the Supabase session with the Clerk JWT
         const { data: sessionData, error: authError } = await supabase.auth.setSession({
           access_token: supabaseToken,
           refresh_token: '', // Clerk handles refresh
         });
 
-        console.log('Clerk Supabase JWT2:', sessionData);
+        
 
         if (authError) {
           throw new Error(`Supabase auth error: ${authError.message}`);
