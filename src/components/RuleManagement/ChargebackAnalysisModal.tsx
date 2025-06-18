@@ -120,7 +120,7 @@ const ChargebackAnalysisModal = observer(() => {
       setActiveTab('rules');
       
       // Show success toast
-      alert(`File uploaded successfully! The file-processor function will process it automatically. Generated rules are now available in the Generated Rules tab.`);
+      alert(`File uploaded successfully! Our AI model is processing it automatically. Generated rules will be available shortly in the Generated Rules tab.`);
     } catch (error) {
       console.error('Analysis error:', error);
       alert(`File upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`); 
