@@ -117,7 +117,7 @@ console.log("window.location.origin", window.location.origin)
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `https://loquacious-manatee-264cad.netlify.app/dashboard`,
         },
       });
 
