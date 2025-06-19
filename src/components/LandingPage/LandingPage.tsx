@@ -485,7 +485,7 @@ const LandingPage = observer(() => {
                   
                   {/* Smaller robot image for this section */}
                   <img 
-                    src="/public/images/robo-thumbs-up.png" 
+                    src="/images/robo-thumbs-up.png" 
                     alt="AI Assistant Robot" 
                     className="relative z-10 w-58 h-58 object-contain opacity-80"
                     style={{
