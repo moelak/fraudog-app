@@ -32,6 +32,24 @@ const Dashboard = observer(() => {
   const location = useLocation();
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
+  const hashParams = new URLSearchParams(window.location.hash.slice(1));
+  const access_token = hashParams.get('access_token');
+  const refresh_token = hashParams.get('refresh_token');
+
+  if (access_token && refresh_token) {
+    supabase.auth
+      .setSession({ access_token, refresh_token })
+      .then(({ error }) => {
+        if (error) {
+          console.error('Failed to set session from URL:', error);
+        } else {
+          // Clean the URL by removing the fragment
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      });
+  }
+}, []);
+
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
     { name: 'Rule Management', href: '/dashboard/rules', icon: ShieldCheckIcon },
