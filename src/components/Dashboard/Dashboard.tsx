@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -12,7 +13,6 @@ import {
   CreditCardIcon,
   ChatBubbleLeftRightIcon,
   UsersIcon,
-  ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 import Overview from '../Overview/Overview';
 import Reports from '../Reports/Reports';
@@ -25,11 +25,14 @@ import ChatAssistant from '../ChatAssistant/ChatAssistant';
 import UserManagement from '../UserManagement/UserManagement';
 import AIChat from '../AIChat/AIChat';
 import AIChatButton from '../AIChat/AIChatButton';
+import AccountMenu from '../Auth/AccountMenu';
+import AccountManagementModal from '../Auth/AccountManagementModal';
 import { dashboardStore } from './DashboardStore';
 
 const Dashboard = observer(() => {
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
@@ -42,14 +45,6 @@ const Dashboard = observer(() => {
     { name: 'User Management', href: '/dashboard/users', icon: UsersIcon },
     { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
   ];
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
@@ -91,27 +86,6 @@ const Dashboard = observer(() => {
               );
             })}
           </nav>
-          <div className="flex items-center justify-between p-4 border-t bg-gray-50">
-            <div className="flex items-center">
-              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                <span className="text-sm font-medium text-blue-600">
-                  {user?.email?.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-700 truncate">
-                  {user?.email}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={handleSignOut}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
-              title="Sign out"
-            >
-              <ArrowRightOnRectangleIcon className="h-5 w-5" />
-            </button>
-          </div>
         </div>
       </div>
 
@@ -130,7 +104,7 @@ const Dashboard = observer(() => {
               </svg>
             </button>
             
-            {/* Right side - Notifications */}
+            {/* Right side - Notifications and Account Menu */}
             <div className="flex items-center gap-4 ml-auto">
               {/* Notification Bell */}
               <div className="relative">
@@ -200,6 +174,9 @@ const Dashboard = observer(() => {
                   </div>
                 )}
               </div>
+
+              {/* Account Menu */}
+              <AccountMenu onManageAccount={() => setIsAccountModalOpen(true)} />
             </div>
           </div>
         </div>
@@ -234,6 +211,12 @@ const Dashboard = observer(() => {
       {/* AI Chat Components */}
       <AIChatButton />
       <AIChat />
+
+      {/* Account Management Modal */}
+      <AccountManagementModal
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
+      />
     </div>
   );
 });

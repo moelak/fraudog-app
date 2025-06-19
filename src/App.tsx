@@ -1,13 +1,12 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
-import AuthPage from './components/Auth/AuthPage';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Dashboard from './components/Dashboard/Dashboard';
 import LandingPage from './components/LandingPage/LandingPage';
 
 const App = () => {
   const { loading, user } = useAuth();
-console.log("user", user)
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -26,9 +25,6 @@ console.log("user", user)
         path="/" 
         element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
       />
-      
-      {/* Auth page */}
-      <Route path="/auth" element={<AuthPage />} />
       
       {/* Protected dashboard routes */}
       <Route

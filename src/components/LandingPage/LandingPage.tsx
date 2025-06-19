@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { landingPageStore } from './LandingPageStore';
+import AuthModal from '../Auth/AuthModal';
 
 const LandingPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
   // Redirect to dashboard if already authenticated
   if (user) {
@@ -13,69 +17,84 @@ const LandingPage = () => {
   }
 
   const handleSignIn = () => {
-    navigate('/auth?mode=signin');
+    setAuthMode('signin');
+    setIsAuthModalOpen(true);
   };
 
   const handleSignUp = () => {
-    navigate('/auth?mode=signup');
+    setAuthMode('signup');
+    setIsAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setIsAuthModalOpen(false);
   };
 
   return (
-    <div 
-      className="min-h-screen relative bg-cover bg-center"
-      style={{
-        backgroundImage: `url('${landingPageStore.backgroundImage}')`
-      }}
-    >
-      <div className="absolute inset-0 bg-black bg-opacity-70 bg-pattern"></div>
+    <>
+      <div 
+        className="min-h-screen relative bg-cover bg-center"
+        style={{
+          backgroundImage: `url('${landingPageStore.backgroundImage}')`
+        }}
+      >
+        <div className="absolute inset-0 bg-black bg-opacity-70 bg-pattern"></div>
 
-      <div className="relative min-h-screen flex flex-col">
-        <nav className="bg-transparent p-4">
-          <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
-            <div className="text-white text-2xl font-bold">{landingPageStore.brandName}</div>
-            <div className="flex gap-4">
-              <button 
-                onClick={handleSignIn}
-                className="px-6 py-2 text-white border border-white rounded-lg hover:bg-white hover:text-black transition-colors"
-              >
-                Log in
-              </button>
-              <button 
-                onClick={handleSignUp}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Sign up
-              </button>
+        <div className="relative min-h-screen flex flex-col">
+          <nav className="bg-transparent p-4">
+            <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
+              <div className="text-white text-2xl font-bold">{landingPageStore.brandName}</div>
+              <div className="flex gap-4">
+                <button 
+                  onClick={handleSignIn}
+                  className="px-6 py-2 text-white border border-white rounded-lg hover:bg-white hover:text-black transition-colors"
+                >
+                  Log in
+                </button>
+                <button 
+                  onClick={handleSignUp}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Sign up
+                </button>
+              </div>
             </div>
-          </div>
-        </nav>
+          </nav>
 
-        <main className="flex-grow flex items-center px-4">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-6">
-              {landingPageStore.heroTitle}
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-200 mb-12 leading-relaxed">
-              {landingPageStore.heroDescription}
-            </p>
-            <div className="flex gap-6">
-              <button 
-                onClick={handleSignUp}
-                className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-lg"
-              >
-                Get Started
-              </button>
-              <button 
-                onClick={handleSignIn}
-                className="px-8 py-3 border-2 border-white text-white rounded-lg hover:bg-white hover:text-black transition-colors text-lg"
-              >
-                Learn More
-              </button>
+          <main className="flex-grow flex items-center px-4">
+            <div className="max-w-4xl mx-auto">
+              <h1 className="text-5xl md:text-7xl font-bold text-white mb-6">
+                {landingPageStore.heroTitle}
+              </h1>
+              <p className="text-xl md:text-2xl text-gray-200 mb-12 leading-relaxed">
+                {landingPageStore.heroDescription}
+              </p>
+              <div className="flex gap-6">
+                <button 
+                  onClick={handleSignUp}
+                  className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-lg"
+                >
+                  Get Started
+                </button>
+                <button 
+                  onClick={handleSignIn}
+                  className="px-8 py-3 border-2 border-white text-white rounded-lg hover:bg-white hover:text-black transition-colors text-lg"
+                >
+                  Learn More
+                </button>
+              </div>
             </div>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={closeAuthModal}
+        initialMode={authMode}
+      />
+    </>
   );
 };
 
