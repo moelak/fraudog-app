@@ -35,27 +35,6 @@ const Dashboard = observer(() => {
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 const navigate = useNavigate();
 
-useEffect(() => {
-  const hashParams = new URLSearchParams(window.location.hash.slice(1));
-  const access_token = hashParams.get('access_token');
-  const refresh_token = hashParams.get('refresh_token');
-
-  
- if (access_token && refresh_token) {
-    supabase.auth
-      .setSession({ access_token, refresh_token })
-      .then(({ error }) => {
-        if (error) {
-          console.error('Failed to set session from URL:', error);
-        }
-        // Always clean the URL after processing
-        window.history.replaceState({}, document.title, window.location.pathname);
-      });
-  } else if (window.location.hash) {
-    // Even if no tokens, remove hash for clean UX
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
-}, []);
 
 
   const navigation = [
