@@ -137,11 +137,11 @@ const LandingPage = observer(() => {
             {/* Auth Buttons */}
             <div className="flex items-center space-x-4">
          
-                  <button className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors">
+                  <button  onClick={handleSignIn} className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors">
                     Login
                   </button>
              
-                  <button className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-purple-500/25">
+                  <button  onClick={handleSignUp}  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-purple-500/25">
                     Sign Up
                   </button>
                
