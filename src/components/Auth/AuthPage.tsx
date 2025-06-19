@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -14,7 +14,10 @@ type AuthMode = 'signin' | 'signup';
 
 const AuthPage = () => {
   const { user, loading } = useAuth();
-  const [mode, setMode] = useState<AuthMode>('signin');
+  const [searchParams] = useSearchParams();
+  const initialMode = (searchParams.get('mode') as AuthMode) || 'signin';
+  
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -23,6 +26,14 @@ const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  // Update mode when URL params change
+  useEffect(() => {
+    const urlMode = searchParams.get('mode') as AuthMode;
+    if (urlMode && (urlMode === 'signin' || urlMode === 'signup')) {
+      setMode(urlMode);
+    }
+  }, [searchParams]);
 
   // Redirect if already authenticated
   if (!loading && user) {
@@ -108,6 +119,8 @@ const AuthPage = () => {
   const switchMode = (newMode: AuthMode) => {
     setMode(newMode);
     resetForm();
+    // Update URL without navigation
+    window.history.replaceState({}, '', `/auth?mode=${newMode}`);
   };
 
   return (

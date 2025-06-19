@@ -3,9 +3,10 @@ import { useAuth } from './hooks/useAuth';
 import AuthPage from './components/Auth/AuthPage';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Dashboard from './components/Dashboard/Dashboard';
+import LandingPage from './components/LandingPage/LandingPage';
 
 const App = () => {
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
 
   if (loading) {
     return (
@@ -20,7 +21,16 @@ const App = () => {
 
   return (
     <Routes>
+      {/* Landing page - only show if not authenticated */}
+      <Route 
+        path="/" 
+        element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
+      />
+      
+      {/* Auth page */}
       <Route path="/auth" element={<AuthPage />} />
+      
+      {/* Protected dashboard routes */}
       <Route
         path="/dashboard/*"
         element={
@@ -29,8 +39,12 @@ const App = () => {
           </ProtectedRoute>
         }
       />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      
+      {/* Catch all - redirect to appropriate page */}
+      <Route 
+        path="*" 
+        element={<Navigate to={user ? "/dashboard" : "/"} replace />} 
+      />
     </Routes>
   );
 };
