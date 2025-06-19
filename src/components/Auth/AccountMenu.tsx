@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import {
-  UserIcon,
   ChevronDownIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,

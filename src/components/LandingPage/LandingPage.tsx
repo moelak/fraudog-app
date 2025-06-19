@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { landingPageStore } from './LandingPageStore';
 import AuthModal from '../Auth/AuthModal';
 import { observer } from 'mobx-react-lite';
 
@@ -141,7 +140,7 @@ const LandingPage = observer(() => {
                     Login
                   </button>
              
-                  <button  onClick={handleSignUp}  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-purple-500/25">
+                  <button  onClick={handleSignUp}  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-purple-500/25">
                     Sign Up
                   </button>
                

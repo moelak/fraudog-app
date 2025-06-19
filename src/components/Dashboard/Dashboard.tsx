@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
 import {
   ChartBarIcon,
   DocumentTextIcon,
@@ -31,7 +30,6 @@ import { dashboardStore } from './DashboardStore';
 
 const Dashboard = observer(() => {
   const location = useLocation();
-  const { user } = useAuth();
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
   const navigation = [
