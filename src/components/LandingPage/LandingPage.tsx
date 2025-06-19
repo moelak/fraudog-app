@@ -449,7 +449,7 @@ const LandingPage = observer(() => {
             </div>
           </div>
           <img
-            src="/images/footStep.svg" 
+            src="/public/images/footStep.svg" 
             alt="Footsteps"
             className="hidden lg:flex absolute footstep  step-5 z-0 top-[90%] right-[45%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[-50deg]"
           />  
@@ -485,7 +485,7 @@ const LandingPage = observer(() => {
                   
                   {/* Smaller robot image for this section */}
                   <img 
-                    src="/images/robo-thumbs-up.png" 
+                    src="/public/images/robo-thumbs-up.png" 
                     alt="AI Assistant Robot" 
                     className="relative z-10 w-58 h-58 object-contain opacity-80"
                     style={{
