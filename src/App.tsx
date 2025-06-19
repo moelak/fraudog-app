@@ -21,7 +21,7 @@ const App = () => {
 
   return (
     <Routes>
-      {/* Landing page - only show if not authenticated */}
+     
       <Route 
         path="/" 
         element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
@@ -29,7 +29,7 @@ const App = () => {
 
           <Route path="/auth/callback" element={<AuthCallback />} />
       
-      {/* Protected dashboard routes */}
+     
       <Route
         path="/dashboard/*"
         element={
@@ -39,7 +39,7 @@ const App = () => {
         }
       />
       
-      {/* Catch all - redirect to appropriate page */}
+
       <Route 
         path="*" 
         element={<Navigate to={user ? "/dashboard" : "/"} replace />} 
