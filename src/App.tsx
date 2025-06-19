@@ -27,7 +27,7 @@ const App = () => {
         element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
       
 
-          <Route path="/dashboard" element={<AuthCallback />} />
+           <Route path="/dashboard" element={<AuthCallback />} />
       
      
       <Route
