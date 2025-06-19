@@ -10,12 +10,9 @@ export class LandingPageStore {
     makeAutoObservable(this);
   }
 
-
-
   updateHeroTitle(title: string) {
     this.heroTitle = title;
   }
-
 
   // New properties for the updated design
   features = [
