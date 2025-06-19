@@ -7,7 +7,7 @@ import LandingPage from './components/LandingPage/LandingPage';
 
 const App = () => {
   const { loading, user } = useAuth();
-
+console.log("user", user)
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
