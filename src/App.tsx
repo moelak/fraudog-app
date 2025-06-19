@@ -24,7 +24,10 @@ const App = () => {
       <Route 
         path="/" 
         element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
-      />
+      
+
+          {/* Auth callback for OAuth (Google login) */}
+  <Route path="/auth/callback" element={<AuthCallback />} />
       
       {/* Protected dashboard routes */}
       <Route
