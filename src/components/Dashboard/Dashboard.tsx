@@ -27,6 +27,8 @@ import AIChatButton from '../AIChat/AIChatButton';
 import AccountMenu from '../Auth/AccountMenu';
 import AccountManagementModal from '../Auth/AccountManagementModal';
 import { dashboardStore } from './DashboardStore';
+import { supabase } from '../../lib/supabase'; // update if path differs
+
 
 const Dashboard = observer(() => {
   const location = useLocation();
