@@ -32,6 +32,7 @@ const Dashboard = observer(() => {
   const location = useLocation();
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
+  useEffect(() => {
   const hashParams = new URLSearchParams(window.location.hash.slice(1));
   const access_token = hashParams.get('access_token');
   const refresh_token = hashParams.get('refresh_token');
