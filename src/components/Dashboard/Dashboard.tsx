@@ -28,11 +28,12 @@ import AccountMenu from '../Auth/AccountMenu';
 import AccountManagementModal from '../Auth/AccountManagementModal';
 import { dashboardStore } from './DashboardStore';
 import { supabase } from '../../lib/supabase'; 
-
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = observer(() => {
   const location = useLocation();
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+const navigate = useNavigate();
 
 useEffect(() => {
   const hashParams = new URLSearchParams(window.location.hash.slice(1));
@@ -47,7 +48,8 @@ useEffect(() => {
           console.error('Failed to set session from URL:', error);
         }
         // Always clean the URL after processing
-        window.history.replaceState({}, document.title, window.location.pathname);
+         window.history.replaceState({}, document.title, '/dashboard');
+        navigate('/dashboard');
       });
   } else if (window.location.hash) {
     // Even if no tokens, remove hash for clean UX
