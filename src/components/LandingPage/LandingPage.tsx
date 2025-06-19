@@ -605,6 +605,6 @@ const navigate = useNavigate();
       />
     </>
   );
-)};
+};
 
 export default LandingPage;
