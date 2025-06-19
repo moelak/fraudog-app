@@ -20,31 +20,33 @@ const App = () => {
   }
 
   return (
-    <Routes>
-     
-      <Route 
-        path="/" 
-        element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
-      
+   <Routes>
+  {/* Landing page */}
+  <Route 
+    path="/" 
+    element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
+  />
 
-           <Route path="/dashboard" element={<AuthCallback />} />
-      
-     
-      <Route
-        path="/dashboard/*"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      
+  {/* Auth callback */}
+  <Route path="/auth/callback" element={<AuthCallback />} />
 
-      <Route 
-        path="*" 
-        element={<Navigate to={user ? "/dashboard" : "/"} replace />} 
-      />
-    </Routes>
+  {/* Protected dashboard */}
+  <Route
+    path="/dashboard/*"
+    element={
+      <ProtectedRoute>
+        <Dashboard />
+      </ProtectedRoute>
+    }
+  />
+
+  {/* Fallback */}
+  <Route 
+    path="*" 
+    element={<Navigate to={user ? "/dashboard" : "/"} replace />} 
+  />
+</Routes>
+
   );
 };
 
