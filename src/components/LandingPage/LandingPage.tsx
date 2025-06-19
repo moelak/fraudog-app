@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { landingPageStore } from './LandingPageStore';
 import AuthModal from '../Auth/AuthModal';
+import { observer } from 'mobx-react-lite';
 
 const LandingPage = observer(() => {
-const navigate = useNavigate();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [activeSection, setActiveSection] = useState('home');
 
   // Redirect to dashboard if already authenticated
   if (user) {
@@ -30,8 +32,12 @@ const navigate = useNavigate();
     setIsAuthModalOpen(false);
   };
 
-
-  const [activeSection, setActiveSection] = useState('home');
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -55,41 +61,25 @@ const navigate = useNavigate();
   }, []);
 
   useEffect(() => {
-  const steps = document.querySelectorAll('.footstep');
+    const steps = document.querySelectorAll('.footstep');
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate');
+          }
+        });
+      },
+      { threshold: 0.6 }
+    );
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('animate');
-        }
-      });
-    },
-    {
-      threshold: 0.6, // Adjust if needed
-    }
-  );
+    steps.forEach((step) => observer.observe(step));
+    return () => steps.forEach((step) => observer.unobserve(step));
+  }, []);
 
-  steps.forEach((step) => observer.observe(step));
-
-  return () => {
-    steps.forEach((step) => observer.unobserve(step));
-  };
-}, []);
-
-
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-
-  
   return (
     <>
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white overflow-x-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white overflow-x-hidden">
       {/* Animated Background */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-blue-900/10 to-black"></div>
@@ -605,6 +595,6 @@ const navigate = useNavigate();
       />
     </>
   );
-};
+});
 
 export default LandingPage;
