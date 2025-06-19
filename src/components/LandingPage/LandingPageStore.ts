@@ -17,7 +17,6 @@ export class LandingPageStore {
   }
 
 
-
   // New properties for the updated design
   features = [
     {
