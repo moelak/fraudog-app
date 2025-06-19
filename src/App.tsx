@@ -26,8 +26,6 @@ const App = () => {
     element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
   />
 
-  {/* Auth callback */}
-  <Route path="/auth/callback" element={<AuthCallback />} />
 
   {/* Protected dashboard */}
   <Route
