@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -15,6 +15,7 @@ type AuthMode = 'signin' | 'signup';
 const AuthPage = () => {
   const { user, loading } = useAuth();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const initialMode = (searchParams.get('mode') as AuthMode) || 'signin';
   
   const [mode, setMode] = useState<AuthMode>(initialMode);
@@ -36,9 +37,11 @@ const AuthPage = () => {
   }, [searchParams]);
 
   // Redirect if already authenticated
-  if (!loading && user) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, loading, navigate]);
 
   // Show loading spinner while checking auth state
   if (loading) {
@@ -47,6 +50,11 @@ const AuthPage = () => {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
+  }
+
+  // If user is authenticated, don't render the auth form
+  if (user) {
+    return null;
   }
 
   const handleEmailAuth = async (e: React.FormEvent) => {
@@ -72,14 +80,22 @@ const AuthPage = () => {
 
         if (data.user && !data.session) {
           setMessage('Please check your email for a confirmation link to complete your registration.');
+        } else if (data.session) {
+          // User is automatically signed in after signup
+          navigate('/dashboard', { replace: true });
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
         if (error) throw error;
+
+        if (data.session) {
+          // Successful sign in - navigate to dashboard
+          navigate('/dashboard', { replace: true });
+        }
       }
     } catch (error: any) {
       setError(error.message || 'An error occurred during authentication');
