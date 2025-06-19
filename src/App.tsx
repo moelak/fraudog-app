@@ -3,6 +3,7 @@ import { useAuth } from './hooks/useAuth';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Dashboard from './components/Dashboard/Dashboard';
 import LandingPage from './components/LandingPage/LandingPage';
+import AuthCallback from './components/Auth/AuthCallback'; // adjust path if needed
 
 const App = () => {
   const { loading, user } = useAuth();
