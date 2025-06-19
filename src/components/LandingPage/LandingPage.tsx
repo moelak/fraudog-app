@@ -204,19 +204,19 @@ const LandingPage = observer(() => {
                   />
 
                   <img
-                    src="/images/footSteps1.svg"
+                    src="/images/foot-steps.svg"
                     alt="Footsteps"
                     className="absolute  footstep z-0 w-24 step-2 opacity-0 top-[75%] right-[50%] transform -translate-x-1/2 translate-y-12 rotate-[5deg]"
                   /> 
 
                   <img
-                    src="/images/footSteps.svg"
+                    src="/images/foot-steps.svg"
                     alt="Footsteps" 
                     className="absolute footstep z-0 w-24 step-3 opacity-0 top-[90%] right-[68%] transform -translate-x-1/2 translate-y-12"
                   />
 
                   <img
-                    src="/images/footSteps.svg"
+                    src="/images/foot-steps.svg"
                     alt="Footsteps"
                     className="absolute  footstep z-0 w-24 step-4 opacity-0 top-[108%] right-[80%] transform -translate-x-1/2 translate-y-12 rotate-[-5deg]"
                   />
@@ -295,7 +295,7 @@ const LandingPage = observer(() => {
             ))}
           </div>
           <img
-            src="/images/footSteps.svg" 
+            src="/images/foot-steps.svg" 
             alt="Footsteps"
             className=" hidden lg:flex absolute footstep  step-5 z-0 top-[95%] right-[45%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 
                      " 
@@ -362,7 +362,7 @@ const LandingPage = observer(() => {
             ))}
           </div>
           <img
-            src="/images/footSteps.svg" 
+            src="/images/foot-steps.svg" 
             alt="Footsteps"
             className="hidden lg:flex absolute footstep  step-5 z-0 top-[90%] right-[45%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[-40deg]"
           />  
@@ -449,7 +449,7 @@ const LandingPage = observer(() => {
             </div>
           </div>
           <img
-            src="/public/images/footSteps.svg" 
+            src="/public/images/foot-steps.svg" 
             alt="Footsteps"
             className="hidden lg:flex absolute footstep  step-5 z-0 top-[90%] right-[45%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[-50deg]"
           />  
