@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import {
@@ -27,14 +27,10 @@ import AIChatButton from '../AIChat/AIChatButton';
 import AccountMenu from '../Auth/AccountMenu';
 import AccountManagementModal from '../Auth/AccountManagementModal';
 import { dashboardStore } from './DashboardStore';
-import { supabase } from '../../lib/supabase'; 
-import { useNavigate } from 'react-router-dom';
 
 const Dashboard = observer(() => {
   const location = useLocation();
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
-const navigate = useNavigate();
-
 
 
   const navigation = [
