@@ -21,12 +21,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // Database types
 export interface User {
   id: string;
-  clerk_id: string;
-  email: string | null;
-  first_name: string | null;
-  last_name: string | null;
+  email: string;
   created_at: string;
   updated_at: string;
+  // Add any additional user profile fields here
+  first_name?: string;
+  last_name?: string;
 }
 
 export interface Database {
