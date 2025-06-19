@@ -195,7 +195,7 @@ const LandingPage = observer(() => {
                   
                   {/* Robot Image - 2x Larger (was 320px, now 640px) */}
                   <img 
-                    src="/images/robo.png" 
+                    src="/images/roboAI.png" 
                     alt="AI Fraud Detection Robot" 
                     className="relative z-10 w-[580px] h-[580px] object-contain drop-shadow-2xl"
                     style={{
