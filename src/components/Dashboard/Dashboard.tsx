@@ -49,7 +49,7 @@ console.log("=>>", access_token,  supabase.auth)
         }
         // Always clean the URL after processing
          window.history.replaceState({}, document.title, '/dashboard');
-        navigate('/dashboard');
+        
       });
   } else {
       // If nothing is there, just go home
