@@ -51,10 +51,10 @@ useEffect(() => {
          window.history.replaceState({}, document.title, '/dashboard');
         navigate('/dashboard');
       });
-  } else if (window.location.hash) {
-    // Even if no tokens, remove hash for clean UX
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
+  } else {
+      // If nothing is there, just go home
+      navigate('/');
+    }
 }, []);
 
 
