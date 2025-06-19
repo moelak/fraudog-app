@@ -39,7 +39,8 @@ useEffect(() => {
   const hashParams = new URLSearchParams(window.location.hash.slice(1));
   const access_token = hashParams.get('access_token');
   const refresh_token = hashParams.get('refresh_token');
-console.log("=>>", access_token,  supabase.auth)
+
+  
  if (access_token && refresh_token) {
     supabase.auth
       .setSession({ access_token, refresh_token })
