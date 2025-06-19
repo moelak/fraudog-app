@@ -34,7 +34,7 @@ const Dashboard = observer(() => {
   const location = useLocation();
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
-  useEffect(() => {
+useEffect(() => {
   const hashParams = new URLSearchParams(window.location.hash.slice(1));
   const access_token = hashParams.get('access_token');
   const refresh_token = hashParams.get('refresh_token');
@@ -45,13 +45,16 @@ const Dashboard = observer(() => {
       .then(({ error }) => {
         if (error) {
           console.error('Failed to set session from URL:', error);
-        } else {
-          // Clean the URL by removing the fragment
-          window.history.replaceState({}, document.title, window.location.pathname);
         }
+        // Always clean the URL after processing
+        window.history.replaceState({}, document.title, window.location.pathname);
       });
+  } else if (window.location.hash) {
+    // Even if no tokens, remove hash for clean UX
+    window.history.replaceState({}, document.title, window.location.pathname);
   }
 }, []);
+
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
