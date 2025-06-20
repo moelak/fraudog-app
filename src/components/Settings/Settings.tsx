@@ -1,8 +1,15 @@
 import { observer } from 'mobx-react-lite';
 import { settingsStore } from './SettingsStore';
-import UserProfile from '../UserProfile/UserProfile';
+import { useAuth } from '../../hooks/useAuth';
+import { 
+  UserIcon, 
+  EnvelopeIcon, 
+  CalendarIcon,
+} from '@heroicons/react/24/outline';
 
 const Settings = observer(() => {
+  const { user } = useAuth();
+
   return (
     <div className="space-y-6">
       <div>
@@ -11,7 +18,43 @@ const Settings = observer(() => {
       </div>
 
       {/* User Profile Section */}
-      <UserProfile />
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 className="text-lg font-medium text-gray-900 mb-6">User Profile</h2>
+        
+        <div className="flex items-center space-x-4 mb-6">
+          <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center">
+            <UserIcon className="h-8 w-8 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900">
+              {user?.user_metadata?.first_name} {user?.user_metadata?.last_name}
+            </h3>
+            <p className="text-gray-600">{user?.email}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium text-gray-900">Account Information</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center space-x-2">
+                <UserIcon className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-600">ID: {user?.id}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <EnvelopeIcon className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-600">{user?.email}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <CalendarIcon className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-600">
+                  Joined: {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Application Settings */}
       <div className="bg-white shadow rounded-lg p-6">

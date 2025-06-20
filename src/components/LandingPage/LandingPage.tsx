@@ -1,9 +1,42 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import AuthModal from '../Auth/AuthModal';
 import { observer } from 'mobx-react-lite';
-import { SignInButton, SignUpButton, SignedOut } from '@clerk/clerk-react';
-import { useState, useEffect } from 'react';
 
 const LandingPage = observer(() => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [activeSection, setActiveSection] = useState('home');
+
+  // Redirect to dashboard if already authenticated
+  if (user) {
+    navigate('/dashboard');
+    return null;
+  }
+
+  const handleSignIn = () => {
+    setAuthMode('signin');
+    setIsAuthModalOpen(true);
+  };
+
+  const handleSignUp = () => {
+    setAuthMode('signup');
+    setIsAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setIsAuthModalOpen(false);
+  };
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -27,38 +60,25 @@ const LandingPage = observer(() => {
   }, []);
 
   useEffect(() => {
-  const steps = document.querySelectorAll('.footstep');
+    const steps = document.querySelectorAll('.footstep');
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate');
+          }
+        });
+      },
+      { threshold: 0.6 }
+    );
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('animate');
-        }
-      });
-    },
-    {
-      threshold: 0.6, // Adjust if needed
-    }
-  );
-
-  steps.forEach((step) => observer.observe(step));
-
-  return () => {
-    steps.forEach((step) => observer.unobserve(step));
-  };
-}, []);
-
-
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+    steps.forEach((step) => observer.observe(step));
+    return () => steps.forEach((step) => observer.unobserve(step));
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white overflow-x-hidden">
+    <>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white overflow-x-hidden">
       {/* Animated Background */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-blue-900/10 to-black"></div>
@@ -115,18 +135,15 @@ const LandingPage = observer(() => {
 
             {/* Auth Buttons */}
             <div className="flex items-center space-x-4">
-              <SignedOut>
-                <SignInButton mode="modal">
-                  <button className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors">
+         
+                  <button  onClick={handleSignIn} className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors">
                     Login
                   </button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <button className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-purple-500/25">
+             
+                  <button  onClick={handleSignUp}  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-purple-500/25">
                     Sign Up
                   </button>
-                </SignUpButton>
-              </SignedOut>
+               
             </div>
           </div>
         </div>
@@ -178,7 +195,7 @@ const LandingPage = observer(() => {
                   
                   {/* Robot Image - 2x Larger (was 320px, now 640px) */}
                   <img 
-                    src="/src/assets/images/robo.png" 
+                    src="/images/roboAI.png" 
                     alt="AI Fraud Detection Robot" 
                     className="relative z-10 w-[580px] h-[580px] object-contain drop-shadow-2xl"
                     style={{
@@ -187,19 +204,19 @@ const LandingPage = observer(() => {
                   />
 
                   <img
-                    src="/src/assets/footsteps-1.svg"
+                    src="/images/foot-steps.svg"
                     alt="Footsteps"
                     className="absolute  footstep z-0 w-24 step-2 opacity-0 top-[75%] right-[50%] transform -translate-x-1/2 translate-y-12 rotate-[5deg]"
                   /> 
 
                   <img
-                    src="/src/assets/footsteps-1.svg"
+                    src="/images/foot-steps.svg"
                     alt="Footsteps" 
                     className="absolute footstep z-0 w-24 step-3 opacity-0 top-[90%] right-[68%] transform -translate-x-1/2 translate-y-12"
                   />
 
                   <img
-                    src="/src/assets/footsteps-1.svg"
+                    src="/images/foot-steps.svg"
                     alt="Footsteps"
                     className="absolute  footstep z-0 w-24 step-4 opacity-0 top-[108%] right-[80%] transform -translate-x-1/2 translate-y-12 rotate-[-5deg]"
                   />
@@ -278,7 +295,7 @@ const LandingPage = observer(() => {
             ))}
           </div>
           <img
-            src="/src/assets/footsteps-1.svg" 
+            src="/images/foot-steps.svg" 
             alt="Footsteps"
             className=" hidden lg:flex absolute footstep  step-5 z-0 top-[95%] right-[45%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 
                      " 
@@ -345,7 +362,7 @@ const LandingPage = observer(() => {
             ))}
           </div>
           <img
-            src="/src/assets/footsteps-1.svg" 
+            src="/images/foot-steps.svg" 
             alt="Footsteps"
             className="hidden lg:flex absolute footstep  step-5 z-0 top-[90%] right-[45%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[-40deg]"
           />  
@@ -432,7 +449,7 @@ const LandingPage = observer(() => {
             </div>
           </div>
           <img
-            src="/src/assets/footsteps-1.svg" 
+            src="/public/images/foot-steps.svg" 
             alt="Footsteps"
             className="hidden lg:flex absolute footstep  step-5 z-0 top-[90%] right-[45%] transform -translate-x-1/2 translate-y-12 w-24 opacity-80 rotate-[-50deg]"
           />  
@@ -468,7 +485,7 @@ const LandingPage = observer(() => {
                   
                   {/* Smaller robot image for this section */}
                   <img 
-                    src="/src/assets/images/robo-thumbs-up.png" 
+                    src="/images/robo-thumbs-up.png" 
                     alt="AI Assistant Robot" 
                     className="relative z-10 w-58 h-58 object-contain opacity-80"
                     style={{
@@ -568,6 +585,14 @@ const LandingPage = observer(() => {
         }
       `}</style>
     </div>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={closeAuthModal}
+        initialMode={authMode}
+      />
+    </>
   );
 });
 

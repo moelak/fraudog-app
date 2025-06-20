@@ -1,5 +1,5 @@
+import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { UserButton } from '@clerk/clerk-react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import {
   ChartBarIcon,
@@ -11,6 +11,7 @@ import {
   BellIcon,
   CreditCardIcon,
   ChatBubbleLeftRightIcon,
+  UsersIcon,
 } from '@heroicons/react/24/outline';
 import Overview from '../Overview/Overview';
 import Reports from '../Reports/Reports';
@@ -20,12 +21,17 @@ import Visualization from '../Visualization/Visualization';
 import Monitoring from '../Monitoring/Monitoring';
 import Chargebacks from '../Chargebacks/Chargebacks';
 import ChatAssistant from '../ChatAssistant/ChatAssistant';
+import UserManagement from '../UserManagement/UserManagement';
 import AIChat from '../AIChat/AIChat';
 import AIChatButton from '../AIChat/AIChatButton';
+import AccountMenu from '../Auth/AccountMenu';
+import AccountManagementModal from '../Auth/AccountManagementModal';
 import { dashboardStore } from './DashboardStore';
 
 const Dashboard = observer(() => {
   const location = useLocation();
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
@@ -35,6 +41,7 @@ const Dashboard = observer(() => {
     { name: 'Chargebacks', href: '/dashboard/chargebacks', icon: CreditCardIcon },
     { name: 'Reports', href: '/dashboard/reports', icon: DocumentTextIcon },
     { name: 'Chat Assistant', href: '/dashboard/assistant', icon: ChatBubbleLeftRightIcon },
+    { name: 'User Management', href: '/dashboard/users', icon: UsersIcon },
     { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
   ];
 
@@ -78,10 +85,6 @@ const Dashboard = observer(() => {
               );
             })}
           </nav>
-          <div className="flex items-center justify-between p-4 border-t bg-gray-50">
-            <UserButton afterSignOutUrl="/" />
-            <span className="text-sm text-gray-500">v1.0.0</span>
-          </div>
         </div>
       </div>
 
@@ -100,7 +103,7 @@ const Dashboard = observer(() => {
               </svg>
             </button>
             
-            {/* Right side - Notifications and user button */}
+            {/* Right side - Notifications and Account Menu */}
             <div className="flex items-center gap-4 ml-auto">
               {/* Notification Bell */}
               <div className="relative">
@@ -170,9 +173,9 @@ const Dashboard = observer(() => {
                   </div>
                 )}
               </div>
-              
-              {/* User Avatar */}
-              <UserButton afterSignOutUrl="/" />
+
+              {/* Account Menu */}
+              <AccountMenu onManageAccount={() => setIsAccountModalOpen(true)} />
             </div>
           </div>
         </div>
@@ -188,6 +191,7 @@ const Dashboard = observer(() => {
                 <Route path="/chargebacks" element={<Chargebacks />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/assistant" element={<ChatAssistant />} />
+                <Route path="/users" element={<UserManagement />} />
                 <Route path="/settings" element={<Settings />} />
               </Routes>
             </div>
@@ -206,6 +210,12 @@ const Dashboard = observer(() => {
       {/* AI Chat Components */}
       <AIChatButton />
       <AIChat />
+
+      {/* Account Management Modal */}
+      <AccountManagementModal
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
+      />
     </div>
   );
 });

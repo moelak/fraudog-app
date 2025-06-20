@@ -6,6 +6,14 @@ export class LandingPageStore {
   heroDescription = "Our AI agents follow every transaction trail — before fraud strikes.";
   backgroundImage = ""; // Not used in the new design
 
+  constructor() {
+    makeAutoObservable(this);
+  }
+
+  updateHeroTitle(title: string) {
+    this.heroTitle = title;
+  }
+
   // New properties for the updated design
   features = [
     {
@@ -54,17 +62,12 @@ export class LandingPageStore {
     }
   ];
 
-  constructor() {
-    makeAutoObservable(this);
-  }
 
   updateBrandName(name: string) {
     this.brandName = name;
   }
 
-  updateHeroTitle(title: string) {
-    this.heroTitle = title;
-  }
+
 
   updateHeroDescription(description: string) {
     this.heroDescription = description;
