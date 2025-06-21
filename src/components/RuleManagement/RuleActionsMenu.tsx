@@ -32,7 +32,7 @@ interface RuleActionsMenuProps {
 }
 
 const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
-  const { recoverRule, toggleRuleStatus, fetchRules } = useRules();
+  const { recoverRule, toggleRuleStatus } = useRules();
   const [isOpen, setIsOpen] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
@@ -68,8 +68,7 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
         setIsRecovering(true);
         try {
           await recoverRule(rule.id);
-          // Refresh the table to show changes immediately
-          await fetchRules();
+          // The hook will automatically refresh the data
         } catch (error) {
           console.error('Error recovering rule:', error);
           alert('Failed to recover rule: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -81,8 +80,7 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
         setIsTogglingStatus(true);
         try {
           await toggleRuleStatus(rule.id);
-          // Refresh the table to show changes immediately
-          await fetchRules();
+          // The hook will automatically refresh the data
         } catch (error) {
           console.error('Error toggling rule status:', error);
           alert('Failed to update rule status: ' + (error instanceof Error ? error.message : 'Unknown error'));

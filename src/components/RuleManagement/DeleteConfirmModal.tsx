@@ -10,7 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const DeleteConfirmModal = observer(() => {
-  const { softDeleteRule, permanentDeleteRule, fetchRules } = useRules();
+  const { softDeleteRule, permanentDeleteRule } = useRules();
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteType, setDeleteType] = useState<'soft' | 'permanent'>('soft');
 
@@ -28,9 +28,7 @@ const DeleteConfirmModal = observer(() => {
       }
       
       ruleManagementStore.closeDeleteConfirmModal();
-      
-      // Refresh the table to show changes immediately
-      await fetchRules();
+      // The hook will automatically refresh the data
       
     } catch (error) {
       console.error('Error deleting rule:', error);

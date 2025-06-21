@@ -95,8 +95,8 @@ export function useRules() {
         throw error;
       }
 
-      // Update local state immediately
-      setRules(prev => [data, ...prev]);
+      // Force a complete refresh to ensure UI updates
+      await fetchRules();
       return data;
     } catch (err) {
       console.error('Error creating rule:', err);
@@ -122,8 +122,8 @@ export function useRules() {
         throw error;
       }
 
-      // Update local state immediately
-      setRules(prev => prev.map(rule => rule.id === id ? data : rule));
+      // Force a complete refresh to ensure UI updates
+      await fetchRules();
       return data;
     } catch (err) {
       console.error('Error updating rule:', err);
@@ -150,12 +150,8 @@ export function useRules() {
         throw error;
       }
 
-      // Update local state immediately
-      setRules(prev => prev.map(rule => 
-        rule.id === id 
-          ? { ...rule, is_deleted: true, status: 'inactive' as const }
-          : rule
-      ));
+      // Force a complete refresh to ensure UI updates
+      await fetchRules();
     } catch (err) {
       console.error('Error soft deleting rule:', err);
       throw err;
@@ -178,12 +174,8 @@ export function useRules() {
         throw error;
       }
 
-      // Update local state immediately
-      setRules(prev => prev.map(rule => 
-        rule.id === id 
-          ? { ...rule, is_deleted: false }
-          : rule
-      ));
+      // Force a complete refresh to ensure UI updates
+      await fetchRules();
     } catch (err) {
       console.error('Error recovering rule:', err);
       throw err;
@@ -206,8 +198,8 @@ export function useRules() {
         throw error;
       }
 
-      // Update local state immediately
-      setRules(prev => prev.filter(rule => rule.id !== id));
+      // Force a complete refresh to ensure UI updates
+      await fetchRules();
     } catch (err) {
       console.error('Error permanently deleting rule:', err);
       throw err;

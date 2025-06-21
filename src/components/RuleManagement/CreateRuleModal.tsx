@@ -32,7 +32,7 @@ interface UpdateRuleData extends Partial<CreateRuleData> {
 }
 
 const CreateRuleModal = observer(() => {
-  const { createRule, updateRule, fetchRules } = useRules();
+  const { createRule, updateRule } = useRules();
   const isEditing = !!ruleManagementStore.editingRule;
   const modalTitle = isEditing ? 'Edit Rule' : 'Create New Rule';
   
@@ -159,11 +159,8 @@ const CreateRuleModal = observer(() => {
         await createRule(ruleData);
       }
 
-      // Close modal and refresh data
+      // Close modal - the fetchRules() call in the hook will update the table
       handleClose();
-      
-      // Refresh the rules list to show changes immediately
-      await fetchRules();
       
     } catch (error) {
       console.error('Error saving rule:', error);
