@@ -240,7 +240,7 @@ const RuleManagement = observer(() => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-3">
+                    {/* <div className="flex items-center space-x-3">
                       {!rule.is_deleted && (
                         <button
                           onClick={() => toggleRuleStatus(rule.id)}
@@ -256,7 +256,7 @@ const RuleManagement = observer(() => {
                         </button>
                       )} 
                       <RuleActionsMenu rule={rule} />
-                    </div>
+                    </div> */} 
                   </td> 
                 </tr> 
               ))}
