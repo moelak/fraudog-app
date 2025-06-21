@@ -149,11 +149,7 @@ export function useRules() {
       if (error) {
         throw error;
       }
- console.log("user", prev => prev.map(rule => 
-        rule.id === id 
-          ? { ...rule, is_deleted: true, status: 'inactive' as const }
-          : rule
-      ))
+ console.log("user=>>>")
       // Update local state
       setRules(prev => prev.map(rule => 
         rule.id === id 
