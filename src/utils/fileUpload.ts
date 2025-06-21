@@ -17,8 +17,6 @@ const getFormSecret = (): string => {
 const getServiceClient = () => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-
-  console.log("meta.env.VITE_SUPABASE_URL", env.VITE_SUPABASE_URL)
   
   if (!supabaseUrl || !supabaseServiceKey) {
     console.warn('Missing Supabase service role credentials');
