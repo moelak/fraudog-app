@@ -240,8 +240,8 @@ const RuleManagement = observer(() => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {/* <div className="flex items-center space-x-3">
-                      {!rule.is_deleted && (
+                    <div className="flex items-center space-x-3">
+                      {/* {!rule.is_deleted && (
                         <button
                           onClick={() => toggleRuleStatus(rule.id)}
                           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -254,9 +254,9 @@ const RuleManagement = observer(() => {
                             }`}
                           />
                         </button>
-                      )} 
+                      )}  */} 
                       <RuleActionsMenu rule={rule} />
-                    </div> */} 
+                    </div>
                   </td> 
                 </tr> 
               ))}
