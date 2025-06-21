@@ -43,7 +43,7 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
-    };
+    }; 
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
