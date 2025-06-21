@@ -135,7 +135,7 @@ export function useRules() {
     if (!user) {
       throw new Error('User not authenticated');
     }
-console.log("user", user, id)
+
     try {
       const { error } = await supabase
         .from('rules')
@@ -151,10 +151,12 @@ console.log("user", user, id)
       }
 
       // Update local state
-      setRules(prev => prev.map(rule => 
+      setRules(prev => prev.map(rule => {
+        console.log("user", rule)
         rule.id === id 
           ? { ...rule, is_deleted: true, status: 'inactive' as const }
           : rule
+      }
       ));
     } catch (err) {
       console.error('Error soft deleting rule:', err);
