@@ -13,10 +13,12 @@ import {
   ChartBarIcon,
   CpuChipIcon,
   UserIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 
 const RuleManagement = observer(() => {
-  const { rules, loading, error, toggleRuleStatus } = useRules();
+  const { rules, loading, error } = useRules();
 
   const filteredRules = ruleManagementStore.filterRules(rules);
   const tabCounts = ruleManagementStore.getTabCounts(rules);
@@ -114,11 +116,14 @@ const RuleManagement = observer(() => {
           </div>
         </div>
 
-        {/* Rules Table */}
+        {/* Rules Table - Removed max-height and overflow to prevent scrolling issues */}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                  {/* Expand/Collapse column */}
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Source
                 </th>
@@ -147,118 +152,190 @@ const RuleManagement = observer(() => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredRules.map((rule) => (
-                <tr key={rule.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className={`p-2 rounded-lg ${
-                        rule.source === 'AI' ? 'bg-purple-100' : 'bg-blue-100'
-                      }`}>
-                        {rule.source === 'AI' ? (
-                          <CpuChipIcon className="h-5 w-5 text-purple-600" />
+                <>
+                  {/* Main Row */}
+                  <tr key={rule.id} className="hover:bg-gray-50 transition-colors">
+                    {/* Expand/Collapse Button */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <button
+                        onClick={() => ruleManagementStore.toggleRowExpansion(rule.id)}
+                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        {ruleManagementStore.isRowExpanded(rule.id) ? (
+                          <ChevronDownIcon className="h-4 w-4" />
                         ) : (
-                          <UserIcon className="h-5 w-5 text-blue-600" />
+                          <ChevronRightIcon className="h-4 w-4" />
                         )}
-                      </div>
-                      <span className={`ml-2 text-sm font-medium ${
-                        rule.source === 'AI' ? 'text-purple-700' : 'text-blue-700'
-                      }`}>
-                        {rule.source}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-start space-x-3">
-                      <div className={`p-2 rounded-lg ${
-                        rule.severity === 'high' ? 'bg-red-100' :
-                        rule.severity === 'medium' ? 'bg-yellow-100' :
-                        'bg-green-100'
-                      }`}>
-                        {rule.severity === 'high' ? (
-                          <ExclamationTriangleIcon className="h-5 w-5 text-red-600" />
-                        ) : (
-                          <ShieldCheckIcon className="h-5 w-5 text-blue-600" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-sm font-medium text-gray-900 truncate">{rule.name}</h3>
-                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">{rule.description}</p>
-                        {rule.log_only && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 mt-1">
-                            Log Only
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {rule.category}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      rule.status === 'active' ? 'bg-green-100 text-green-800' : 
-                      rule.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {rule.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {rule.catches > 0 ? rule.catches.toLocaleString() : '—'}
-                    </div>
-                    <div className="text-xs text-gray-500">fraud caught</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {rule.false_positives > 0 ? rule.false_positives.toLocaleString() : '—'}
-                    </div>
-                    <div className="text-xs text-gray-500">false flags</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className={`text-sm font-medium ${
-                        rule.effectiveness >= 90 ? 'text-green-600' :
-                        rule.effectiveness >= 70 ? 'text-yellow-600' :
-                        rule.effectiveness > 0 ? 'text-red-600' : 'text-gray-400'
-                      }`}>
-                        {rule.effectiveness > 0 ? `${rule.effectiveness}%` : '—'}
-                      </div>
-                      {rule.effectiveness > 0 && (
-                        <div className={`ml-2 w-16 bg-gray-200 rounded-full h-2`}>
-                          <div
-                            className={`h-2 rounded-full ${
-                              rule.effectiveness >= 90 ? 'bg-green-500' :
-                              rule.effectiveness >= 70 ? 'bg-yellow-500' :
-                              'bg-red-500'
-                            }`}
-                            style={{ width: `${rule.effectiveness}%` }}
-                          />
+                      </button>
+                    </td>
+
+                    {/* Source */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className={`p-2 rounded-lg ${
+                          rule.source === 'AI' ? 'bg-purple-100' : 'bg-blue-100'
+                        }`}>
+                          {rule.source === 'AI' ? (
+                            <CpuChipIcon className="h-5 w-5 text-purple-600" />
+                          ) : (
+                            <UserIcon className="h-5 w-5 text-blue-600" />
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-3">
-                      {/* {!rule.is_deleted && (
-                        <button
-                          onClick={() => toggleRuleStatus(rule.id)}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            rule.status === 'active' ? 'bg-blue-600' : 'bg-gray-200'
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              rule.status === 'active' ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                          />
-                        </button>
-                      )}  */} 
+                        <span className={`ml-2 text-sm font-medium ${
+                          rule.source === 'AI' ? 'text-purple-700' : 'text-blue-700'
+                        }`}>
+                          {rule.source}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Rule */}
+                    <td className="px-6 py-4">
+                      <div className="flex items-start space-x-3">
+                        <div className={`p-2 rounded-lg ${
+                          rule.severity === 'high' ? 'bg-red-100' :
+                          rule.severity === 'medium' ? 'bg-yellow-100' :
+                          'bg-green-100'
+                        }`}>
+                          {rule.severity === 'high' ? (
+                            <ExclamationTriangleIcon className="h-5 w-5 text-red-600" />
+                          ) : (
+                            <ShieldCheckIcon className="h-5 w-5 text-blue-600" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm font-medium text-gray-900 truncate">{rule.name}</h3>
+                          {rule.log_only && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 mt-1">
+                              Log Only
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Category */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {rule.category}
+                      </span>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        rule.status === 'active' ? 'bg-green-100 text-green-800' : 
+                        rule.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {rule.status}
+                      </span>
+                    </td>
+
+                    {/* Catches */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {rule.catches > 0 ? rule.catches.toLocaleString() : '—'}
+                      </div>
+                      <div className="text-xs text-gray-500">fraud caught</div>
+                    </td>
+
+                    {/* False Positives */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {rule.false_positives > 0 ? rule.false_positives.toLocaleString() : '—'}
+                      </div>
+                      <div className="text-xs text-gray-500">false flags</div>
+                    </td>
+
+                    {/* Effectiveness */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className={`text-sm font-medium ${
+                          rule.effectiveness >= 90 ? 'text-green-600' :
+                          rule.effectiveness >= 70 ? 'text-yellow-600' :
+                          rule.effectiveness > 0 ? 'text-red-600' : 'text-gray-400'
+                        }`}>
+                          {rule.effectiveness > 0 ? `${rule.effectiveness}%` : '—'}
+                        </div>
+                        {rule.effectiveness > 0 && (
+                          <div className={`ml-2 w-16 bg-gray-200 rounded-full h-2`}>
+                            <div
+                              className={`h-2 rounded-full ${
+                                rule.effectiveness >= 90 ? 'bg-green-500' :
+                                rule.effectiveness >= 70 ? 'bg-yellow-500' :
+                                'bg-red-500'
+                              }`}
+                              style={{ width: `${rule.effectiveness}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <RuleActionsMenu rule={rule} />
-                    </div>
-                  </td> 
-                </tr> 
+                    </td> 
+                  </tr>
+
+                  {/* Expanded Row Details */}
+                  {ruleManagementStore.isRowExpanded(rule.id) && (
+                    <tr className="bg-gray-50">
+                      <td colSpan={9} className="px-6 py-4">
+                        <div className="space-y-4">
+                          {/* Description */}
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-900 mb-2">Description</h4>
+                            <p className="text-sm text-gray-700">{rule.description}</p>
+                          </div>
+
+                          {/* Rule Condition */}
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-900 mb-2">Rule Condition</h4>
+                            <div className="bg-gray-100 rounded-lg p-3">
+                              <code className="text-sm text-gray-800 font-mono whitespace-pre-wrap">
+                                {rule.condition}
+                              </code>
+                            </div>
+                          </div>
+
+                          {/* Additional Metadata */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                              <span className="font-medium text-gray-900">Severity:</span>
+                              <span className={`ml-1 capitalize ${
+                                rule.severity === 'high' ? 'text-red-600' :
+                                rule.severity === 'medium' ? 'text-yellow-600' :
+                                'text-green-600'
+                              }`}>
+                                {rule.severity}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-900">Created:</span>
+                              <span className="ml-1 text-gray-600">
+                                {new Date(rule.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-900">Updated:</span>
+                              <span className="ml-1 text-gray-600">
+                                {new Date(rule.updated_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-900">Log Only:</span>
+                              <span className={`ml-1 ${rule.log_only ? 'text-blue-600' : 'text-gray-600'}`}>
+                                {rule.log_only ? 'Yes' : 'No'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
             </tbody>
           </table>

@@ -28,6 +28,7 @@ export class RuleManagementStore {
   isDeleteConfirmModalOpen = false;
   editingRule: Rule | null = null;
   deletingRule: Rule | null = null;
+  expandedRows = new Set<string>(); // Track which rows are expanded
 
   constructor() {
     makeAutoObservable(this);
@@ -85,6 +86,23 @@ export class RuleManagementStore {
 
   viewRuleHistory = (id: string) => {
     console.log('Viewing history for rule:', id);
+  }
+
+  // Row expansion methods
+  toggleRowExpansion = (ruleId: string) => {
+    if (this.expandedRows.has(ruleId)) {
+      this.expandedRows.delete(ruleId);
+    } else {
+      this.expandedRows.add(ruleId);
+    }
+  }
+
+  isRowExpanded = (ruleId: string) => {
+    return this.expandedRows.has(ruleId);
+  }
+
+  collapseAllRows = () => {
+    this.expandedRows.clear();
   }
 
   filterRules = (rules: Rule[]) => {

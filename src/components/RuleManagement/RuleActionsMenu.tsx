@@ -32,11 +32,11 @@ interface RuleActionsMenuProps {
 }
 
 const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
-  const { recoverRule , toggleRuleStatus} = useRules();
+  const { recoverRule, toggleRuleStatus, fetchRules } = useRules();
   const [isOpen, setIsOpen] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -68,23 +68,28 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
         setIsRecovering(true);
         try {
           await recoverRule(rule.id);
-          alert('Rule recovered successfully!');
+          // Refresh the table to show changes immediately
+          await fetchRules();
         } catch (error) {
           console.error('Error recovering rule:', error);
           alert('Failed to recover rule: ' + (error instanceof Error ? error.message : 'Unknown error'));
         } finally {
           setIsRecovering(false);
         }
-            break;
-    case 'toggle-status':
-      try {
-        await toggleRuleStatus(rule.id);
-        alert(`Rule has been ${rule.status === 'inactive' ? 'activated' : 'deactivated'} successfully.`);
-      } catch (error) {
-        console.error('Error toggling rule status:', error);
-        alert('Failed to update rule status: ' + (error instanceof Error ? error.message : 'Unknown error'));
-      }
-      break;
+        break;
+      case 'toggle-status':
+        setIsTogglingStatus(true);
+        try {
+          await toggleRuleStatus(rule.id);
+          // Refresh the table to show changes immediately
+          await fetchRules();
+        } catch (error) {
+          console.error('Error toggling rule status:', error);
+          alert('Failed to update rule status: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        } finally {
+          setIsTogglingStatus(false);
+        }
+        break;
     }
   };
 
@@ -93,6 +98,7 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+        disabled={isRecovering || isTogglingStatus}
       >
         <EllipsisVerticalIcon className="h-5 w-5" />
       </button>  
@@ -141,18 +147,18 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
                   View History
                 </button>
 
-<button
-  onClick={() => handleAction('toggle-status')}
-  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
->
-  {rule.status === 'inactive' ? (
-    <ArrowUturnLeftIcon className="h-4 w-4 mr-3" />
-  ) : (
-    <TrashIcon className="h-4 w-4 mr-3 rotate-180" />
-  )}
-  {rule.status === 'inactive' ? 'Activate' : 'Deactivate'}
-</button>
-
+                <button
+                  onClick={() => handleAction('toggle-status')}
+                  disabled={isTogglingStatus}
+                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                >
+                  {rule.status === 'inactive' ? (
+                    <ArrowUturnLeftIcon className="h-4 w-4 mr-3" />
+                  ) : (
+                    <TrashIcon className="h-4 w-4 mr-3 rotate-180" />
+                  )}
+                  {isTogglingStatus ? 'Updating...' : (rule.status === 'inactive' ? 'Activate' : 'Deactivate')}
+                </button>
                 
                 <div className="border-t border-gray-100 my-1"></div>
                 

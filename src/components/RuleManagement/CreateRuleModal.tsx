@@ -4,7 +4,6 @@ import { ruleManagementStore } from './RuleManagementStore';
 import { useRules } from '../../hooks/useRules';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
-
 interface CreateRuleData {
   name: string;
   description: string;
@@ -33,7 +32,7 @@ interface UpdateRuleData extends Partial<CreateRuleData> {
 }
 
 const CreateRuleModal = observer(() => {
-  const { createRule, updateRule } = useRules();
+  const { createRule, updateRule, fetchRules } = useRules();
   const isEditing = !!ruleManagementStore.editingRule;
   const modalTitle = isEditing ? 'Edit Rule' : 'Create New Rule';
   
@@ -144,7 +143,6 @@ const CreateRuleModal = observer(() => {
         };
         
         await updateRule(ruleManagementStore.editingRule.id, updates);
-        alert('Rule updated successfully!');
       } else {
         // Create new rule
         const ruleData: CreateRuleData = {
@@ -159,10 +157,14 @@ const CreateRuleModal = observer(() => {
         };
         
         await createRule(ruleData);
-        alert('Rule created successfully!');
       }
 
+      // Close modal and refresh data
       handleClose();
+      
+      // Refresh the rules list to show changes immediately
+      await fetchRules();
+      
     } catch (error) {
       console.error('Error saving rule:', error);
       alert('Failed to save rule: ' + (error instanceof Error ? error.message : 'Unknown error'));

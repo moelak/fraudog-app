@@ -10,7 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const DeleteConfirmModal = observer(() => {
-  const { softDeleteRule, permanentDeleteRule } = useRules();
+  const { softDeleteRule, permanentDeleteRule, fetchRules } = useRules();
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteType, setDeleteType] = useState<'soft' | 'permanent'>('soft');
 
@@ -23,12 +23,15 @@ const DeleteConfirmModal = observer(() => {
     try {
       if (deleteType === 'soft') {
         await softDeleteRule(rule.id);
-        alert('Rule moved to deleted rules successfully!');
       } else {
         await permanentDeleteRule(rule.id);
-        alert('Rule permanently deleted!');
       }
+      
       ruleManagementStore.closeDeleteConfirmModal();
+      
+      // Refresh the table to show changes immediately
+      await fetchRules();
+      
     } catch (error) {
       console.error('Error deleting rule:', error);
       alert('Failed to delete rule: ' + (error instanceof Error ? error.message : 'Unknown error'));

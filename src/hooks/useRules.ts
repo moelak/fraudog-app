@@ -95,7 +95,7 @@ export function useRules() {
         throw error;
       }
 
-      // Update local state
+      // Update local state immediately
       setRules(prev => [data, ...prev]);
       return data;
     } catch (err) {
@@ -122,7 +122,7 @@ export function useRules() {
         throw error;
       }
 
-      // Update local state
+      // Update local state immediately
       setRules(prev => prev.map(rule => rule.id === id ? data : rule));
       return data;
     } catch (err) {
@@ -144,13 +144,13 @@ export function useRules() {
           status: 'inactive' 
         })
         .eq('id', id)
-        // .eq('user_id', user.id);  
+        .eq('user_id', user.id);
 
       if (error) {
         throw error;
       }
 
-      // Update local state
+      // Update local state immediately
       setRules(prev => prev.map(rule => 
         rule.id === id 
           ? { ...rule, is_deleted: true, status: 'inactive' as const }
@@ -178,7 +178,7 @@ export function useRules() {
         throw error;
       }
 
-      // Update local state
+      // Update local state immediately
       setRules(prev => prev.map(rule => 
         rule.id === id 
           ? { ...rule, is_deleted: false }
@@ -206,7 +206,7 @@ export function useRules() {
         throw error;
       }
 
-      // Update local state
+      // Update local state immediately
       setRules(prev => prev.filter(rule => rule.id !== id));
     } catch (err) {
       console.error('Error permanently deleting rule:', err);
