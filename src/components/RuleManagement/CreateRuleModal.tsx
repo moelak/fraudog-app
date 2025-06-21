@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import { useState, useEffect } from 'react';
 import { ruleManagementStore } from './RuleManagementStore';
-import { useRules, UpdateRuleData } from '../../hooks/useRules';
+import { useRules } from '../../hooks/useRules';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 
@@ -24,6 +24,12 @@ interface FormData {
   condition: string;
   description: string;
   log_only: boolean;
+}
+
+interface UpdateRuleData extends Partial<CreateRuleData> {
+  catches?: number;
+  false_positives?: number;
+  effectiveness?: number;
 }
 
 const CreateRuleModal = observer(() => {
