@@ -191,7 +191,7 @@ const RuleManagement = observer(() => {
 
                     {/* Rule */}
                     <td className="px-6 py-4">
-                      <div className="flex items-start space-x-3">
+                      <div className="flex items-center space-x-3">
                         <div className={`p-2 rounded-lg ${
                           rule.severity === 'high' ? 'bg-red-100' :
                           rule.severity === 'medium' ? 'bg-yellow-100' :
