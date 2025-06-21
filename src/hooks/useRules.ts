@@ -135,7 +135,7 @@ export function useRules() {
     if (!user) {
       throw new Error('User not authenticated');
     }
-console.log("user", user)
+console.log("user", user, id)
     try {
       const { error } = await supabase
         .from('rules')
