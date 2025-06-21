@@ -149,14 +149,16 @@ export function useRules() {
       if (error) {
         throw error;
       }
-
-      // Update local state
-      setRules(prev => prev.map(rule => {
-        console.log("user", rule)
+ console.log("user", prev => prev.map(rule => 
         rule.id === id 
           ? { ...rule, is_deleted: true, status: 'inactive' as const }
           : rule
-      }
+      ))
+      // Update local state
+      setRules(prev => prev.map(rule => 
+        rule.id === id 
+          ? { ...rule, is_deleted: true, status: 'inactive' as const }
+          : rule
       ));
     } catch (err) {
       console.error('Error soft deleting rule:', err);
