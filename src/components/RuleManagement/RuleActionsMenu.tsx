@@ -141,7 +141,7 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
                   View History
                 </button>
 
-                <button
+<button
   onClick={() => handleAction('toggle-status')}
   className="flex items-center w-full px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors"
 >
