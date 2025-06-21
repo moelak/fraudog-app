@@ -141,11 +141,11 @@ export function useRules() {
         .from('rules')
         .update({ 
           is_deleted: true, 
-          status: 'inactive' 
+   
         })
         .eq('id', id)
         .eq('user_id', user.id); 
- console.log("user=>>>", error)
+
       if (error) {
         throw error;
       }
