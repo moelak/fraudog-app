@@ -32,10 +32,11 @@ interface RuleActionsMenuProps {
 }
 
 const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
-  const { recoverRule } = useRules();
+  const { recoverRule , toggleRuleStatus} = useRules();
   const [isOpen, setIsOpen] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
