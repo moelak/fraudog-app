@@ -117,7 +117,7 @@ const RuleManagement = observer(() => {
         </div>
 
         {/* Rules Table - Removed max-height and overflow to prevent scrolling issues */}
-        <div className="overflow-x-clip">
+        <div className="overflow-x-auto h-[600px]">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
