@@ -145,11 +145,11 @@ export function useRules() {
         })
         .eq('id', id)
         .eq('user_id', user.id); 
-
+ console.log("user=>>>", error)
       if (error) {
         throw error;
       }
- console.log("user=>>>")
+
       // Update local state
       setRules(prev => prev.map(rule => 
         rule.id === id 
