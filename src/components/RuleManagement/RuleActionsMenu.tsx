@@ -139,6 +139,14 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
                   <ClockIcon className="h-4 w-4 mr-3" />
                   View History
                 </button>
+
+                <button
+  onClick={() => handleAction('toggle-status')}
+  className="flex items-center w-full px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors"
+>
+  <PencilIcon className="h-4 w-4 mr-3" />
+  {rule.status === 'inactive' ? 'Activate' : 'Deactivate'}
+</button>
                 
                 <div className="border-t border-gray-100 my-1"></div>
                 
