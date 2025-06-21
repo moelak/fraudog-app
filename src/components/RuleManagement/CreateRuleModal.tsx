@@ -1,8 +1,20 @@
 import { observer } from 'mobx-react-lite';
 import { useState, useEffect } from 'react';
 import { ruleManagementStore } from './RuleManagementStore';
-import { useRules, CreateRuleData, UpdateRuleData } from '../../hooks/useRules';
+import { useRules, UpdateRuleData } from '../../hooks/useRules';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+
+
+interface CreateRuleData {
+  name: string;
+  description: string;
+  category: string;
+  condition: string;
+  status: 'active' | 'inactive' | 'warning';
+  severity: 'low' | 'medium' | 'high';
+  log_only: boolean;
+  source?: 'AI' | 'User';
+}
 
 interface FormData {
   name: string;
