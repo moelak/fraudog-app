@@ -40,6 +40,7 @@ export interface UpdateRuleData extends Partial<CreateRuleData> {
 
 export function useRules() {
   const { user } = useAuth();
+
   const [rules, setRules] = useState<Rule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -130,48 +131,36 @@ export function useRules() {
     }
   };
 
- import { useAuth } from '@clerk/clerk-react'; // if using Clerk
+  const softDeleteRule = async (id: string): Promise<void> => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
 
-const { getToken } = useAuth(); // call this in your component scope
+    try {
+      const { error } = await supabase
+        .from('rules')
+        .update({ 
+          is_deleted: true, 
+          status: 'inactive' 
+        })
+        .eq('id', id)
+        .eq('user_id', user.id);
 
-const softDeleteRule = async (id: string): Promise<void> => {
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
+      if (error) {
+        throw error;
+      }
 
-  try {
-    // 🔑 Set Supabase session using Clerk token
-    const token = await getToken({ template: 'supabase' });
-    await supabase.auth.setSession({
-      access_token: token,
-      refresh_token: token, // Clerk doesn't issue a refresh token
-    });
-
-    // 🔁 Proceed with the update
-    const { error } = await supabase
-      .from('rules')
-      .update({
-        is_deleted: true,
-        status: 'inactive',
-      })
-      .eq('id', id);
-
-    if (error) throw error;
-
-    // ✅ Update local state
-    setRules(prev =>
-      prev.map(rule =>
-        rule.id === id
+      // Update local state
+      setRules(prev => prev.map(rule => 
+        rule.id === id 
           ? { ...rule, is_deleted: true, status: 'inactive' as const }
           : rule
-      )
-    );
-  } catch (err) {
-    console.error('Error soft deleting rule:', err);
-    throw err;
-  }
-};
-
+      ));
+    } catch (err) {
+      console.error('Error soft deleting rule:', err);
+      throw err;
+    }
+  };
 
   const recoverRule = async (id: string): Promise<void> => {
     if (!user) {
