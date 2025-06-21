@@ -74,7 +74,16 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
         } finally {
           setIsRecovering(false);
         }
-        break;
+            break;
+    case 'toggle-status':
+      try {
+        await toggleRuleStatus(rule.id);
+        alert(`Rule has been ${rule.status === 'inactive' ? 'activated' : 'deactivated'} successfully.`);
+      } catch (error) {
+        console.error('Error toggling rule status:', error);
+        alert('Failed to update rule status: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      }
+      break;
     }
   };
 
