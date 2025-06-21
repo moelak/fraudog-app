@@ -1,7 +1,9 @@
 import { observer } from 'mobx-react-lite';
 import { ruleManagementStore } from './RuleManagementStore';
+import { useRules } from '../../hooks/useRules';
 import CreateRuleModal from './CreateRuleModal';
 import ChargebackAnalysisModal from './ChargebackAnalysisModal';
+import DeleteConfirmModal from './DeleteConfirmModal';
 import RuleActionsMenu from './RuleActionsMenu';
 import {
   PlusIcon,
@@ -9,14 +11,39 @@ import {
   ExclamationTriangleIcon,
   MagnifyingGlassIcon,
   ChartBarIcon,
+  CpuChipIcon,
+  UserIcon,
 } from '@heroicons/react/24/outline';
 
 const RuleManagement = observer(() => {
+  const { rules, loading, error, toggleRuleStatus } = useRules();
+
+  const filteredRules = ruleManagementStore.filterRules(rules);
+  const tabCounts = ruleManagementStore.getTabCounts(rules);
+
   const tabs = [
-    { id: 'active' as const, name: 'Active Rules', count: ruleManagementStore.activeRulesCount },
-    { id: 'all' as const, name: 'All Rules', count: ruleManagementStore.rules.length },
-    { id: 'attention' as const, name: 'Needs Attention', count: ruleManagementStore.needsAttentionCount },
+    { id: 'active' as const, name: 'Active Rules', count: tabCounts.active },
+    { id: 'all' as const, name: 'All Rules', count: tabCounts.all },
+    { id: 'attention' as const, name: 'Needs Attention', count: tabCounts.attention },
+    { id: 'deleted' as const, name: 'Deleted Rules', count: tabCounts.deleted },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2 text-gray-600">Loading rules...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-700">Error loading rules: {error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -93,6 +120,9 @@ const RuleManagement = observer(() => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Source
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Rule
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -116,8 +146,26 @@ const RuleManagement = observer(() => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {ruleManagementStore.filteredRules.map((rule) => (
+              {filteredRules.map((rule) => (
                 <tr key={rule.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className={`p-2 rounded-lg ${
+                        rule.source === 'AI' ? 'bg-purple-100' : 'bg-blue-100'
+                      }`}>
+                        {rule.source === 'AI' ? (
+                          <CpuChipIcon className="h-5 w-5 text-purple-600" />
+                        ) : (
+                          <UserIcon className="h-5 w-5 text-blue-600" />
+                        )}
+                      </div>
+                      <span className={`ml-2 text-sm font-medium ${
+                        rule.source === 'AI' ? 'text-purple-700' : 'text-blue-700'
+                      }`}>
+                        {rule.source}
+                      </span>
+                    </div>
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-start space-x-3">
                       <div className={`p-2 rounded-lg ${
@@ -134,6 +182,11 @@ const RuleManagement = observer(() => {
                       <div className="min-w-0 flex-1">
                         <h3 className="text-sm font-medium text-gray-900 truncate">{rule.name}</h3>
                         <p className="text-sm text-gray-500 mt-1 line-clamp-2">{rule.description}</p>
+                        {rule.log_only && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 mt-1">
+                            Log Only
+                          </span>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -152,11 +205,15 @@ const RuleManagement = observer(() => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{rule.catches.toLocaleString()}</div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {rule.catches > 0 ? rule.catches.toLocaleString() : '—'}
+                    </div>
                     <div className="text-xs text-gray-500">fraud caught</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{rule.falsePositives.toLocaleString()}</div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {rule.false_positives > 0 ? rule.false_positives.toLocaleString() : '—'}
+                    </div>
                     <div className="text-xs text-gray-500">false flags</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -164,36 +221,40 @@ const RuleManagement = observer(() => {
                       <div className={`text-sm font-medium ${
                         rule.effectiveness >= 90 ? 'text-green-600' :
                         rule.effectiveness >= 70 ? 'text-yellow-600' :
-                        'text-red-600'
+                        rule.effectiveness > 0 ? 'text-red-600' : 'text-gray-400'
                       }`}>
-                        {rule.effectiveness}%
+                        {rule.effectiveness > 0 ? `${rule.effectiveness}%` : '—'}
                       </div>
-                      <div className={`ml-2 w-16 bg-gray-200 rounded-full h-2`}>
-                        <div
-                          className={`h-2 rounded-full ${
-                            rule.effectiveness >= 90 ? 'bg-green-500' :
-                            rule.effectiveness >= 70 ? 'bg-yellow-500' :
-                            'bg-red-500'
-                          }`}
-                          style={{ width: `${rule.effectiveness}%` }}
-                        />
-                      </div>
+                      {rule.effectiveness > 0 && (
+                        <div className={`ml-2 w-16 bg-gray-200 rounded-full h-2`}>
+                          <div
+                            className={`h-2 rounded-full ${
+                              rule.effectiveness >= 90 ? 'bg-green-500' :
+                              rule.effectiveness >= 70 ? 'bg-yellow-500' :
+                              'bg-red-500'
+                            }`}
+                            style={{ width: `${rule.effectiveness}%` }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-3">
-                      <button
-                        onClick={() => ruleManagementStore.toggleRuleStatus(rule.id)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          rule.status === 'active' ? 'bg-blue-600' : 'bg-gray-200'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            rule.status === 'active' ? 'translate-x-6' : 'translate-x-1'
+                      {!rule.is_deleted && (
+                        <button
+                          onClick={() => toggleRuleStatus(rule.id)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            rule.status === 'active' ? 'bg-blue-600' : 'bg-gray-200'
                           }`}
-                        />
-                      </button>
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              rule.status === 'active' ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      )}
                       <RuleActionsMenu rule={rule} />
                     </div>
                   </td>
@@ -204,19 +265,22 @@ const RuleManagement = observer(() => {
         </div>
 
         {/* Empty State */}
-        {ruleManagementStore.filteredRules.length === 0 && (
+        {filteredRules.length === 0 && (
           <div className="text-center py-12">
             <ShieldCheckIcon className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">
-              {ruleManagementStore.searchQuery ? 'No rules found' : 'No rules'}
+              {ruleManagementStore.searchQuery ? 'No rules found' : 
+               ruleManagementStore.activeTab === 'deleted' ? 'No deleted rules' : 'No rules'}
             </h3>
             <p className="mt-1 text-sm text-gray-500">
               {ruleManagementStore.searchQuery 
                 ? 'Try adjusting your search terms or filters.'
+                : ruleManagementStore.activeTab === 'deleted'
+                ? 'Deleted rules will appear here when you delete them.'
                 : 'Get started by creating a new fraud detection rule.'
               }
             </p>
-            {!ruleManagementStore.searchQuery && (
+            {!ruleManagementStore.searchQuery && ruleManagementStore.activeTab !== 'deleted' && (
               <div className="mt-6">
                 <button
                   onClick={ruleManagementStore.openCreateModal}
@@ -234,6 +298,7 @@ const RuleManagement = observer(() => {
       {/* Modals */}
       <CreateRuleModal />
       <ChargebackAnalysisModal />
+      <DeleteConfirmModal />
     </div>
   );
 });
