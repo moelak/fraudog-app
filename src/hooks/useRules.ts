@@ -40,6 +40,7 @@ export interface UpdateRuleData extends Partial<CreateRuleData> {
 
 export function useRules() {
   const { user } = useAuth();
+  console.log('Supabase user ID:', user);
   const [rules, setRules] = useState<Rule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
