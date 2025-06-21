@@ -80,12 +80,12 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
 
   return (
     <div className="relative" ref={menuRef}>
-      <button
+      {/* <button
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
       >
         <EllipsisVerticalIcon className="h-5 w-5" />
-      </button>
+      </button> */} 
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
