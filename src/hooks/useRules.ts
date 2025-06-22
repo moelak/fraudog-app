@@ -137,16 +137,34 @@ export function useRules() {
     }
 
     try {
+      // First, let's try to fetch the rule to make sure it exists and belongs to the user
+      const { data: existingRule, error: fetchError } = await supabase
+        .from('rules')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (fetchError) {
+        throw new Error(`Rule not found or access denied: ${fetchError.message}`);
+      }
+
+      if (!existingRule) {
+        throw new Error('Rule not found or you do not have permission to delete it');
+      }
+
+      // Now perform the update with explicit user_id check
       const { error } = await supabase
         .from('rules')
         .update({ 
           is_deleted: true, 
-          status: 'inactive' 
+          status: 'inactive' as const
         })
         .eq('id', id)
-        .eq('user_id', user.id); // Restored the user_id check for RLS compliance
+        .eq('user_id', user.id);
 
       if (error) {
+        console.error('Soft delete error details:', error);
         throw error;
       }
 
