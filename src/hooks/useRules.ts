@@ -144,7 +144,7 @@ export function useRules() {
           status: 'inactive' 
         })
         .eq('id', id)
-        .eq('user_id', user.id);
+  
 
       if (error) {
         throw error;
