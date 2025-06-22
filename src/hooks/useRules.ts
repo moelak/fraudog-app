@@ -144,7 +144,7 @@ export function useRules() {
           status: 'inactive' 
         })
         .eq('id', id)
-  
+        .eq('user_id', user.id); // Restored the user_id check for RLS compliance
 
       if (error) {
         throw error;
