@@ -15,6 +15,7 @@ import AIChat from '../AIChat/AIChat';
 import AIChatButton from '../AIChat/AIChatButton';
 import AccountMenu from '../Auth/AccountMenu';
 import AccountManagementModal from '../Auth/AccountManagementModal';
+import BoltBadge from '../BoltBadge/BoltBadge';
 import { dashboardStore } from './DashboardStore';
 
 const Dashboard = observer(() => {
@@ -68,6 +69,11 @@ const Dashboard = observer(() => {
 							);
 						})}
 					</nav>
+					
+					{/* Bolt Badge in Sidebar Footer */}
+					<div className='p-4 border-t border-gray-200'>
+						<BoltBadge variant="minimal" size="sm" className="w-full justify-center" />
+					</div>
 				</div>
 			</div>
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import AuthModal from '../Auth/AuthModal';
+import BoltBadge from '../BoltBadge/BoltBadge';
 import { observer } from 'mobx-react-lite';
 
 const LandingPage = observer(() => {
@@ -496,19 +497,25 @@ const LandingPage = observer(() => {
 
 				{/* Footer */}
 				<footer className='py-12 border-t border-purple-500/20'>
-					<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center'>
-						<div className='text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent mb-4'>Fraud-dog</div>
-						<p className='text-gray-400 mb-6'>Protecting your business with intelligent fraud detection</p>
-						<div className='flex justify-center space-x-6 text-sm text-gray-400'>
-							<a href='#' className='hover:text-purple-400 transition-colors'>
-								Privacy Policy
-							</a>
-							<a href='#' className='hover:text-purple-400 transition-colors'>
-								Terms of Service
-							</a>
-							<a href='#' className='hover:text-purple-400 transition-colors'>
-								Contact
-							</a>
+					<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+						<div className='flex flex-col items-center text-center space-y-6'>
+							<div className='text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent'>Fraud-dog</div>
+							<p className='text-gray-400'>Protecting your business with intelligent fraud detection</p>
+							
+							{/* Built with Bolt Badge */}
+							<BoltBadge variant="minimal" size="sm" />
+							
+							<div className='flex justify-center space-x-6 text-sm text-gray-400'>
+								<a href='#' className='hover:text-purple-400 transition-colors'>
+									Privacy Policy
+								</a>
+								<a href='#' className='hover:text-purple-400 transition-colors'>
+									Terms of Service
+								</a>
+								<a href='#' className='hover:text-purple-400 transition-colors'>
+									Contact
+								</a>
+							</div>
 						</div>
 					</div>
 				</footer>
