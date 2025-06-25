@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
+import { ruleManagementStore } from '../components/RuleManagement/RuleManagementStore';
 
 export interface Rule {
   id: string;
@@ -67,6 +68,7 @@ export function useRules() {
       }
 
       setRules(data || []);
+      ruleManagementStore.setRules(data || []);
     } catch (err) {
       console.error('Error fetching rules:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch rules');
@@ -135,7 +137,7 @@ export function useRules() {
     if (!user) {
       throw new Error('User not authenticated');
     }
-
+		
     try {
       // First, let's try to fetch the rule to make sure it exists and belongs to the user
       const { data: existingRule, error: fetchError } = await supabase
@@ -161,7 +163,7 @@ export function useRules() {
           status: 'inactive' as const
         })
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id); 
 
       if (error) {
         console.error('Soft delete error details:', error);

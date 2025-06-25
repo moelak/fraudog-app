@@ -29,10 +29,15 @@ export class RuleManagementStore {
   editingRule: Rule | null = null;
   deletingRule: Rule | null = null;
   expandedRows = new Set<string>(); // Track which rows are expanded
+  rules: Rule[] = [];
 
   constructor() {
     makeAutoObservable(this);
   }
+
+setRules = (newRules: Rule[]) => {
+  this.rules = newRules;
+}
 
   setActiveTab = (tab: 'active' | 'all' | 'attention' | 'deleted') => {
     this.activeTab = tab;
