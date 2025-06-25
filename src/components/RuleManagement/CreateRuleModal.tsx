@@ -9,7 +9,7 @@ interface CreateRuleData {
   description: string;
   category: string;
   condition: string;
-  status: 'active' | 'inactive' | 'warning' | 'in_progress';
+  status: 'active' | 'inactive' | 'warning';
   severity: 'low' | 'medium' | 'high';
   log_only: boolean;
   source?: 'AI' | 'User';
@@ -138,7 +138,7 @@ const CreateRuleModal = observer(() => {
           description: formData.description,
           category: formData.category,
           condition: formData.condition,
-          status: formData.status,
+          status: formData.status as 'active' | 'inactive' | 'warning',
           severity: formData.severity,
           log_only: formData.log_only
         };
@@ -151,7 +151,7 @@ const CreateRuleModal = observer(() => {
           description: formData.description,
           category: formData.category,
           condition: formData.condition,
-          status: formData.status,
+          status: formData.status as 'active' | 'inactive' | 'warning',
           severity: formData.severity,
           log_only: formData.log_only,
           source: 'User'
@@ -202,8 +202,11 @@ const CreateRuleModal = observer(() => {
 
   if (!isOpen) return null;
 
+  // Use higher z-index when editing from Generated Rules to appear above Chargeback Analysis modal
+  const zIndexClass = isEditingFromGenerated ? 'z-[60]' : 'z-50';
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className={`fixed inset-0 ${zIndexClass} overflow-y-auto`}>
       <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         {/* Background overlay */}
         <div 
