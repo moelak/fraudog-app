@@ -143,13 +143,14 @@ channel.subscribe((status) => {
 
     subscriptionRef.current = channel;
     // Cleanup function
-return () => {
+   return () => {
   if (subscriptionRef.current) {
     supabase.removeChannel(subscriptionRef.current);
     subscriptionRef.current = null;
   }
 };
 
+  }, [user?.id]); // Only depend on user.id to avoid unnecessary re-subscriptions
 
   const createRule = async (ruleData: CreateRuleData): Promise<Rule | null> => {
     if (!user) {
