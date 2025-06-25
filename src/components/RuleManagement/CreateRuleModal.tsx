@@ -9,7 +9,7 @@ interface CreateRuleData {
   description: string;
   category: string;
   condition: string;
-  status: 'active' | 'inactive' | 'warning';
+  status: 'active' | 'inactive' | 'warning' | 'in_progress';
   severity: 'low' | 'medium' | 'high';
   log_only: boolean;
   source?: 'AI' | 'User';
@@ -18,7 +18,7 @@ interface CreateRuleData {
 interface FormData {
   name: string;
   category: string;
-  status: 'active' | 'inactive' | 'warning';
+  status: 'active' | 'inactive' | 'warning' | 'in_progress';
   severity: 'low' | 'medium' | 'high';
   condition: string;
   description: string;
@@ -34,6 +34,7 @@ interface UpdateRuleData extends Partial<CreateRuleData> {
 const CreateRuleModal = observer(() => {
   const { createRule, updateRule } = useRules();
   const isEditing = !!ruleManagementStore.editingRule;
+  const isEditingFromGenerated = ruleManagementStore.isEditingFromGenerated;
   const modalTitle = isEditing ? 'Edit Rule' : 'Create New Rule';
   
   const [formData, setFormData] = useState<FormData>({
@@ -61,7 +62,7 @@ const CreateRuleModal = observer(() => {
       setFormData({
         name: rule.name,
         category: rule.category,
-        status: rule.status,
+        status: ['active', 'inactive', 'warning'].includes(rule.status) ? rule.status as 'active' | 'inactive' | 'warning' : 'active',
         severity: rule.severity,
         condition: rule.condition,
         description: rule.description,
@@ -271,24 +272,26 @@ const CreateRuleModal = observer(() => {
                     )}
                   </div>
 
-                  {/* Status */}
-                  <div>
-                    <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                      Status *
-                    </label>
-                    <select
-                      id="status"
-                      value={formData.status}
-                      onChange={(e) => handleInputChange('status', e.target.value as 'active' | 'inactive' | 'warning')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      {statusOptions.map(status => (
-                        <option key={status} value={status}>
-                          {status.charAt(0).toUpperCase() + status.slice(1)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  {/* Status - Hide when editing from Generated Rules */}
+                  {!isEditingFromGenerated && (
+                    <div>
+                      <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                        Status *
+                      </label>
+                      <select
+                        id="status"
+                        value={formData.status}
+                        onChange={(e) => handleInputChange('status', e.target.value as 'active' | 'inactive' | 'warning')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        {statusOptions.map(status => (
+                          <option key={status} value={status}>
+                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   {/* Severity */}
                   <div>

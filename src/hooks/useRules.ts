@@ -9,7 +9,7 @@ export interface Rule {
   description: string;
   category: string;
   condition: string;
-  status: 'active' | 'inactive' | 'warning';
+  status: 'active' | 'inactive' | 'warning' | 'in_progress';
   severity: 'low' | 'medium' | 'high';
   log_only: boolean;
   catches: number;
@@ -27,7 +27,7 @@ export interface CreateRuleData {
   description: string;
   category: string;
   condition: string;
-  status: 'active' | 'inactive' | 'warning';
+  status: 'active' | 'inactive' | 'warning' | 'in_progress';
   severity: 'low' | 'medium' | 'high';
   log_only: boolean;
   source?: 'AI' | 'User';
@@ -76,6 +76,52 @@ export function useRules() {
       setLoading(false);
     }
   };
+
+  // Set up WebSocket subscription for real-time updates
+  useEffect(() => {
+    if (!user) return;
+
+    const subscription = supabase
+      .channel('rules_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'rules',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Real-time rule change:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            const newRule = payload.new as Rule;
+            if (newRule.status === 'in_progress') {
+              ruleManagementStore.addInProgressRule(newRule);
+            } else {
+              // Refresh all rules to ensure consistency
+              fetchRules();
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedRule = payload.new as Rule;
+            if (updatedRule.status === 'in_progress') {
+              ruleManagementStore.updateInProgressRule(updatedRule);
+            } else {
+              // Rule status changed from in_progress, refresh all rules
+              fetchRules();
+            }
+          } else if (payload.eventType === 'DELETE') {
+            // Refresh all rules
+            fetchRules();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [user]);
 
   const createRule = async (ruleData: CreateRuleData): Promise<Rule | null> => {
     if (!user) {
@@ -131,6 +177,10 @@ export function useRules() {
       console.error('Error updating rule:', err);
       throw err;
     }
+  };
+
+  const implementRule = async (id: string): Promise<void> => {
+    await updateRule(id, { status: 'active' });
   };
 
   const softDeleteRule = async (id: string): Promise<void> => {
@@ -238,20 +288,21 @@ export function useRules() {
     fetchRules();
   }, [user]);
 
-  // Filter functions
-  const activeRules = rules.filter(rule => !rule.is_deleted && rule.status === 'active');
-  const allRules = rules.filter(rule => !rule.is_deleted);
-  const needsAttentionRules = rules.filter(rule => 
+  // Filter functions - only include allowed statuses
+  const allowedRules = rules.filter(rule => ['active', 'inactive', 'warning'].includes(rule.status));
+  const activeRules = allowedRules.filter(rule => !rule.is_deleted && rule.status === 'active');
+  const allRules = allowedRules.filter(rule => !rule.is_deleted);
+  const needsAttentionRules = allowedRules.filter(rule => 
     !rule.is_deleted && (
       rule.status === 'warning' || 
       rule.effectiveness < 70 || 
       rule.false_positives > 100
     )
   );
-  const deletedRules = rules.filter(rule => rule.is_deleted);
+  const deletedRules = allowedRules.filter(rule => rule.is_deleted);
 
   return {
-    rules,
+    rules: allowedRules,
     activeRules,
     allRules,
     needsAttentionRules,
@@ -261,6 +312,7 @@ export function useRules() {
     fetchRules,
     createRule,
     updateRule,
+    implementRule,
     softDeleteRule,
     recoverRule,
     permanentDeleteRule,
