@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
 import { ruleManagementStore } from '../components/RuleManagement/RuleManagementStore';
@@ -41,7 +41,7 @@ export interface UpdateRuleData extends Partial<CreateRuleData> {
 
 export function useRules() {
   const { user } = useAuth();
-
+  const subscriptionRef = useRef<any>(null);
   const [rules, setRules] = useState<Rule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,10 +79,25 @@ export function useRules() {
 
   // Set up WebSocket subscription for real-time updates
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      // Clean up existing subscription if user logs out
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
+      return;
+    }
 
-    const subscription = supabase
-      .channel('rules_changes')
+    // Clean up existing subscription before creating a new one
+    if (subscriptionRef.current) {
+      subscriptionRef.current.unsubscribe();
+      subscriptionRef.current = null;
+    }
+
+    // Create new subscription
+    const channel = supabase.channel(`rules_changes_${user.id}`);
+    
+    subscriptionRef.current = channel
       .on(
         'postgres_changes',
         {
@@ -116,12 +131,18 @@ export function useRules() {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
 
+    // Cleanup function
     return () => {
-      subscription.unsubscribe();
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
     };
-  }, [user]);
+  }, [user?.id]); // Only depend on user.id to avoid unnecessary re-subscriptions
 
   const createRule = async (ruleData: CreateRuleData): Promise<Rule | null> => {
     if (!user) {
