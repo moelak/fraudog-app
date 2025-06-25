@@ -30,7 +30,7 @@ const BoltBadge: React.FC<BoltBadgeProps> = ({
       rel="noopener noreferrer"
       className={`
         inline-flex items-center gap-2 rounded-full font-medium transition-all duration-200 
-        hover:scale-105 hover:shadow-lg group cursor-pointer
+        hover:scale-105 hover:shadow-lg group cursor-pointer z-40
         ${sizeClasses[size]} 
         ${variantClasses[variant]}
         ${className}
