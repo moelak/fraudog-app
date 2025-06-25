@@ -136,10 +136,10 @@ if (subscriptionRef.current) {
           }
         }
       )
-      .subscribe((status) => {
-        console.log('Subscription status:', status);
-      });
-
+    
+channel.subscribe((status) => {
+  console.log('Subscription status:', status);
+});
     // Cleanup function
     return () => {
       if (subscriptionRef.current) {
