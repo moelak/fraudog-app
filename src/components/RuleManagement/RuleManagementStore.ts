@@ -7,7 +7,7 @@ export interface Rule {
   category: string;
   condition: string;
   severity: 'low' | 'medium' | 'high';
-  status: 'active' | 'inactive' | 'warning' | 'in_progress';
+  status: 'active' | 'inactive' | 'warning' | 'in progress';
   log_only: boolean;
   catches: number;
   false_positives: number;
@@ -30,7 +30,7 @@ export class RuleManagementStore {
   deletingRule: Rule | null = null;
   expandedRows = new Set<string>(); // Track which rows are expanded
   rules: Rule[] = [];
-  inProgressRules: Rule[] = []; // Track in_progress rules separately
+  inProgressRules: Rule[] = []; // Track in progress rules separately
   isEditingFromGenerated = false; // Track if editing from Generated Rules section
 
   constructor() {
@@ -38,14 +38,14 @@ export class RuleManagementStore {
   }
 
 setRules = (newRules: Rule[]) => {
-  // Filter out rules with status 'in_progress' for main rules display
+  // Filter out rules with status 'in progress' for main rules display
   this.rules = newRules.filter(rule => ['active', 'inactive', 'warning'].includes(rule.status));
-  // Keep in_progress rules separate
-  this.inProgressRules = newRules.filter(rule => rule.status === 'in_progress');
+  // Keep in progress rules separate
+  this.inProgressRules = newRules.filter(rule => rule.status === 'in progress');
 }
 
 addInProgressRule = (rule: Rule) => {
-  if (rule.status === 'in_progress') {
+  if (rule.status === 'in progress') {
     this.inProgressRules.push(rule);
   }
 }
@@ -57,10 +57,10 @@ removeInProgressRule = (ruleId: string) => {
 updateInProgressRule = (updatedRule: Rule) => {
   const index = this.inProgressRules.findIndex(rule => rule.id === updatedRule.id);
   if (index !== -1) {
-    if (updatedRule.status === 'in_progress') {
+    if (updatedRule.status === 'in progress') {
       this.inProgressRules[index] = updatedRule;
     } else {
-      // Rule status changed from in_progress, remove from this list
+      // Rule status changed from in progress, remove from this list
       this.inProgressRules.splice(index, 1);
     }
   }
