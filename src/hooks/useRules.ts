@@ -140,6 +140,8 @@ if (subscriptionRef.current) {
 channel.subscribe((status) => {
   console.log('Subscription status:', status);
 });
+
+    subscriptionRef.current = channel;
     // Cleanup function
     return () => {
       if (subscriptionRef.current) {
