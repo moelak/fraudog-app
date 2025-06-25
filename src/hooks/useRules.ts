@@ -9,7 +9,7 @@ export interface Rule {
   description: string;
   category: string;
   condition: string;
-  status: 'active' | 'inactive' | 'warning' | 'in_progress';
+  status: 'active' | 'inactive' | 'warning' | 'in progress';
   severity: 'low' | 'medium' | 'high';
   log_only: boolean;
   catches: number;
@@ -27,7 +27,7 @@ export interface CreateRuleData {
   description: string;
   category: string;
   condition: string;
-  status: 'active' | 'inactive' | 'warning' | 'in_progress';
+  status: 'active' | 'inactive' | 'warning' | 'in progress';
   severity: 'low' | 'medium' | 'high';
   log_only: boolean;
   source?: 'AI' | 'User';
@@ -96,7 +96,7 @@ export function useRules() {
           
           if (payload.eventType === 'INSERT') {
             const newRule = payload.new as Rule;
-            if (newRule.status === 'in_progress') {
+            if (newRule.status === 'in progress') {
               ruleManagementStore.addInProgressRule(newRule);
             } else {
               // Refresh all rules to ensure consistency
@@ -104,10 +104,10 @@ export function useRules() {
             }
           } else if (payload.eventType === 'UPDATE') {
             const updatedRule = payload.new as Rule;
-            if (updatedRule.status === 'in_progress') {
+            if (updatedRule.status === 'in progress') {
               ruleManagementStore.updateInProgressRule(updatedRule);
             } else {
-              // Rule status changed from in_progress, refresh all rules
+              // Rule status changed from in progress, refresh all rules
               fetchRules();
             }
           } else if (payload.eventType === 'DELETE') {
