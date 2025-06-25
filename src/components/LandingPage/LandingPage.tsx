@@ -496,7 +496,7 @@ const LandingPage = observer(() => {
 				</section>
 
 				{/* Footer */}
-				<footer className='py-12 border-t border-purple-500/20 zIndex-1'>
+				<footer className='py-12 border-t border-purple-500/20 z-1'>
 					<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
 						<div className='flex flex-col items-center text-center space-y-6'>
 							<div className='text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent'>Fraud-dog</div>
