@@ -95,9 +95,14 @@ export function useRules() {
     }
 
     // Create new subscription
-    const channel = supabase.channel(`rules_changes_${user.id}`);
+if (subscriptionRef.current) {
+  supabase.removeChannel(subscriptionRef.current);
+  subscriptionRef.current = null;
+}
+
     
-    subscriptionRef.current = channel
+  const channel = supabase
+  .channel(`rules_changes_${user.id}`)
       .on(
         'postgres_changes',
         {
