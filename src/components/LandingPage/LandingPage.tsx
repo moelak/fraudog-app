@@ -409,7 +409,7 @@ const LandingPage = observer(() => {
 									</div>
 								</div>
 
-								{/* Implementation Time */}
+								{/* Implementation Time */} 
 								<div>
 									<div className='flex justify-between text-sm font-medium mb-1'>
 										<span>Implementation Time</span>
@@ -496,9 +496,8 @@ const LandingPage = observer(() => {
 				</section>
 
 				{/* Footer */}
-			 <footer className="py-20 min-h-[80vh] relative ">
-										<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center'>
-
+				<footer className='py-12 border-t border-purple-500/20'>
+					<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
 						<div className='flex flex-col items-center text-center space-y-6'>
 							<div className='text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent'>Fraud-dog</div>
 							<p className='text-gray-400'>Protecting your business with intelligent fraud detection</p>
