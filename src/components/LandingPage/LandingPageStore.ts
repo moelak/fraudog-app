@@ -68,7 +68,6 @@ export class LandingPageStore {
   }
 
 
-
   updateHeroDescription(description: string) {
     this.heroDescription = description;
   }

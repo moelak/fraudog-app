@@ -1,32 +1,86 @@
 import { observer } from 'mobx-react-lite';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ruleManagementStore } from './RuleManagementStore';
+import { useRules } from '../../hooks/useRules';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+
+interface CreateRuleData {
+  name: string;
+  description: string;
+  category: string;
+  condition: string;
+  status: 'active' | 'inactive' | 'warning';
+  severity: 'low' | 'medium' | 'high';
+  log_only: boolean;
+  source?: 'AI' | 'User';
+}
 
 interface FormData {
   name: string;
   category: string;
   status: 'active' | 'inactive' | 'warning';
+  severity: 'low' | 'medium' | 'high';
   condition: string;
   description: string;
-  logOnly: boolean;
+  log_only: boolean;
+}
+
+interface UpdateRuleData extends Partial<CreateRuleData> {
+  catches?: number;
+  false_positives?: number;
+  effectiveness?: number;
 }
 
 const CreateRuleModal = observer(() => {
+  const { createRule, updateRule } = useRules();
+  const isEditing = !!ruleManagementStore.editingRule;
+  const modalTitle = isEditing ? 'Edit Rule' : 'Create New Rule';
+  
   const [formData, setFormData] = useState<FormData>({
     name: '',
     category: 'Behavioral',
     status: 'active',
+    severity: 'medium',
     condition: '',
     description: '',
-    logOnly: false
+    log_only: false
   });
 
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [isTestingRule, setIsTestingRule] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const categories = ['Behavioral', 'Payment Method', 'Technical', 'Identity'];
-  const statusOptions = ['active', 'inactive', 'warning'];
+  const statusOptions: Array<'active' | 'inactive' | 'warning'> = ['active', 'inactive', 'warning'];
+  const severityOptions: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
+
+  // Populate form when editing
+  useEffect(() => {
+    if (isEditing && ruleManagementStore.editingRule) {
+      const rule = ruleManagementStore.editingRule;
+      setFormData({
+        name: rule.name,
+        category: rule.category,
+        status: rule.status,
+        severity: rule.severity,
+        condition: rule.condition,
+        description: rule.description,
+        log_only: rule.log_only
+      });
+    } else {
+      // Reset form for new rule
+      setFormData({
+        name: '',
+        category: 'Behavioral',
+        status: 'active',
+        severity: 'medium',
+        condition: '',
+        description: '',
+        log_only: false
+      });
+    }
+    setErrors({});
+  }, [isEditing, ruleManagementStore.editingRule]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<FormData> = {};
@@ -66,35 +120,54 @@ const CreateRuleModal = observer(() => {
     }, 1500);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
       return;
     }
 
-    // Convert to the format expected by the store
-    ruleManagementStore.addRule({
-      name: formData.name,
-      description: formData.description,
-      category: formData.category,
-      condition: formData.condition,
-      status: formData.status,
-      severity: 'medium' // Default severity
-    });
+    setIsSaving(true);
 
-    // Reset form
-    setFormData({
-      name: '',
-      category: 'Behavioral',
-      status: 'active',
-      condition: '',
-      description: '',
-      logOnly: false
-    });
-    setErrors({});
-    
-    ruleManagementStore.closeCreateModal();
+    try {
+      if (isEditing && ruleManagementStore.editingRule) {
+        // Update existing rule
+        const updates: UpdateRuleData = {
+          name: formData.name,
+          description: formData.description,
+          category: formData.category,
+          condition: formData.condition,
+          status: formData.status,
+          severity: formData.severity,
+          log_only: formData.log_only
+        };
+        
+        await updateRule(ruleManagementStore.editingRule.id, updates);
+      } else {
+        // Create new rule
+        const ruleData: CreateRuleData = {
+          name: formData.name,
+          description: formData.description,
+          category: formData.category,
+          condition: formData.condition,
+          status: formData.status,
+          severity: formData.severity,
+          log_only: formData.log_only,
+          source: 'User'
+        };
+        
+        await createRule(ruleData);
+      }
+
+      // Close modal - the fetchRules() call in the hook will update the table
+      handleClose();
+      
+    } catch (error) {
+      console.error('Error saving rule:', error);
+      alert('Failed to save rule: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleClose = () => {
@@ -102,12 +175,18 @@ const CreateRuleModal = observer(() => {
       name: '',
       category: 'Behavioral',
       status: 'active',
+      severity: 'medium',
       condition: '',
       description: '',
-      logOnly: false
+      log_only: false
     });
     setErrors({});
-    ruleManagementStore.closeCreateModal();
+    
+    if (isEditing) {
+      ruleManagementStore.closeEditModal();
+    } else {
+      ruleManagementStore.closeCreateModal();
+    }
   };
 
   const handleInputChange = (field: keyof FormData, value: string | boolean) => {
@@ -118,7 +197,9 @@ const CreateRuleModal = observer(() => {
     }
   };
 
-  if (!ruleManagementStore.isCreateModalOpen) return null;
+  const isOpen = ruleManagementStore.isCreateModalOpen || ruleManagementStore.isEditModalOpen;
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -135,7 +216,7 @@ const CreateRuleModal = observer(() => {
             {/* Header */}
             <div className="bg-white px-6 pt-6 pb-4">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">Create New Rule</h3>
+                <h3 className="text-xl font-semibold text-gray-900">{modalTitle}</h3>
                 <button
                   type="button"
                   onClick={handleClose}
@@ -166,8 +247,8 @@ const CreateRuleModal = observer(() => {
                   )}
                 </div>
 
-                {/* Category and Status Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Category, Status, and Severity Row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Category */}
                   <div>
                     <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
@@ -204,6 +285,25 @@ const CreateRuleModal = observer(() => {
                       {statusOptions.map(status => (
                         <option key={status} value={status}>
                           {status.charAt(0).toUpperCase() + status.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Severity */}
+                  <div>
+                    <label htmlFor="severity" className="block text-sm font-medium text-gray-700 mb-2">
+                      Severity *
+                    </label>
+                    <select
+                      id="severity"
+                      value={formData.severity}
+                      onChange={(e) => handleInputChange('severity', e.target.value as 'low' | 'medium' | 'high')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {severityOptions.map(severity => (
+                        <option key={severity} value={severity}>
+                          {severity.charAt(0).toUpperCase() + severity.slice(1)}
                         </option>
                       ))}
                     </select>
@@ -274,14 +374,14 @@ const CreateRuleModal = observer(() => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleInputChange('logOnly', !formData.logOnly)}
+                    onClick={() => handleInputChange('log_only', !formData.log_only)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      formData.logOnly ? 'bg-blue-600' : 'bg-gray-200'
+                      formData.log_only ? 'bg-blue-600' : 'bg-gray-200'
                     }`}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        formData.logOnly ? 'translate-x-6' : 'translate-x-1'
+                        formData.log_only ? 'translate-x-6' : 'translate-x-1'
                       }`}
                     />
                   </button>
@@ -293,9 +393,10 @@ const CreateRuleModal = observer(() => {
             <div className="bg-gray-50 px-6 py-4 sm:flex sm:flex-row-reverse">
               <button
                 type="submit"
-                className="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-6 py-3 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm transition-colors"
+                disabled={isSaving}
+                className="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-6 py-3 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm transition-colors disabled:opacity-50"
               >
-                Save Rule
+                {isSaving ? 'Saving...' : (isEditing ? 'Update Rule' : 'Save Rule')}
               </button>
               <button
                 type="button"
