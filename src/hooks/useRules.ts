@@ -78,79 +78,70 @@ export function useRules() {
   };
 
   // Set up WebSocket subscription for real-time updates
-  useEffect(() => {
-    if (!user) {
-      // Clean up existing subscription if user logs out
-      if (subscriptionRef.current) {
-        subscriptionRef.current.unsubscribe();
-        subscriptionRef.current = null;
-      }
-      return;
-    }
-
-    // Clean up existing subscription before creating a new one
+useEffect(() => {
+  if (!user) {
     if (subscriptionRef.current) {
-      subscriptionRef.current.unsubscribe();
+      supabase.removeChannel(subscriptionRef.current);
       subscriptionRef.current = null;
     }
+    return;
+  }
 
-    // Create new subscription
-if (subscriptionRef.current) {
-  supabase.removeChannel(subscriptionRef.current);
-  subscriptionRef.current = null;
-}
-
-    
-  const channel = supabase
-  .channel(`rules_changes_${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'rules',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Real-time rule change:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            const newRule = payload.new as Rule;
-            if (newRule.status === 'in progress') {
-              ruleManagementStore.addInProgressRule(newRule);
-            } else {
-              // Refresh all rules to ensure consistency
-              fetchRules();
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedRule = payload.new as Rule;
-            if (updatedRule.status === 'in progress') {
-              ruleManagementStore.updateInProgressRule(updatedRule);
-            } else {
-              // Rule status changed from in progress, refresh all rules
-              fetchRules();
-            }
-          } else if (payload.eventType === 'DELETE') {
-            // Refresh all rules
-            fetchRules();
-          }
-        }
-      )
-    
-channel.subscribe((status) => {
-  console.log('Subscription status:', status);
-});
-
-    subscriptionRef.current = channel;
-    // Cleanup function
-   return () => {
+  // Remove previous channel if any
   if (subscriptionRef.current) {
     supabase.removeChannel(subscriptionRef.current);
     subscriptionRef.current = null;
   }
-};
 
-  }, [user?.id]); // Only depend on user.id to avoid unnecessary re-subscriptions
+  const channel = supabase
+    .channel(`rules_changes_${user.id}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'rules',
+        filter: `user_id=eq.${user.id}`,
+      },
+      (payload) => {
+        console.log('Real-time rule change:', payload);
+
+        if (payload.eventType === 'INSERT') {
+          const newRule = payload.new as Rule;
+          if (newRule.status === 'in progress') {
+            ruleManagementStore.addInProgressRule(newRule);
+          } else {
+            fetchRules();
+          }
+        } else if (payload.eventType === 'UPDATE') {
+          const updatedRule = payload.new as Rule;
+          if (updatedRule.status === 'in progress') {
+            ruleManagementStore.updateInProgressRule(updatedRule);
+          } else {
+            fetchRules();
+          }
+        } else if (payload.eventType === 'DELETE') {
+          fetchRules();
+        }
+      }
+    );
+
+  // Subscribe and store reference
+  channel.subscribe((status) => {
+    console.log('Subscription status:', status);
+  });
+
+  subscriptionRef.current = channel;
+
+  // Clean up
+  return () => {
+    if (subscriptionRef.current) {
+      supabase.removeChannel(subscriptionRef.current);
+      subscriptionRef.current = null;
+    }
+  };
+}, [user?.id]);
+
 
   const createRule = async (ruleData: CreateRuleData): Promise<Rule | null> => {
     if (!user) {
