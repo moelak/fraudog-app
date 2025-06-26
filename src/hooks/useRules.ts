@@ -134,7 +134,7 @@ export function useRules() {
     await channel.subscribe((status) => {
   console.log('Subscription status:', status); // Will log "SUBSCRIBED", "CHANNEL_ERROR", etc.
 });
-
+ 
     subscriptionRef.current = channel;
   };
 
