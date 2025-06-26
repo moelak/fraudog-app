@@ -63,9 +63,7 @@ export function useRules() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (fetchError) {
-        throw fetchError;
-      }
+      if (fetchError) throw fetchError;
 
       setRules(data || []);
       ruleManagementStore.setRules(data || []);
@@ -77,267 +75,193 @@ export function useRules() {
     }
   };
 
-
   useEffect(() => {
-  let mounted = true;
+    let mounted = true;
 
-  const setupRealtime = async () => {
+    const setupRealtime = async () => {
+      if (subscriptionRef.current) {
+        console.warn('Already subscribed. Skipping setup.');
+        return;
+      }
 
-       const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-    if (!session || !session.access_token) {
-      console.warn('No valid session. Skipping realtime.');
-      return;
-    }
-    
-    if (!user) {
+      if (!session || !session.access_token || !user) {
+        console.warn('No valid session. Skipping Realtime.');
+        return;
+      }
+
+      const channel = supabase
+        .channel(`rules_changes_${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'rules',
+          },
+          (payload) => {
+            const updatedRule = payload.new as Rule;
+
+            // ⚠️ Filter manually
+            if (updatedRule.user_id !== user.id) return;
+
+            console.log('Realtime rule change:', payload);
+
+            if (!mounted) return;
+
+            if (payload.eventType === 'INSERT') {
+              if (updatedRule.status === 'in progress') {
+                ruleManagementStore.addInProgressRule(updatedRule);
+              } else {
+                fetchRules();
+              }
+            } else if (payload.eventType === 'UPDATE') {
+              if (updatedRule.status === 'in progress') {
+                ruleManagementStore.updateInProgressRule(updatedRule);
+              } else {
+                fetchRules();
+              }
+            } else if (payload.eventType === 'DELETE') {
+              fetchRules();
+            }
+          }
+        )
+        .on('error', (err) => {
+          console.error('Realtime subscription error:', err);
+        })
+        .on('close', () => {
+          console.warn('Realtime channel closed.');
+        });
+
+      await channel
+        .subscribe((status) => {
+          console.log('Subscription status:', status);
+        })
+        .catch((err) => {
+          console.error('Subscribe call failed:', err);
+        });
+
+      subscriptionRef.current = channel;
+    };
+
+    // Delay to ensure session is ready
+    const delayAndSetup = () => {
+      setTimeout(() => {
+        if (mounted) setupRealtime();
+      }, 250);
+    };
+
+    delayAndSetup();
+
+    return () => {
+      mounted = false;
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
         subscriptionRef.current = null;
       }
-      return;
-    }
+    };
+  }, [user?.id]);
 
-    // Cleanup any previous channel
-    if (subscriptionRef.current) {
-      supabase.removeChannel(subscriptionRef.current);
-      subscriptionRef.current = null;
-    }
-
-    const channel = supabase
-      .channel(`rules_changes_${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'rules',
-          // filter: `user_id=eq.${user.id}`, 
-        },
-        (payload) => {
-          console.log('Real-time rule change:', payload);
-
-          if (!mounted) return;
-
-          if (payload.eventType === 'INSERT') {
-            const newRule = payload.new as Rule;
-            if (newRule.status === 'in progress') {
-              ruleManagementStore.addInProgressRule(newRule);
-            } else {
-              fetchRules();
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedRule = payload.new as Rule;
-            if (updatedRule.status === 'in progress') {
-              ruleManagementStore.updateInProgressRule(updatedRule);
-            } else {
-              fetchRules();
-            }
-          } else if (payload.eventType === 'DELETE') {
-            fetchRules();
-          }
-        }
-      );
-
-    await channel.subscribe((status) => {
-  console.log('Subscription status:', status); // Will log "SUBSCRIBED", "CHANNEL_ERROR", etc.
-});
- 
-    subscriptionRef.current = channel;
-  };
-
-  setupRealtime();
-
-  return () => {
-    mounted = false;
-    if (subscriptionRef.current) {
-      supabase.removeChannel(subscriptionRef.current);
-      subscriptionRef.current = null;
-    }
-  };
-}, [user?.id]);
-
-
+  useEffect(() => {
+    fetchRules();
+  }, [user]);
 
   const createRule = async (ruleData: CreateRuleData): Promise<Rule | null> => {
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
+    if (!user) throw new Error('User not authenticated');
 
-    try {
-      const { data, error } = await supabase
-        .from('rules')
-        .insert({
-          ...ruleData,
-          user_id: user.id,
-          source: ruleData.source || 'User'
-        })
-        .select()
-        .single();
+    const { data, error } = await supabase
+      .from('rules')
+      .insert({ ...ruleData, user_id: user.id, source: ruleData.source || 'User' })
+      .select()
+      .single();
 
-      if (error) {
-        throw error;
-      }
+    if (error) throw error;
 
-      // Force a complete refresh to ensure UI updates
-      await fetchRules();
-      return data;
-    } catch (err) {
-      console.error('Error creating rule:', err);
-      throw err;
-    }
+    await fetchRules();
+    return data;
   };
 
   const updateRule = async (id: string, updates: UpdateRuleData): Promise<Rule | null> => {
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
+    if (!user) throw new Error('User not authenticated');
 
-    try {
-      const { data, error } = await supabase
-        .from('rules')
-        .update(updates)
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .select()
-        .single();
+    const { data, error } = await supabase
+      .from('rules')
+      .update(updates)
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .select()
+      .single();
 
-      if (error) {
-        throw error;
-      }
+    if (error) throw error;
 
-      // Force a complete refresh to ensure UI updates
-      await fetchRules();
-      return data;
-    } catch (err) {
-      console.error('Error updating rule:', err);
-      throw err;
-    }
+    await fetchRules();
+    return data;
   };
 
-  const implementRule = async (id: string): Promise<void> => {
-    await updateRule(id, { status: 'active' });
+  const implementRule = async (id: string) => await updateRule(id, { status: 'active' });
+
+  const softDeleteRule = async (id: string) => {
+    if (!user) throw new Error('User not authenticated');
+
+    const { error } = await supabase
+      .from('rules')
+      .update({ is_deleted: true, status: 'inactive' })
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+
+    await fetchRules();
   };
 
-  const softDeleteRule = async (id: string): Promise<void> => {
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-		
-    try {
-      // First, let's try to fetch the rule to make sure it exists and belongs to the user
-      const { data: existingRule, error: fetchError } = await supabase
-        .from('rules')
-        .select('*')
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .single();
+  const recoverRule = async (id: string) => {
+    if (!user) throw new Error('User not authenticated');
 
-      if (fetchError) {
-        throw new Error(`Rule not found or access denied: ${fetchError.message}`);
-      }
+    const { error } = await supabase
+      .from('rules')
+      .update({ is_deleted: false })
+      .eq('id', id)
+      .eq('user_id', user.id);
 
-      if (!existingRule) {
-        throw new Error('Rule not found or you do not have permission to delete it');
-      }
+    if (error) throw error;
 
-      // Now perform the update with explicit user_id check
-      const { error } = await supabase
-        .from('rules')
-        .update({ 
-          is_deleted: true, 
-          status: 'inactive' as const
-        })
-        .eq('id', id)
-        .eq('user_id', user.id); 
-
-      if (error) {
-        console.error('Soft delete error details:', error);
-        throw error;
-      }
-
-      // Force a complete refresh to ensure UI updates
-      await fetchRules();
-    } catch (err) {
-      console.error('Error soft deleting rule:', err);
-      throw err;
-    }
+    await fetchRules();
   };
 
-  const recoverRule = async (id: string): Promise<void> => {
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
+  const permanentDeleteRule = async (id: string) => {
+    if (!user) throw new Error('User not authenticated');
 
-    try {
-      const { error } = await supabase
-        .from('rules')
-        .update({ is_deleted: false })
-        .eq('id', id)
-        .eq('user_id', user.id);
+    const { error } = await supabase
+      .from('rules')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
 
-      if (error) {
-        throw error;
-      }
+    if (error) throw error;
 
-      // Force a complete refresh to ensure UI updates
-      await fetchRules();
-    } catch (err) {
-      console.error('Error recovering rule:', err);
-      throw err;
-    }
+    await fetchRules();
   };
 
-  const permanentDeleteRule = async (id: string): Promise<void> => {
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-
-    try {
-      const { error } = await supabase
-        .from('rules')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
-
-      if (error) {
-        throw error;
-      }
-
-      // Force a complete refresh to ensure UI updates
-      await fetchRules();
-    } catch (err) {
-      console.error('Error permanently deleting rule:', err);
-      throw err;
-    }
-  };
-
-  const toggleRuleStatus = async (id: string): Promise<void> => {
-    const rule = rules.find(r => r.id === id);
+  const toggleRuleStatus = async (id: string) => {
+    const rule = rules.find((r) => r.id === id);
     if (!rule) return;
 
     const newStatus = rule.status === 'active' ? 'inactive' : 'active';
     await updateRule(id, { status: newStatus });
   };
 
-  useEffect(() => {
-    fetchRules();
-  }, [user]);
-
-  // Filter functions - only include allowed statuses
-  const allowedRules = rules.filter(rule => ['active', 'inactive', 'warning'].includes(rule.status));
-  const activeRules = allowedRules.filter(rule => !rule.is_deleted && rule.status === 'active');
-  const allRules = allowedRules.filter(rule => !rule.is_deleted);
-  const needsAttentionRules = allowedRules.filter(rule => 
-    !rule.is_deleted && (
-      rule.status === 'warning' || 
-      rule.effectiveness < 70 || 
-      rule.false_positives > 100
-    )
+  const allowedRules = rules.filter((r) => ['active', 'inactive', 'warning'].includes(r.status));
+  const activeRules = allowedRules.filter((r) => !r.is_deleted && r.status === 'active');
+  const allRules = allowedRules.filter((r) => !r.is_deleted);
+  const needsAttentionRules = allowedRules.filter(
+    (r) =>
+      !r.is_deleted &&
+      (r.status === 'warning' || r.effectiveness < 70 || r.false_positives > 100)
   );
-  const deletedRules = allowedRules.filter(rule => rule.is_deleted);
+  const deletedRules = allowedRules.filter((r) => r.is_deleted);
 
   return {
     rules: allowedRules,
@@ -354,6 +278,6 @@ export function useRules() {
     softDeleteRule,
     recoverRule,
     permanentDeleteRule,
-    toggleRuleStatus
+    toggleRuleStatus,
   };
 }
