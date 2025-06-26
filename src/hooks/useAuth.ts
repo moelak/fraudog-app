@@ -23,7 +23,7 @@ export function useAuth() {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-      }, 200); // 200ms is a safe buffer
+      }, 5000); // 200ms is a safe buffer
     });
 
     return () => subscription.unsubscribe();
