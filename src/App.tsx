@@ -19,7 +19,7 @@ const App = () => {
     );
   }
 
-  return (
+  return ( 
    <Routes>
   {/* Landing page */}
        <Route path="/debug-realtime" element={<RealtimeTest />} />
