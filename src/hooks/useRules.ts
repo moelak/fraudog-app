@@ -114,7 +114,7 @@ export function useRules() {
           event: '*',
           schema: 'public',
           table: 'rules',
-          filter: `user_id=eq.${user.id}`,
+          // filter: `user_id=eq.${user.id}`, 
         },
         (payload) => {
           console.log('Real-time rule change:', payload);
