@@ -91,7 +91,6 @@ export function useRules() {
       console.warn('No valid session. Skipping realtime.');
       return;
     }
-
     
     if (!user) {
       if (subscriptionRef.current) {
