@@ -82,6 +82,17 @@ export function useRules() {
   let mounted = true;
 
   const setupRealtime = async () => {
+
+       const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session || !session.access_token) {
+      console.warn('No valid session. Skipping realtime.');
+      return;
+    }
+
+    
     if (!user) {
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
