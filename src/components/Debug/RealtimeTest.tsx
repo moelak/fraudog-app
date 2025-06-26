@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 
-export default function RealtimeTest() {
+export default function RealtimeTest() { 
   useEffect(() => {
     const test = async () => {
       const {
