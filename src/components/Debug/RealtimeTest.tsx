@@ -1,14 +1,22 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 
-export default function RealtimeTest() { 
+export default function RealtimeTest() {
+  const subscriptionRef = useRef<any>(null);
+
   useEffect(() => {
-    const test = async () => {
+    const setupRealtime = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
       console.log('📦 Supabase session:', session);
+
+      // 🔁 Remove existing channel before creating a new one
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current);
+        subscriptionRef.current = null;
+      }
 
       const channel = supabase
         .channel('debug_rules_channel')
@@ -30,17 +38,23 @@ export default function RealtimeTest() {
           console.warn('⚠️ Realtime channel closed');
         });
 
-      await channel
-        .subscribe((status) => {
-          console.log('📡 Subscription status:', status); // Should be "SUBSCRIBED"
-        })
-        .catch((err) => {
-          console.error('❌ Subscribe failed:', err);
-        });
+      subscriptionRef.current = channel;
+
+      // ✅ CORRECT way to subscribe
+      channel.subscribe((status) => {
+        console.log('📡 Subscription status:', status);
+      });
     };
 
-    test();
+    setupRealtime();
+
+    return () => {
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current);
+        subscriptionRef.current = null;
+      }
+    };
   }, []);
 
-  return <div className="p-6 text-lg">✅ Realtime Test Running (check your console)</div>;
+  return <div className="p-6 text-lg">✅ Realtime Test Running (check console)</div>;
 }
