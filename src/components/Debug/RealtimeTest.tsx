@@ -12,7 +12,12 @@ export default function RealtimeTest() {
 
       console.log('📦 Supabase session:', session);
 
-      // 🔁 Remove existing channel before creating a new one
+      if (!session?.access_token) {
+        console.warn('⚠️ No valid session for realtime');
+        return;
+      }
+
+      // Clean up existing channel
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
         subscriptionRef.current = null;
@@ -30,20 +35,17 @@ export default function RealtimeTest() {
           (payload) => {
             console.log('⚡ Realtime event received:', payload);
           }
-        )
-        .on('error', (err) => {
-          console.error('❌ Realtime subscription error:', err);
-        })
-        .on('close', () => {
-          console.warn('⚠️ Realtime channel closed');
-        });
+        );
 
       subscriptionRef.current = channel;
 
-      // ✅ CORRECT way to subscribe
-      channel.subscribe((status) => {
+      const { error, status } = await channel.subscribe((status) => {
         console.log('📡 Subscription status:', status);
       });
+
+      if (error) {
+        console.error('❌ Subscription error:', error);
+      }
     };
 
     setupRealtime();
