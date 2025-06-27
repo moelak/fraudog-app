@@ -1,61 +1,53 @@
-import { useEffect, useRef } from 'react';
-import { supabase } from '../../lib/supabase';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './hooks/useAuth';
+import ProtectedRoute from './components/Auth/ProtectedRoute';
+import Dashboard from './components/Dashboard/Dashboard';
+import LandingPage from './components/LandingPage/LandingPage';
+import RealtimeTest from './components/Debug/RealtimeTest';
 
-export default function RealtimeTest() {
-  const subscriptionRef = useRef<any>(null);
+const App = () => {
+  const { loading, user } = useAuth();
 
-  useEffect(() => {
-    const setupRealtime = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center"> 
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
-      console.log('📦 Supabase session:', session);
+  return ( 
+   <Routes>
+  {/* Landing page */}
+       <Route path="/debug-realtime" element={<RealtimeTest />} />
 
-      if (!session?.access_token) {
-        console.warn('⚠️ No valid session');
-        return;
-      }
+  <Route 
+    path="/" 
+    element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
+  />
 
-      if (subscriptionRef.current) {
-        supabase.removeChannel(subscriptionRef.current);
-        subscriptionRef.current = null;
-      }
 
-      const channel = supabase.channel('rules_updates_channel');
+  {/* Protected dashboard */}
+  <Route
+    path="/dashboard/*"
+    element={
+      <ProtectedRoute>
+        <Dashboard />
+      </ProtectedRoute>
+    }
+  />
 
-      channel
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'rules',
-          },
-          (payload) => {
-            console.log('⚡ Realtime event:', payload);
-          }
-        );
+  {/* Fallback */}
+  <Route 
+    path="*" 
+    element={<Navigate to={user ? "/dashboard" : "/"} replace />} 
+  />
+</Routes>
 
-      subscriptionRef.current = channel;
+  );
+};
 
-      const { error, status } = await channel.subscribe();
-      console.log('📡 Subscription status:', status);
-
-      if (error) {
-        console.error('❌ Subscription error:', error);
-      }
-    };
-
-    setupRealtime();
-
-    return () => {
-      if (subscriptionRef.current) {
-        supabase.removeChannel(subscriptionRef.current);
-        subscriptionRef.current = null;
-      }
-    };
-  }, []);
-
-  return <div className="p-6 text-lg">✅ Realtime Test Running (check console)</div>;
-}
+export default App;
