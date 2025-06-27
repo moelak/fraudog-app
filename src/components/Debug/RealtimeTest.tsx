@@ -13,18 +13,18 @@ export default function RealtimeTest() {
       console.log('📦 Supabase session:', session);
 
       if (!session?.access_token) {
-        console.warn('⚠️ No valid session for realtime');
+        console.warn('⚠️ No valid session');
         return;
       }
 
-      // Clean up existing channel
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
         subscriptionRef.current = null;
       }
 
-      const channel = supabase
-        .channel('debug_rules_channel')
+      const channel = supabase.channel('rules_updates_channel');
+
+      channel
         .on(
           'postgres_changes',
           {
@@ -33,15 +33,14 @@ export default function RealtimeTest() {
             table: 'rules',
           },
           (payload) => {
-            console.log('⚡ Realtime event received:', payload);
+            console.log('⚡ Realtime event:', payload);
           }
         );
 
       subscriptionRef.current = channel;
 
-      const { error, status } = await channel.subscribe((status) => {
-        console.log('📡 Subscription status:', status);
-      });
+      const { error, status } = await channel.subscribe();
+      console.log('📡 Subscription status:', status);
 
       if (error) {
         console.error('❌ Subscription error:', error);
