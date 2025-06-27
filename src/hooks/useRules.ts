@@ -42,6 +42,7 @@ export interface UpdateRuleData extends Partial<CreateRuleData> {
 export function useRules() {
   const { user } = useAuth();
   const subscriptionRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
   const [rules, setRules] = useState<Rule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,23 +80,35 @@ export function useRules() {
     let mounted = true;
 
     const setupRealtime = async () => {
-      if (subscriptionRef.current) {
-        console.warn('Already subscribed. Skipping setup.');
+      // Skip if already subscribed or no user
+      if (isSubscribedRef.current || !user) {
         return;
       }
 
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      try {
+        // Check for valid session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session?.access_token) {
+          console.warn('No valid session for Realtime');
+          return;
+        }
 
-      if (!session || !session.access_token || !user) {
-        console.warn('No valid session. Skipping Realtime.');
-        return;
-      }
+        // Clean up any existing subscription
+        if (subscriptionRef.current) {
+          await supabase.removeChannel(subscriptionRef.current);
+          subscriptionRef.current = null;
+          isSubscribedRef.current = false;
+        }
 
-      const channel = supabase
-        .channel(`rules_changes_${user.id}`)
-        .on(
+        console.log('Setting up Realtime subscription for user:', user.id);
+
+        // Create new channel with unique name
+        const channelName = `rules_changes_${user.id}_${Date.now()}`;
+        const channel = supabase.channel(channelName);
+
+        // Set up event listener
+        channel.on(
           'postgres_changes',
           {
             event: '*',
@@ -103,64 +116,95 @@ export function useRules() {
             table: 'rules',
           },
           (payload) => {
-            const updatedRule = payload.new as Rule;
-
-            // ⚠️ Filter manually
-            if (updatedRule.user_id !== user.id) return;
-
             console.log('Realtime rule change:', payload);
 
             if (!mounted) return;
 
+            const rule = payload.new as Rule;
+            
+            // Filter by user_id manually since RLS might not work with Realtime
+            if (rule && rule.user_id !== user.id) {
+              return;
+            }
+
             if (payload.eventType === 'INSERT') {
-              if (updatedRule.status === 'in progress') {
-                ruleManagementStore.addInProgressRule(updatedRule);
+              if (rule.status === 'in progress') {
+                ruleManagementStore.addInProgressRule(rule);
               } else {
                 fetchRules();
               }
             } else if (payload.eventType === 'UPDATE') {
-              if (updatedRule.status === 'in progress') {
-                ruleManagementStore.updateInProgressRule(updatedRule);
+              if (rule.status === 'in progress') {
+                ruleManagementStore.updateInProgressRule(rule);
               } else {
+                // If rule was moved from 'in progress' to another status, remove from in progress
+                ruleManagementStore.removeInProgressRule(rule.id);
                 fetchRules();
               }
             } else if (payload.eventType === 'DELETE') {
+              const deletedRule = payload.old as Rule;
+              if (deletedRule?.id) {
+                ruleManagementStore.removeInProgressRule(deletedRule.id);
+              }
               fetchRules();
             }
           }
-        )
-        .on('error', (err) => {
-          console.error('Realtime subscription error:', err);
-        })
-        .on('close', () => {
-          console.warn('Realtime channel closed.');
-        });
+        );
 
-      await channel
-        .subscribe((status) => {
+        // Subscribe to the channel
+        const subscriptionPromise = channel.subscribe((status, err) => {
           console.log('Subscription status:', status);
-        })
-        .catch((err) => {
-          console.error('Subscribe call failed:', err);
+          
+          if (err) {
+            console.error('Subscription error:', err);
+            isSubscribedRef.current = false;
+          } else if (status === 'SUBSCRIBED') {
+            console.log('Successfully subscribed to Realtime');
+            isSubscribedRef.current = true;
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('Channel error occurred');
+            isSubscribedRef.current = false;
+          } else if (status === 'TIMED_OUT') {
+            console.error('Subscription timed out');
+            isSubscribedRef.current = false;
+          } else if (status === 'CLOSED') {
+            console.log('Channel closed');
+            isSubscribedRef.current = false;
+          }
         });
 
-      subscriptionRef.current = channel;
+        subscriptionRef.current = channel;
+
+        // Handle subscription promise if it exists
+        if (subscriptionPromise && typeof subscriptionPromise.then === 'function') {
+          subscriptionPromise.catch((error) => {
+            console.error('Subscription promise error:', error);
+            isSubscribedRef.current = false;
+          });
+        }
+
+      } catch (error) {
+        console.error('Error setting up Realtime:', error);
+        isSubscribedRef.current = false;
+      }
     };
 
-    // Delay to ensure session is ready
-    const delayAndSetup = () => {
-      setTimeout(() => {
-        if (mounted) setupRealtime();
-      }, 250);
-    };
-
-    delayAndSetup();
+    // Delay setup to ensure auth is ready
+    const timeoutId = setTimeout(() => {
+      if (mounted) {
+        setupRealtime();
+      }
+    }, 500);
 
     return () => {
       mounted = false;
+      clearTimeout(timeoutId);
+      
       if (subscriptionRef.current) {
+        console.log('Cleaning up Realtime subscription');
         supabase.removeChannel(subscriptionRef.current);
         subscriptionRef.current = null;
+        isSubscribedRef.current = false;
       }
     };
   }, [user?.id]);

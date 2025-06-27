@@ -3,7 +3,6 @@ import { useAuth } from './hooks/useAuth';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Dashboard from './components/Dashboard/Dashboard';
 import LandingPage from './components/LandingPage/LandingPage';
-import RealtimeTest from './components/Debug/RealtimeTest';
 
 const App = () => {
   const { loading, user } = useAuth();
@@ -22,13 +21,10 @@ const App = () => {
   return ( 
    <Routes>
   {/* Landing page */}
-       <Route path="/debug-realtime" element={<RealtimeTest />} />
-
   <Route 
     path="/" 
     element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
   />
-
 
   {/* Protected dashboard */}
   <Route
