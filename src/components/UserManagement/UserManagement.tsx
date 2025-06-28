@@ -107,7 +107,7 @@ const UserManagement = observer(() => {
 
   return (
     <div className="space-y-6">
-      <div className=" justify-between items-center">
+      <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
           <p className="mt-2 text-gray-600">Manage users in your application</p>
