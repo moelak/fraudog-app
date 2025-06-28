@@ -40,13 +40,26 @@ export class RuleManagementStore {
 setRules = (newRules: Rule[]) => {
   // Filter out rules with status 'in progress' for main rules display
   this.rules = newRules.filter(rule => ['active', 'inactive', 'warning'].includes(rule.status));
-  // Keep in progress rules separate
-  this.inProgressRules = newRules.filter(rule => rule.status === 'in progress');
+  // Keep in progress rules separate and deduplicated
+  const inProgressRules = newRules.filter(rule => rule.status === 'in progress');
+  this.inProgressRules = this.deduplicateRules(inProgressRules);
 }
 
 addInProgressRule = (rule: Rule) => {
   if (rule.status === 'in progress') {
-    this.inProgressRules.push(rule);
+    // Check if rule already exists to prevent duplicates
+    const existingIndex = this.inProgressRules.findIndex(existingRule => existingRule.id === rule.id);
+    
+    if (existingIndex !== -1) {
+      // Update existing rule instead of adding duplicate
+      this.inProgressRules[existingIndex] = rule;
+    } else {
+      // Add new rule
+      this.inProgressRules.push(rule);
+    }
+    
+    // Ensure the array remains deduplicated
+    this.inProgressRules = this.deduplicateRules(this.inProgressRules);
   }
 }
 
@@ -64,6 +77,33 @@ updateInProgressRule = (updatedRule: Rule) => {
       this.inProgressRules.splice(index, 1);
     }
   }
+  
+  // Ensure the array remains deduplicated after update
+  this.inProgressRules = this.deduplicateRules(this.inProgressRules);
+}
+
+// Helper method to deduplicate rules by ID
+deduplicateRules = (rules: Rule[]): Rule[] => {
+  const uniqueRules = new Map<string, Rule>();
+  
+  rules.forEach(rule => {
+    const existingRule = uniqueRules.get(rule.id);
+    
+    if (!existingRule) {
+      // First occurrence of this rule ID
+      uniqueRules.set(rule.id, rule);
+    } else {
+      // Rule already exists, keep the one with the latest updated_at timestamp
+      const existingTime = new Date(existingRule.updated_at).getTime();
+      const newTime = new Date(rule.updated_at).getTime();
+      
+      if (newTime > existingTime) {
+        uniqueRules.set(rule.id, rule);
+      }
+    }
+  });
+  
+  return Array.from(uniqueRules.values());
 }
 
   setActiveTab = (tab: 'active' | 'all' | 'attention' | 'deleted') => {
