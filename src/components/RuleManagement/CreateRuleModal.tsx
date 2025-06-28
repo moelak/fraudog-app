@@ -29,6 +29,7 @@ interface UpdateRuleData extends Partial<CreateRuleData> {
   catches?: number;
   false_positives?: number;
   effectiveness?: number;
+  status?: 'active' | 'inactive' | 'warning' | 'in progress';
 }
 
 const CreateRuleModal = observer(() => {
@@ -138,10 +139,17 @@ const CreateRuleModal = observer(() => {
           description: formData.description,
           category: formData.category,
           condition: formData.condition,
-          status: formData.status as 'active' | 'inactive' | 'warning',
           severity: formData.severity,
           log_only: formData.log_only
         };
+        
+        // Only update status if NOT editing from Generated Rules
+        if (!isEditingFromGenerated) {
+          updates.status = formData.status as 'active' | 'inactive' | 'warning';
+        } else {
+          // Keep status as 'in progress' when editing from Generated Rules
+          updates.status = 'in progress';
+        }
         
         await updateRule(ruleManagementStore.editingRule.id, updates);
       } else {
@@ -392,6 +400,20 @@ const CreateRuleModal = observer(() => {
                     />
                   </button>
                 </div>
+
+                {/* Status Notice for Generated Rules */}
+                {isEditingFromGenerated && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="flex">
+                      <div className="ml-3">
+                        <h4 className="text-sm font-medium text-blue-800">Generated Rule</h4>
+                        <p className="text-sm text-blue-700 mt-1">
+                          This rule will remain in "in progress" status after editing. Use the "Implement Rule" button to activate it.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
