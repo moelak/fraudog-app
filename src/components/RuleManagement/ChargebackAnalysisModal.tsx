@@ -21,7 +21,7 @@ const ChargebackAnalysisModal = observer(() => {
 	useEffect(() => {
 		const loadAnimation = async () => {
 			try {
-				const response = await fetch('/loading/Animation-1751143749810.lottie');
+				const response = await fetch('/loading/Animation-1751146315326.json');
 				const data = await response.json();
 				setAnimationData(data);
 			} catch (error) {
