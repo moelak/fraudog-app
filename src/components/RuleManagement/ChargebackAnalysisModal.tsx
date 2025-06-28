@@ -1,9 +1,10 @@
 import { observer } from 'mobx-react-lite';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ruleManagementStore } from './RuleManagementStore';
 import { useRules } from '../../hooks/useRules';
 import { uploadFile } from '../../utils/fileUpload';
 import { XMarkIcon, CloudArrowUpIcon, DocumentTextIcon, SparklesIcon, PencilIcon, CheckIcon } from '@heroicons/react/24/outline';
+import Lottie from 'lottie-react';
 
 const ChargebackAnalysisModal = observer(() => {
 	const { implementRule } = useRules();
@@ -13,6 +14,38 @@ const ChargebackAnalysisModal = observer(() => {
 	const [isAnalyzing, setIsAnalyzing] = useState(false);
 	const [showSuccessModal, setShowSuccessModal] = useState(false);
 	const [errorMessage, setErrorMessage] = useState('');
+	const [animationData, setAnimationData] = useState(null);
+	const [initialRuleCount, setInitialRuleCount] = useState(0);
+
+	// Load Lottie animation
+	useEffect(() => {
+		const loadAnimation = async () => {
+			try {
+				const response = await fetch('/loading/Animation-1751143749810.lottie');
+				const data = await response.json();
+				setAnimationData(data);
+			} catch (error) {
+				console.error('Error loading Lottie animation:', error);
+			}
+		};
+		loadAnimation();
+	}, []);
+
+	// Monitor rule count changes to auto-close modal
+	useEffect(() => {
+		if (showSuccessModal && initialRuleCount > 0) {
+			const currentRuleCount = ruleManagementStore.inProgressRules.length;
+			// If we have new rules added (more than initial count), auto-close after a delay
+			if (currentRuleCount > initialRuleCount) {
+				const timer = setTimeout(() => {
+					setShowSuccessModal(false);
+					setActiveTab('rules'); // Switch to Generated Rules tab
+				}, 3000); // 3 second delay to show the success state
+
+				return () => clearTimeout(timer);
+			}
+		}
+	}, [showSuccessModal, initialRuleCount, ruleManagementStore.inProgressRules.length]);
 
 	const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
@@ -54,6 +87,7 @@ const ChargebackAnalysisModal = observer(() => {
 		if (!selectedFile) return;
 
 		setIsAnalyzing(true);
+		setInitialRuleCount(ruleManagementStore.inProgressRules.length);
 
 		try {
 			// Upload file to Supabase storage using the uploadFile utility
@@ -95,6 +129,7 @@ const ChargebackAnalysisModal = observer(() => {
 		setCsvPreview([]);
 		setIsAnalyzing(false);
 		setActiveTab('analysis');
+		setShowSuccessModal(false);
 		ruleManagementStore.closeChargebackAnalysis();
 	};
 
@@ -289,17 +324,26 @@ const ChargebackAnalysisModal = observer(() => {
 				</div>
 			</div>
 
-			{/* Success Modal */}
+			{/* Success Modal - Full Screen with Lottie Animation */}
 			{showSuccessModal && (
-				<div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50'>
-					<div className='bg-white rounded-xl shadow-xl p-6 max-w-md text-center'>
+				<div className='fixed inset-0 z-[60] bg-white flex flex-col items-center justify-center'>
+					{/* Lottie Animation */}
+					{animationData && (
+						<div className='mb-8'>
+							<Lottie 
+								animationData={animationData} 
+								style={{ width: 200, height: 200 }}
+								loop={true}
+							/>
+						</div>
+					)}
+					
+					{/* Success Message */}
+					<div className='max-w-md text-center'>
 						<h2 className='text-xl font-semibold text-green-600 mb-3'>Upload Successful</h2>
-						<p className='text-gray-700 mb-4'>
+						<p className='text-gray-700'>
 							Your file has been uploaded. Our AI is processing it now. The generated rules will appear in real-time in the <strong>Generated Rules</strong> tab.
 						</p>
-						<button onClick={() => setShowSuccessModal(false)} className='bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition'>
-							Got it
-						</button>
 					</div>
 				</div>
 			)}
