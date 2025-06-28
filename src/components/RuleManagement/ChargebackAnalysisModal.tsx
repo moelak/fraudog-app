@@ -56,7 +56,7 @@ const ChargebackAnalysisModal = observer(() => {
 				setTimeout(() => {
 					setShowFailureAlert(false);
 				}, 3000);
-			}, 30000); // 30 seconds fail-safe
+			}, 40000); // 40 seconds fail-safe
 
 			// Check for rule changes more frequently
 			checkRulesTimerRef.current = setInterval(() => {
