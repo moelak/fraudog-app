@@ -3,6 +3,7 @@ import { useAuth } from './hooks/useAuth';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Dashboard from './components/Dashboard/Dashboard';
 import LandingPage from './components/LandingPage/LandingPage';
+import ToastContainer from './components/Toast/ToastContainer';
 
 const App = () => {
   const { loading, user } = useAuth();
@@ -19,30 +20,34 @@ const App = () => {
   }
 
   return ( 
-   <Routes>
-  {/* Landing page */}
-  <Route 
-    path="/" 
-    element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
-  />
+    <>
+      <Routes>
+        {/* Landing page */}
+        <Route 
+          path="/" 
+          element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
+        />
 
-  {/* Protected dashboard */}
-  <Route
-    path="/dashboard/*"
-    element={
-      <ProtectedRoute>
-        <Dashboard />
-      </ProtectedRoute>
-    }
-  />
+        {/* Protected dashboard */}
+        <Route
+          path="/dashboard/*"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
 
-  {/* Fallback */}
-  <Route 
-    path="*" 
-    element={<Navigate to={user ? "/dashboard" : "/"} replace />} 
-  />
-</Routes>
+        {/* Fallback */}
+        <Route 
+          path="*" 
+          element={<Navigate to={user ? "/dashboard" : "/"} replace />} 
+        />
+      </Routes>
 
+      {/* Toast Container */}
+      <ToastContainer />
+    </>
   );
 };
 

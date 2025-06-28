@@ -2,6 +2,7 @@ import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 import { ruleManagementStore } from './RuleManagementStore';
 import { useRules } from '../../hooks/useRules';
+import { showSuccessToast, showErrorToast } from '../../utils/toast';
 import { XMarkIcon, ExclamationTriangleIcon, TrashIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 
 const DeleteConfirmModal = observer(() => {
@@ -19,15 +20,18 @@ const DeleteConfirmModal = observer(() => {
 		try {
 			if (deleteType === 'soft') {
 				await softDeleteRule(rule.id);
+				showSuccessToast('Rule moved to deleted rules successfully.');
 			} else {
 				await permanentDeleteRule(rule.id);
+				showSuccessToast('Rule permanently deleted.');
 			}
 
 			ruleManagementStore.closeDeleteConfirmModal();
 			// The hook will automatically refresh the data
 		} catch (error) {
 			console.error('Error deleting rule:', error);
-			alert('Failed to delete rule: ' + (error instanceof Error ? error.message : 'Unknown error'));
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			showErrorToast(`Failed to delete rule: ${errorMessage}`);
 		} finally {
 			setIsDeleting(false);
 		}

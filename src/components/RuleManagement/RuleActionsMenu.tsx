@@ -2,6 +2,7 @@ import { observer } from 'mobx-react-lite';
 import { useState, useRef, useEffect } from 'react';
 import { ruleManagementStore } from './RuleManagementStore';
 import { useRules } from '../../hooks/useRules';
+import { showSuccessToast, showErrorToast } from '../../utils/toast';
 import {
   EllipsisVerticalIcon,
   PencilIcon,
@@ -68,10 +69,12 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
         setIsRecovering(true);
         try {
           await recoverRule(rule.id);
+          showSuccessToast('Rule recovered successfully.');
           // The hook will automatically refresh the data
         } catch (error) {
           console.error('Error recovering rule:', error);
-          alert('Failed to recover rule: ' + (error instanceof Error ? error.message : 'Unknown error'));
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          showErrorToast(`Failed to recover rule: ${errorMessage}`);
         } finally {
           setIsRecovering(false);
         }
@@ -80,10 +83,13 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
         setIsTogglingStatus(true);
         try {
           await toggleRuleStatus(rule.id);
+          const newStatus = rule.status === 'active' ? 'inactive' : 'active';
+          showSuccessToast(`Rule ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully.`);
           // The hook will automatically refresh the data
         } catch (error) {
           console.error('Error toggling rule status:', error);
-          alert('Failed to update rule status: ' + (error instanceof Error ? error.message : 'Unknown error'));
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          showErrorToast(`Failed to update rule status: ${errorMessage}`);
         } finally {
           setIsTogglingStatus(false);
         }

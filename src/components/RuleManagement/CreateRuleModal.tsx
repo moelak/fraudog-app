@@ -2,6 +2,7 @@ import { observer } from 'mobx-react-lite';
 import { useState, useEffect } from 'react';
 import { ruleManagementStore } from './RuleManagementStore';
 import { useRules } from '../../hooks/useRules';
+import { showSuccessToast, showErrorToast } from '../../utils/toast';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 interface CreateRuleData {
@@ -118,7 +119,7 @@ const CreateRuleModal = observer(() => {
     // Simulate rule testing
     setTimeout(() => {
       setIsTestingRule(false);
-      alert('Rule syntax is valid! ✅');
+      showSuccessToast('Rule syntax is valid! ✅');
     }, 1500);
   };
 
@@ -152,6 +153,7 @@ const CreateRuleModal = observer(() => {
         }
         
         await updateRule(ruleManagementStore.editingRule.id, updates);
+        showSuccessToast('Rule updated successfully.');
       } else {
         // Create new rule
         const ruleData: CreateRuleData = {
@@ -166,6 +168,7 @@ const CreateRuleModal = observer(() => {
         };
         
         await createRule(ruleData);
+        showSuccessToast('Rule created successfully.');
       }
 
       // Close modal - the fetchRules() call in the hook will update the table
@@ -173,7 +176,8 @@ const CreateRuleModal = observer(() => {
       
     } catch (error) {
       console.error('Error saving rule:', error);
-      alert('Failed to save rule: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      showErrorToast(`Failed to save rule: ${errorMessage}`);
     } finally {
       setIsSaving(false);
     }

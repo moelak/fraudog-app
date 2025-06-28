@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ruleManagementStore } from './RuleManagementStore';
 import { useRules } from '../../hooks/useRules';
 import { uploadFile } from '../../utils/fileUpload';
+import { showSuccessToast, showErrorToast } from '../../utils/toast';
 import { XMarkIcon, CloudArrowUpIcon, DocumentTextIcon, SparklesIcon, PencilIcon, CheckIcon } from '@heroicons/react/24/outline';
 import Lottie from 'lottie-react';
 
@@ -189,10 +190,12 @@ const ChargebackAnalysisModal = observer(() => {
 	const handleImplementRule = async (ruleId: string) => {
 		try {
 			await implementRule(ruleId);
+			showSuccessToast('Rule implemented successfully and moved to the Rule Management table with status set to active.');
 			// The rule will be automatically removed from inProgressRules via WebSocket
 		} catch (error) {
 			console.error('Error implementing rule:', error);
-			alert('Failed to implement rule: ' + (error instanceof Error ? error.message : 'Unknown error'));
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			showErrorToast(`Failed to implement rule: ${errorMessage}`);
 		}
 	};
 
