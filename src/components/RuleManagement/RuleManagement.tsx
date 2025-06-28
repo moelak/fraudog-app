@@ -39,6 +39,14 @@ const RuleManagement = observer(() => {
 		{ id: 'deleted' as const, name: 'Deleted Rules', count: tabCounts.deleted },
 	];
 
+	// Debug function to check modal state
+	const handleOpenChargebackAnalysis = () => {
+		console.log('Opening Chargeback Analysis Modal...');
+		console.log('Current modal state:', ruleManagementStore.isChargebackAnalysisOpen);
+		ruleManagementStore.openChargebackAnalysis();
+		console.log('New modal state:', ruleManagementStore.isChargebackAnalysisOpen);
+	};
+
 	// if (loading) {
 	// 	return (
 	// 		<div className='flex items-center justify-center py-12'>
@@ -63,22 +71,6 @@ const RuleManagement = observer(() => {
 					<h1 className='text-3xl font-bold text-gray-900'>Rule Management</h1>
 					<p className='mt-2 text-gray-600'>Create and manage fraud detection rules</p>
 				</div>
-				{/* <div className='flex space-x-3'>
-					<button
-						onClick={ruleManagementStore.openChargebackAnalysis}
-						className='inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm'
-					>
-						<ChartBarIcon className='h-5 w-5 mr-2' />
-						Chargeback Analysis
-					</button>
-					<button
-						onClick={ruleManagementStore.openCreateModal}
-						className='inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm'
-					>
-						<PlusIcon className='h-5 w-5 mr-2' />
-						Create New Rule
-					</button>
-				</div> */}
 
 				<div className='relative inline-block text-left'>
 					<Menu as='div' className='relative'>
@@ -110,7 +102,7 @@ const RuleManagement = observer(() => {
 								<Menu.Item>
 									{({ active }) => (
 										<button
-											onClick={ruleManagementStore.openChargebackAnalysis}
+											onClick={handleOpenChargebackAnalysis}
 											className={`${active ? 'bg-blue-100' : ''} block px-4 py-2 text-sm text-gray-700 w-full text-left`}
 										>
 											Generate by AI
@@ -122,6 +114,19 @@ const RuleManagement = observer(() => {
 					</Menu>
 				</div>
 			</div>
+
+			{/* Debug info - remove this after testing */}
+			{/* <div className='bg-yellow-50 border border-yellow-200 rounded-lg p-4'>
+				<p className='text-yellow-800 text-sm'>
+					Debug: Chargeback Analysis Modal Open: {ruleManagementStore.isChargebackAnalysisOpen ? 'true' : 'false'}
+				</p>
+				<button 
+					onClick={handleOpenChargebackAnalysis}
+					className='mt-2 px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700'
+				>
+					Force Open Modal 
+				</button>
+			</div> */}
 
 			{/* Tabs and Search */}
 			<div className='bg-white rounded-xl shadow-sm border border-gray-100'>

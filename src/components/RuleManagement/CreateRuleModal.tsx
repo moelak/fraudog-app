@@ -2,6 +2,7 @@ import { observer } from 'mobx-react-lite';
 import { useState, useEffect } from 'react';
 import { ruleManagementStore } from './RuleManagementStore';
 import { useRules } from '../../hooks/useRules';
+import { showSuccessToast, showErrorToast } from '../../utils/toast';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 interface CreateRuleData {
@@ -18,14 +19,22 @@ interface CreateRuleData {
 interface FormData {
   name: string;
   category: string;
-  status: 'active' | 'inactive' | 'warning';
+  status: 'active' | 'inactive' | 'warning' | 'in_progress';
   severity: 'low' | 'medium' | 'high';
   condition: string;
   description: string;
   log_only: boolean;
 }
 
-interface UpdateRuleData extends Partial<CreateRuleData> {
+interface UpdateRuleData {
+  name?: string;
+  description?: string;
+  category?: string;
+  condition?: string;
+  status?: 'active' | 'inactive' | 'warning' | 'in progress';
+  severity?: 'low' | 'medium' | 'high';
+  log_only?: boolean;
+  source?: 'AI' | 'User';
   catches?: number;
   false_positives?: number;
   effectiveness?: number;
@@ -34,6 +43,7 @@ interface UpdateRuleData extends Partial<CreateRuleData> {
 const CreateRuleModal = observer(() => {
   const { createRule, updateRule } = useRules();
   const isEditing = !!ruleManagementStore.editingRule;
+  const isEditingFromGenerated = ruleManagementStore.isEditingFromGenerated;
   const modalTitle = isEditing ? 'Edit Rule' : 'Create New Rule';
   
   const [formData, setFormData] = useState<FormData>({
@@ -61,7 +71,7 @@ const CreateRuleModal = observer(() => {
       setFormData({
         name: rule.name,
         category: rule.category,
-        status: rule.status,
+        status: ['active', 'inactive', 'warning'].includes(rule.status) ? rule.status as 'active' | 'inactive' | 'warning' : 'active',
         severity: rule.severity,
         condition: rule.condition,
         description: rule.description,
@@ -116,7 +126,7 @@ const CreateRuleModal = observer(() => {
     // Simulate rule testing
     setTimeout(() => {
       setIsTestingRule(false);
-      alert('Rule syntax is valid! ✅');
+      showSuccessToast('Rule syntax is valid! ✅');
     }, 1500);
   };
 
@@ -137,12 +147,20 @@ const CreateRuleModal = observer(() => {
           description: formData.description,
           category: formData.category,
           condition: formData.condition,
-          status: formData.status,
           severity: formData.severity,
           log_only: formData.log_only
         };
         
+        // Only update status if NOT editing from Generated Rules
+        if (!isEditingFromGenerated) {
+          updates.status = formData.status as 'active' | 'inactive' | 'warning';
+        } else {
+          // Keep status as 'in progress' when editing from Generated Rules
+          updates.status = 'in progress';
+        }
+        
         await updateRule(ruleManagementStore.editingRule.id, updates);
+        showSuccessToast('Rule updated successfully.');
       } else {
         // Create new rule
         const ruleData: CreateRuleData = {
@@ -150,13 +168,14 @@ const CreateRuleModal = observer(() => {
           description: formData.description,
           category: formData.category,
           condition: formData.condition,
-          status: formData.status,
+          status: formData.status as 'active' | 'inactive' | 'warning',
           severity: formData.severity,
           log_only: formData.log_only,
           source: 'User'
         };
         
         await createRule(ruleData);
+        showSuccessToast('Rule created successfully.');
       }
 
       // Close modal - the fetchRules() call in the hook will update the table
@@ -164,7 +183,8 @@ const CreateRuleModal = observer(() => {
       
     } catch (error) {
       console.error('Error saving rule:', error);
-      alert('Failed to save rule: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      showErrorToast(`Failed to save rule: ${errorMessage}`);
     } finally {
       setIsSaving(false);
     }
@@ -201,8 +221,11 @@ const CreateRuleModal = observer(() => {
 
   if (!isOpen) return null;
 
+  // Use higher z-index when editing from Generated Rules to appear above Chargeback Analysis modal
+  const zIndexClass = isEditingFromGenerated ? 'z-[60]' : 'z-50';
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className={`fixed inset-0 ${zIndexClass} overflow-y-auto`}>
       <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         {/* Background overlay */}
         <div 
@@ -271,24 +294,26 @@ const CreateRuleModal = observer(() => {
                     )}
                   </div>
 
-                  {/* Status */}
-                  <div>
-                    <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                      Status *
-                    </label>
-                    <select
-                      id="status"
-                      value={formData.status}
-                      onChange={(e) => handleInputChange('status', e.target.value as 'active' | 'inactive' | 'warning')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      {statusOptions.map(status => (
-                        <option key={status} value={status}>
-                          {status.charAt(0).toUpperCase() + status.slice(1)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  {/* Status - Hide when editing from Generated Rules */}
+                  {!isEditingFromGenerated && (
+                    <div>
+                      <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                        Status *
+                      </label>
+                      <select
+                        id="status"
+                        value={formData.status}
+                        onChange={(e) => handleInputChange('status', e.target.value as 'active' | 'inactive' | 'warning')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        {statusOptions.map(status => (
+                          <option key={status} value={status}>
+                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   {/* Severity */}
                   <div>
@@ -386,6 +411,20 @@ const CreateRuleModal = observer(() => {
                     />
                   </button>
                 </div>
+
+                {/* Status Notice for Generated Rules */}
+                {isEditingFromGenerated && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="flex">
+                      <div className="ml-3">
+                        <h4 className="text-sm font-medium text-blue-800">Generated Rule</h4>
+                        <p className="text-sm text-blue-700 mt-1">
+                          This rule will remain in "in progress" status after editing. Use the "Implement Rule" button to activate it.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

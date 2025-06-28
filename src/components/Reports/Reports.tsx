@@ -21,7 +21,7 @@ const Reports = observer(() => {
             <div key={report.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
               <h3 className="font-semibold text-lg mb-2">{report.title}</h3>
               <p className="text-gray-600 text-sm mb-2">{report.description}</p>
-              <div className="flex justify-between items-center text-sm text-gray-500">
+              <div className=" justify-between items-center text-sm text-gray-500">
                 <span>Generated: {report.createdAt}</span>
                 <span className={`px-2 py-1 rounded-full text-xs ${
                   report.status === 'completed' ? 'bg-green-100 text-green-800' :

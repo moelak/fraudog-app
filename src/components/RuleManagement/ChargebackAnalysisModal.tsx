@@ -1,42 +1,127 @@
 import { observer } from 'mobx-react-lite';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ruleManagementStore } from './RuleManagementStore';
+import { useRules } from '../../hooks/useRules';
 import { uploadFile } from '../../utils/fileUpload';
-import { XMarkIcon, CloudArrowUpIcon, DocumentTextIcon, SparklesIcon } from '@heroicons/react/24/outline';
-
-type Rule = {
-	id: number;
-	name: string;
-	description: string;
-	condition: string;
-	confidence: number;
-	expectedCatches: number;
-	estimatedFalsePositives: number;
-};
+import { showSuccessToast, showErrorToast } from '../../utils/toast';
+import { XMarkIcon, CloudArrowUpIcon, DocumentTextIcon, SparklesIcon, PencilIcon, CheckIcon } from '@heroicons/react/24/outline';
+import Lottie from 'lottie-react';
 
 const ChargebackAnalysisModal = observer(() => {
+	const { implementRule } = useRules();
 	const [activeTab, setActiveTab] = useState<'analysis' | 'rules'>('analysis');
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const [csvPreview, setCsvPreview] = useState<string[]>([]);
 	const [isAnalyzing, setIsAnalyzing] = useState(false);
-	const [generatedRules, setGeneratedRules] = useState<Rule[]>([]);
-
-	// Filter states
-	// const [dateType, setDateType] = useState('Transaction Date');
-	// const [dateRange, setDateRange] = useState({ start: '', end: '' });
-	// const [activeFilter, setActiveFilter] = useState('Amount');
 	const [showSuccessModal, setShowSuccessModal] = useState(false);
 	const [errorMessage, setErrorMessage] = useState('');
+	const [animationData, setAnimationData] = useState(null);
+	const [initialRuleCount, setInitialRuleCount] = useState(0);
+	const [showFailureAlert, setShowFailureAlert] = useState(false);
+	
+	// Refs to track timers and data generation state
+	const failSafeTimerRef = useRef<NodeJS.Timeout | null>(null);
+	const checkRulesTimerRef = useRef<NodeJS.Timeout | null>(null);
+	const lastRuleCountRef = useRef(0);
+	const noNewDataTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const dataGenerationCompleteRef = useRef(false);
 
-	// const filters = ['Amount', 'Country', 'Mismatch', 'Card', 'Age', 'Device'];
+	// Load Lottie animation
+	useEffect(() => {
+		const loadAnimation = async () => {
+			try {
+				const response = await fetch('/loading/Animation-1751146315326.json');
+				const data = await response.json();
+				setAnimationData(data);
+			} catch (error) {
+				console.error('Error loading Lottie animation:', error);
+			}
+		};
+		loadAnimation();
+	}, []);
 
-	// // Sample pie chart data
-	// const pieChartData = [
-	// 	{ label: '$0-$100', value: 35, color: '#3B82F6' },
-	// 	{ label: '$100-$500', value: 28, color: '#10B981' },
-	// 	{ label: '$500-$1000', value: 20, color: '#F59E0B' },
-	// 	{ label: '$1000+', value: 17, color: '#EF4444' },
-	// ];
+	// Enhanced monitoring logic for rule generation
+	useEffect(() => {
+		if (showSuccessModal) {
+			console.log('Starting rule generation monitoring...');
+			dataGenerationCompleteRef.current = false;
+			lastRuleCountRef.current = initialRuleCount;
+
+			// Extended fail-safe timer (30 seconds total)
+			failSafeTimerRef.current = setTimeout(() => {
+				console.log('Fail-safe timer triggered - no rules generated in 40 seconds');
+				setShowSuccessModal(false);
+				setShowFailureAlert(true);
+				
+				// Auto-dismiss failure alert after 3 seconds
+				setTimeout(() => {
+					setShowFailureAlert(false);
+				}, 5000);
+			}, 40000); // 40 seconds fail-safe 
+
+			// Check for rule changes more frequently
+			checkRulesTimerRef.current = setInterval(() => {
+				const currentRuleCount = ruleManagementStore.inProgressRules.length;
+				
+				console.log(`Rule count check: ${currentRuleCount} (was ${lastRuleCountRef.current})`);
+				
+				// If we have new rules added
+				if (currentRuleCount > initialRuleCount) {
+					console.log('New rules detected!');
+					
+					// Check if rule count has stopped increasing (data generation complete)
+					if (currentRuleCount === lastRuleCountRef.current) {
+						// No new rules in the last check - start completion timer
+						if (!noNewDataTimeoutRef.current && !dataGenerationCompleteRef.current) {
+							console.log('No new rules in last check, starting completion timer...');
+							noNewDataTimeoutRef.current = setTimeout(() => {
+								console.log('Data generation appears complete, closing modal');
+								dataGenerationCompleteRef.current = true;
+								
+								// Clear all timers
+								if (failSafeTimerRef.current) {
+									clearTimeout(failSafeTimerRef.current);
+									failSafeTimerRef.current = null;
+								}
+								if (checkRulesTimerRef.current) {
+									clearInterval(checkRulesTimerRef.current);
+									checkRulesTimerRef.current = null;
+								}
+								
+								// Close modal and switch to rules tab
+								setShowSuccessModal(false);
+								setActiveTab('rules');
+							}, 5000); // Wait 5 seconds after last rule to ensure completion
+						}
+					} else {
+						// Rule count increased, reset the completion timer
+						if (noNewDataTimeoutRef.current) {
+							console.log('New rules still coming, resetting completion timer');
+							clearTimeout(noNewDataTimeoutRef.current);
+							noNewDataTimeoutRef.current = null;
+						}
+						lastRuleCountRef.current = currentRuleCount;
+					}
+				}
+			}, 2000); // Check every 2 seconds
+
+			return () => {
+				// Cleanup all timers
+				if (failSafeTimerRef.current) {
+					clearTimeout(failSafeTimerRef.current);
+					failSafeTimerRef.current = null;
+				}
+				if (checkRulesTimerRef.current) {
+					clearInterval(checkRulesTimerRef.current);
+					checkRulesTimerRef.current = null;
+				}
+				if (noNewDataTimeoutRef.current) {
+					clearTimeout(noNewDataTimeoutRef.current);
+					noNewDataTimeoutRef.current = null;
+				}
+			};
+		}
+	}, [showSuccessModal, initialRuleCount]);
 
 	const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
@@ -78,10 +163,11 @@ const ChargebackAnalysisModal = observer(() => {
 		if (!selectedFile) return;
 
 		setIsAnalyzing(true);
+		setInitialRuleCount(ruleManagementStore.inProgressRules.length);
+		console.log('Starting analysis with initial rule count:', ruleManagementStore.inProgressRules.length);
 
 		try {
 			// Upload file to Supabase storage using the uploadFile utility
-			// This will trigger the file-processor Edge Function via the storage webhook
 			const uploadResult = await uploadFile(selectedFile);
 
 			if (!uploadResult.success) {
@@ -90,39 +176,7 @@ const ChargebackAnalysisModal = observer(() => {
 
 			console.log('File uploaded successfully:', uploadResult);
 
-			// Mock generated rules based on analysis
-			// In a real implementation, you might want to poll for results or use a webhook callback
-			const mockRules = [
-				{
-					id: Date.now() + 1,
-					name: 'High-Risk Transaction Pattern',
-					description: 'Identifies transactions with high-risk characteristics based on historical chargeback data.',
-					condition: 'amount > 500 AND country NOT IN ("US", "CA", "UK") AND card_age < 30',
-					confidence: 92,
-					expectedCatches: 124,
-					estimatedFalsePositives: 8,
-				},
-				{
-					id: Date.now() + 2,
-					name: 'Multiple Rapid Transactions',
-					description: 'Detects when a customer makes multiple purchases in a short time period.',
-					condition: 'transaction_count > 3 AND time_between_transactions < 300 AND different_shipping_addresses > 1',
-					confidence: 85,
-					expectedCatches: 92,
-					estimatedFalsePositives: 12,
-				},
-				{
-					id: Date.now() + 3,
-					name: 'Billing/Shipping Mismatch',
-					description: 'Identifies orders where billing and shipping addresses are in different countries.',
-					condition: 'billing_country != shipping_country AND amount > 200',
-					confidence: 78,
-					expectedCatches: 67,
-					estimatedFalsePositives: 15,
-				},
-			];
-
-			setGeneratedRules(mockRules);
+			// Show success message and switch to Generated Rules tab
 			setActiveTab('rules');
 			setShowSuccessModal(true);
 		} catch (error) {
@@ -133,27 +187,46 @@ const ChargebackAnalysisModal = observer(() => {
 		}
 	};
 
+	const handleImplementRule = async (ruleId: string) => {
+		try {
+			await implementRule(ruleId);
+			showSuccessToast('Rule implemented successfully and moved to the Rule Management table with status set to active.');
+			// The rule will be automatically removed from inProgressRules via WebSocket
+		} catch (error) {
+			console.error('Error implementing rule:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			showErrorToast(`Failed to implement rule: ${errorMessage}`);
+		}
+	};
+
+	const handleEditRule = (rule: any) => {
+		ruleManagementStore.editRule(rule, true); // true indicates editing from Generated Rules
+	};
+
 	const handleClose = () => {
+		// Clear all timers when closing
+		if (failSafeTimerRef.current) {
+			clearTimeout(failSafeTimerRef.current);
+			failSafeTimerRef.current = null;
+		}
+		if (checkRulesTimerRef.current) {
+			clearInterval(checkRulesTimerRef.current);
+			checkRulesTimerRef.current = null;
+		}
+		if (noNewDataTimeoutRef.current) {
+			clearTimeout(noNewDataTimeoutRef.current);
+			noNewDataTimeoutRef.current = null;
+		}
+
 		setSelectedFile(null);
 		setCsvPreview([]);
 		setIsAnalyzing(false);
-		setGeneratedRules([]);
 		setActiveTab('analysis');
+		setShowSuccessModal(false);
+		setShowFailureAlert(false);
+		dataGenerationCompleteRef.current = false;
 		ruleManagementStore.closeChargebackAnalysis();
 	};
-
-	// const handleImplementRule = (rule: Rule) => {
-	// 	ruleManagementStore.addRule({
-	// 		name: rule.name,
-	// 		description: rule.description,
-	// 		category: 'Behavioral',
-	// 		condition: rule.condition,
-	// 		status: 'active',
-	// 		severity: 'medium',
-	// 	});
-
-	// 	setErrorMessage(`Rule "${rule.name}" has been implemented successfully!`);
-	// };
 
 	if (!ruleManagementStore.isChargebackAnalysisOpen) return null;
 
@@ -163,7 +236,7 @@ const ChargebackAnalysisModal = observer(() => {
 				{/* Background overlay */}
 				<div className='fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity' onClick={handleClose} />
 
-				{/* Modal panel */}
+				{/* Modal panel - Reverted to original structure */}
 				<div className='inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full'>
 					{/* Header */}
 					<div className='bg-white px-6 pt-6 pb-4'>
@@ -192,9 +265,9 @@ const ChargebackAnalysisModal = observer(() => {
 									}`}
 								>
 									Generated Rules
-									{generatedRules.length > 0 && (
+									{ruleManagementStore.inProgressRules.length > 0 && (
 										<span className='ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800'>
-											{generatedRules.length}
+											{ruleManagementStore.inProgressRules.length}
 										</span>
 									)}
 								</button>
@@ -202,8 +275,8 @@ const ChargebackAnalysisModal = observer(() => {
 						</div>
 					</div>
 
-					{/* Content */}
-					<div className='px-6 pb-6 max-h-96 overflow-y-auto'>
+					{/* Content - Reverted to original max-height */}
+					<div className='px-6 pb-6 max-h-[35rem] overflow-y-auto'>
 						{activeTab === 'analysis' ? (
 							<div className='space-y-6'>
 								{/* Upload Section */}
@@ -244,109 +317,6 @@ const ChargebackAnalysisModal = observer(() => {
 									)}
 								</div>
 
-								{/* Visualization Filters */}
-
-								{/* <div>
-									<h4 className='text-lg font-medium text-gray-900 mb-4'>Visualization Filters</h4>
-									<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-										<div>
-											<label className='block text-sm font-medium text-gray-700 mb-2'>Date Type</label>
-											<select
-												value={dateType}
-												onChange={(e) => setDateType(e.target.value)}
-												className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-											>
-												<option>Transaction Date</option>
-												<option>Chargeback Date</option>
-												<option>Settlement Date</option>
-											</select>
-										</div>
-										<div>
-											<label className='block text-sm font-medium text-gray-700 mb-2'>Date Range</label>
-											<div className='flex space-x-2'>
-												<input
-													type='date'
-													value={dateRange.start}
-													onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))}
-													className='flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-												/>
-												<input
-													type='date'
-													value={dateRange.end}
-													onChange={(e) => setDateRange((prev) => ({ ...prev, end: e.target.value }))}
-													className='flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-												/>
-											</div>
-										</div>
-									</div>
-
-								
-									<div className='mt-4'>
-										<label className='block text-sm font-medium text-gray-700 mb-2'>Filter By</label>
-										<div className='flex flex-wrap gap-2'>
-											{filters.map((filter) => (
-												<button
-													key={filter}
-													onClick={() => setActiveFilter(filter)}
-													className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-														activeFilter === filter ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-													}`}
-												>
-													{filter}
-												</button>
-											))}
-										</div>
-									</div>
-								</div> */}
-
-								{/* Pie Chart */}
-								{/* <div>
-									<h4 className='text-lg font-medium text-gray-900 mb-4 flex items-center'>
-										<ChartPieIcon className='h-5 w-5 mr-2' />
-										Chargebacks by Transaction Amount
-									</h4>
-									<div className='bg-gray-50 rounded-lg p-6'>
-										<div className='flex items-center justify-center'>
-											<div className='relative w-48 h-48'>
-												<svg viewBox='0 0 200 200' className='w-full h-full'>
-													{pieChartData.map((segment, index) => {
-														const total = pieChartData.reduce((sum, item) => sum + item.value, 0);
-														const angle = (segment.value / total) * 360;
-														const startAngle = pieChartData.slice(0, index).reduce((sum, item) => sum + (item.value / total) * 360, 0);
-
-														const x1 = 100 + 80 * Math.cos(((startAngle - 90) * Math.PI) / 180);
-														const y1 = 100 + 80 * Math.sin(((startAngle - 90) * Math.PI) / 180);
-														const x2 = 100 + 80 * Math.cos(((startAngle + angle - 90) * Math.PI) / 180);
-														const y2 = 100 + 80 * Math.sin(((startAngle + angle - 90) * Math.PI) / 180);
-
-														const largeArcFlag = angle > 180 ? 1 : 0;
-
-														return (
-															<path
-																key={index}
-																d={`M 100 100 L ${x1} ${y1} A 80 80 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
-																fill={segment.color}
-																stroke='white'
-																strokeWidth='2'
-															/>
-														);
-													})}
-												</svg>
-											</div>
-											<div className='ml-8 space-y-2'>
-												{pieChartData.map((segment, index) => (
-													<div key={index} className='flex items-center'>
-														<div className='w-4 h-4 rounded mr-3' style={{ backgroundColor: segment.color }} />
-														<span className='text-sm text-gray-700'>
-															{segment.label}: {segment.value}%
-														</span>
-													</div>
-												))}
-											</div>
-										</div>
-									</div>
-								</div> */}
-
 								{/* Analyze Button */}
 								<div className='flex justify-center'>
 									<button
@@ -371,11 +341,11 @@ const ChargebackAnalysisModal = observer(() => {
 						) : (
 							<div className='space-y-6'>
 								{/* Generated Rules */}
-								{generatedRules.length > 0 ? (
+								{ruleManagementStore.inProgressRules.length > 0 ? (
 									<div>
 										<h4 className='text-lg font-medium text-gray-900 mb-4'>Generated Fraud Detection Rules</h4>
 										<div className='space-y-4'>
-											{generatedRules.map((rule) => (
+											{ruleManagementStore.inProgressRules.map((rule) => (
 												<div key={rule.id} className='border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow'>
 													<div className='flex justify-between items-start mb-4'>
 														<div className='flex-1'>
@@ -384,14 +354,14 @@ const ChargebackAnalysisModal = observer(() => {
 														</div>
 														<span
 															className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-																rule.confidence >= 90
+																rule.effectiveness >= 90
 																	? 'bg-green-100 text-green-800'
-																	: rule.confidence >= 70
+																	: rule.effectiveness >= 70
 																	? 'bg-yellow-100 text-yellow-800'
 																	: 'bg-red-100 text-red-800'
 															}`}
 														>
-															{rule.confidence}% confidence
+															{rule.effectiveness > 0 ? `${rule.effectiveness}% confidence` : 'Processing...'}
 														</span>
 													</div>
 
@@ -401,27 +371,34 @@ const ChargebackAnalysisModal = observer(() => {
 
 													<div className='grid grid-cols-3 gap-4 mb-4'>
 														<div className='text-center'>
-															<div className='text-2xl font-bold text-green-600'>{rule.expectedCatches}</div>
+															<div className='text-2xl font-bold text-green-600'>{rule.catches > 0 ? rule.catches : '—'}</div>
 															<div className='text-xs text-gray-500'>Expected Catches</div>
 														</div>
 														<div className='text-center'>
-															<div className='text-2xl font-bold text-red-600'>{rule.estimatedFalsePositives}</div>
+															<div className='text-2xl font-bold text-red-600'>{rule.false_positives > 0 ? rule.false_positives : '—'}</div>
 															<div className='text-xs text-gray-500'>Est. False Positives</div>
 														</div>
 														<div className='text-center'>
 															<div className='text-2xl font-bold text-blue-600'>
-																{Math.round((rule.expectedCatches / (rule.expectedCatches + rule.estimatedFalsePositives)) * 100)}%
+																{rule.effectiveness > 0 ? `${rule.effectiveness}%` : '—'}
 															</div>
 															<div className='text-xs text-gray-500'>Effectiveness</div>
 														</div>
 													</div>
 
 													<div className='flex justify-end space-x-3'>
-														<button className='px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors'>Preview</button>
-														<button
-															// onClick={() => handleImplementRule(rule)}
-															className='px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors'
+														<button 
+															onClick={() => handleEditRule(rule)}
+															className='inline-flex items-center px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors'
 														>
+															<PencilIcon className='h-4 w-4 mr-2' />
+															Edit
+														</button>
+														<button
+															onClick={() => handleImplementRule(rule.id)}
+															className='inline-flex items-center px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors'
+														>
+															<CheckIcon className='h-4 w-4 mr-2' />
 															Implement Rule
 														</button>
 													</div>
@@ -441,20 +418,43 @@ const ChargebackAnalysisModal = observer(() => {
 					</div>
 				</div>
 			</div>
+
+			{/* Success Modal - Full Screen with Lottie Animation */}
 			{showSuccessModal && (
-				<div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50'>
-					<div className='bg-white rounded-xl shadow-xl p-6 max-w-md text-center'>
-						<h2 className='text-xl font-semibold text-green-600 mb-3'>Upload Successful</h2>
-						<p className='text-gray-700 mb-4'>
-							Your file has been uploaded. Our AI is processing it now. The generated rules will appear shortly in the <strong>Generated Rules</strong> tab.
+				<div className='fixed inset-0 z-[60] bg-white flex flex-col items-center justify-center'>
+					{/* Lottie Animation - Increased Size */}
+					{animationData && (
+						<div className='mb-8'>
+							<Lottie 
+								animationData={animationData} 
+								style={{ width: 500, height: 500 }}
+								loop={true}
+							/>
+						</div>
+					)}
+					
+					{/* Success Message - Updated Text */}
+					<div className='max-w-md text-center'>
+						<p className='text-gray-700 text-lg'>
+							Our AI is processing it now. The generated rules will appear in real-time in the <strong>Generated Rules</strong> tab.
 						</p>
-						<button onClick={() => setShowSuccessModal(false)} className='bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition'>
-							Got it
-						</button>
 					</div>
 				</div>
 			)}
 
+			{/* Failure Alert Modal */}
+			{showFailureAlert && (
+				<div className='fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50'>
+					<div className='bg-white rounded-xl shadow-xl p-6 max-w-md text-center'>
+						<h2 className='text-xl font-semibold text-red-600 mb-3'>Processing Failed</h2>
+						<p className='text-gray-700'>
+							Something went wrong. Please try again.
+						</p>
+					</div>
+				</div>
+			)}
+
+			{/* Error Modal */}
 			{errorMessage && (
 				<div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50'>
 					<div className='bg-white rounded-xl shadow-xl p-6 max-w-md text-center'>

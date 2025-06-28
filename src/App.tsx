@@ -3,6 +3,7 @@ import { useAuth } from './hooks/useAuth';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Dashboard from './components/Dashboard/Dashboard';
 import LandingPage from './components/LandingPage/LandingPage';
+import ToastContainer from './components/Toast/ToastContainer';
 
 const App = () => {
   const { loading, user } = useAuth();
@@ -10,7 +11,7 @@ const App = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
+        <div className="text-center"> 
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
@@ -18,32 +19,35 @@ const App = () => {
     );
   }
 
-  return (
-   <Routes>
-  {/* Landing page */}
-  <Route 
-    path="/" 
-    element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
-  />
+  return ( 
+    <>
+      <Routes>
+        {/* Landing page */}
+        <Route 
+          path="/" 
+          element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
+        />
 
+        {/* Protected dashboard */}
+        <Route
+          path="/dashboard/*"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
 
-  {/* Protected dashboard */}
-  <Route
-    path="/dashboard/*"
-    element={
-      <ProtectedRoute>
-        <Dashboard />
-      </ProtectedRoute>
-    }
-  />
+        {/* Fallback */}
+        <Route 
+          path="*" 
+          element={<Navigate to={user ? "/dashboard" : "/"} replace />} 
+        />
+      </Routes>
 
-  {/* Fallback */}
-  <Route 
-    path="*" 
-    element={<Navigate to={user ? "/dashboard" : "/"} replace />} 
-  />
-</Routes>
-
+      {/* Toast Container */}
+      <ToastContainer />
+    </>
   );
 };
 
