@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ruleManagementStore } from './RuleManagementStore';
 import { useRules } from '../../hooks/useRules';
 import { uploadFile } from '../../utils/fileUpload';
@@ -17,6 +17,13 @@ const ChargebackAnalysisModal = observer(() => {
 	const [animationData, setAnimationData] = useState(null);
 	const [initialRuleCount, setInitialRuleCount] = useState(0);
 	const [showFailureAlert, setShowFailureAlert] = useState(false);
+	
+	// Refs to track timers and data generation state
+	const failSafeTimerRef = useRef<NodeJS.Timeout | null>(null);
+	const checkRulesTimerRef = useRef<NodeJS.Timeout | null>(null);
+	const lastRuleCountRef = useRef(0);
+	const noNewDataTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const dataGenerationCompleteRef = useRef(false);
 
 	// Load Lottie animation
 	useEffect(() => {
@@ -32,44 +39,85 @@ const ChargebackAnalysisModal = observer(() => {
 		loadAnimation();
 	}, []);
 
-	// Monitor rule count changes and implement fail-safe logic
+	// Enhanced monitoring logic for rule generation
 	useEffect(() => {
 		if (showSuccessModal) {
-			// Start 10-second timer for fail-safe
-			const failSafeTimer = setTimeout(() => {
-				const currentRuleCount = ruleManagementStore.inProgressRules.length;
-				
-				// If no new rules were added, show failure alert
-				if (currentRuleCount <= initialRuleCount) {
-					setShowSuccessModal(false);
-					setShowFailureAlert(true);
-					
-					// Auto-dismiss failure alert after 3 seconds
-					setTimeout(() => {
-						setShowFailureAlert(false);
-					}, 3000);
-				}
-			}, 10000); // 10 seconds
+			console.log('Starting rule generation monitoring...');
+			dataGenerationCompleteRef.current = false;
+			lastRuleCountRef.current = initialRuleCount;
 
-			// Check for successful rule addition
-			const checkRulesTimer = setInterval(() => {
+			// Extended fail-safe timer (30 seconds total)
+			failSafeTimerRef.current = setTimeout(() => {
+				console.log('Fail-safe timer triggered - no rules generated in 30 seconds');
+				setShowSuccessModal(false);
+				setShowFailureAlert(true);
+				
+				// Auto-dismiss failure alert after 3 seconds
+				setTimeout(() => {
+					setShowFailureAlert(false);
+				}, 3000);
+			}, 30000); // 30 seconds fail-safe
+
+			// Check for rule changes more frequently
+			checkRulesTimerRef.current = setInterval(() => {
 				const currentRuleCount = ruleManagementStore.inProgressRules.length;
 				
-				// If we have new rules added (more than initial count), auto-close after a delay
+				console.log(`Rule count check: ${currentRuleCount} (was ${lastRuleCountRef.current})`);
+				
+				// If we have new rules added
 				if (currentRuleCount > initialRuleCount) {
-					clearTimeout(failSafeTimer);
-					clearInterval(checkRulesTimer);
+					console.log('New rules detected!');
 					
-					setTimeout(() => {
-						setShowSuccessModal(false);
-						setActiveTab('rules'); // Switch to Generated Rules tab
-					}, 2000); // 2 second delay to show the success state
+					// Check if rule count has stopped increasing (data generation complete)
+					if (currentRuleCount === lastRuleCountRef.current) {
+						// No new rules in the last check - start completion timer
+						if (!noNewDataTimeoutRef.current && !dataGenerationCompleteRef.current) {
+							console.log('No new rules in last check, starting completion timer...');
+							noNewDataTimeoutRef.current = setTimeout(() => {
+								console.log('Data generation appears complete, closing modal');
+								dataGenerationCompleteRef.current = true;
+								
+								// Clear all timers
+								if (failSafeTimerRef.current) {
+									clearTimeout(failSafeTimerRef.current);
+									failSafeTimerRef.current = null;
+								}
+								if (checkRulesTimerRef.current) {
+									clearInterval(checkRulesTimerRef.current);
+									checkRulesTimerRef.current = null;
+								}
+								
+								// Close modal and switch to rules tab
+								setShowSuccessModal(false);
+								setActiveTab('rules');
+							}, 5000); // Wait 5 seconds after last rule to ensure completion
+						}
+					} else {
+						// Rule count increased, reset the completion timer
+						if (noNewDataTimeoutRef.current) {
+							console.log('New rules still coming, resetting completion timer');
+							clearTimeout(noNewDataTimeoutRef.current);
+							noNewDataTimeoutRef.current = null;
+						}
+						lastRuleCountRef.current = currentRuleCount;
+					}
 				}
-			}, 1000); // Check every second
+			}, 2000); // Check every 2 seconds
 
 			return () => {
-				clearTimeout(failSafeTimer);
-				clearInterval(checkRulesTimer);
+				// Cleanup all timers
+				if (failSafeTimerRef.current) {
+					clearTimeout(failSafeTimerRef.current);
+					failSafeTimerRef.current = null;
+				}
+				if (checkRulesTimerRef.current) {
+					clearInterval(checkRulesTimerRef.current);
+					checkRulesTimerRef.current = null;
+				}
+				if (noNewDataTimeoutRef.current) {
+					clearTimeout(noNewDataTimeoutRef.current);
+					noNewDataTimeoutRef.current = null;
+				}
 			};
 		}
 	}, [showSuccessModal, initialRuleCount]);
@@ -115,6 +163,7 @@ const ChargebackAnalysisModal = observer(() => {
 
 		setIsAnalyzing(true);
 		setInitialRuleCount(ruleManagementStore.inProgressRules.length);
+		console.log('Starting analysis with initial rule count:', ruleManagementStore.inProgressRules.length);
 
 		try {
 			// Upload file to Supabase storage using the uploadFile utility
@@ -152,12 +201,27 @@ const ChargebackAnalysisModal = observer(() => {
 	};
 
 	const handleClose = () => {
+		// Clear all timers when closing
+		if (failSafeTimerRef.current) {
+			clearTimeout(failSafeTimerRef.current);
+			failSafeTimerRef.current = null;
+		}
+		if (checkRulesTimerRef.current) {
+			clearInterval(checkRulesTimerRef.current);
+			checkRulesTimerRef.current = null;
+		}
+		if (noNewDataTimeoutRef.current) {
+			clearTimeout(noNewDataTimeoutRef.current);
+			noNewDataTimeoutRef.current = null;
+		}
+
 		setSelectedFile(null);
 		setCsvPreview([]);
 		setIsAnalyzing(false);
 		setActiveTab('analysis');
 		setShowSuccessModal(false);
 		setShowFailureAlert(false);
+		dataGenerationCompleteRef.current = false;
 		ruleManagementStore.closeChargebackAnalysis();
 	};
 
