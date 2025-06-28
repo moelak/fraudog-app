@@ -26,11 +26,18 @@ interface FormData {
   log_only: boolean;
 }
 
-interface UpdateRuleData extends Partial<CreateRuleData> {
+interface UpdateRuleData {
+  name?: string;
+  description?: string;
+  category?: string;
+  condition?: string;
+  status?: 'active' | 'inactive' | 'warning' | 'in progress';
+  severity?: 'low' | 'medium' | 'high';
+  log_only?: boolean;
+  source?: 'AI' | 'User';
   catches?: number;
   false_positives?: number;
   effectiveness?: number;
-  status?: 'active' | 'inactive' | 'warning' | 'in progress';
 }
 
 const CreateRuleModal = observer(() => {

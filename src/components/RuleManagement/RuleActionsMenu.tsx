@@ -19,7 +19,7 @@ interface RuleActionsMenuProps {
     category: string;
     condition: string;
     severity: 'low' | 'medium' | 'high';
-    status: 'active' | 'inactive' | 'warning';
+    status: 'active' | 'inactive' | 'warning' | 'in progress';
     log_only: boolean;
     catches: number;
     false_positives: number;

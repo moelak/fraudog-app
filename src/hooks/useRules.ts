@@ -27,13 +27,21 @@ export interface CreateRuleData {
   description: string;
   category: string;
   condition: string;
-  status: 'active' | 'inactive' | 'warning' | 'in progress';
+  status: 'active' | 'inactive' | 'warning';
   severity: 'low' | 'medium' | 'high';
   log_only: boolean;
   source?: 'AI' | 'User';
 }
 
-export interface UpdateRuleData extends Partial<CreateRuleData> {
+export interface UpdateRuleData {
+  name?: string;
+  description?: string;
+  category?: string;
+  condition?: string;
+  status?: 'active' | 'inactive' | 'warning' | 'in progress';
+  severity?: 'low' | 'medium' | 'high';
+  log_only?: boolean;
+  source?: 'AI' | 'User';
   catches?: number;
   false_positives?: number;
   effectiveness?: number;
@@ -152,7 +160,7 @@ export function useRules() {
         );
 
         // Subscribe to the channel
-        const subscriptionPromise = channel.subscribe((status, err) => {
+        channel.subscribe((status, err) => {
           console.log('Subscription status:', status);
           
           if (err) {
@@ -174,14 +182,6 @@ export function useRules() {
         });
 
         subscriptionRef.current = channel;
-
-        // Handle subscription promise if it exists
-        if (subscriptionPromise && typeof subscriptionPromise.then === 'function') {
-          subscriptionPromise.catch((error) => {
-            console.error('Subscription promise error:', error);
-            isSubscribedRef.current = false;
-          });
-        }
 
       } catch (error) {
         console.error('Error setting up Realtime:', error);
