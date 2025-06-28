@@ -55,7 +55,7 @@ const ChargebackAnalysisModal = observer(() => {
 				// Auto-dismiss failure alert after 3 seconds
 				setTimeout(() => {
 					setShowFailureAlert(false);
-				}, 3000);
+				}, 5000);
 			}, 40000); // 40 seconds fail-safe 
 
 			// Check for rule changes more frequently
