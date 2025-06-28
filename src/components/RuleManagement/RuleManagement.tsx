@@ -116,7 +116,7 @@ const RuleManagement = observer(() => {
 			</div>
 
 			{/* Debug info - remove this after testing */}
-			<div className='bg-yellow-50 border border-yellow-200 rounded-lg p-4'>
+			{/* <div className='bg-yellow-50 border border-yellow-200 rounded-lg p-4'>
 				<p className='text-yellow-800 text-sm'>
 					Debug: Chargeback Analysis Modal Open: {ruleManagementStore.isChargebackAnalysisOpen ? 'true' : 'false'}
 				</p>
@@ -124,9 +124,9 @@ const RuleManagement = observer(() => {
 					onClick={handleOpenChargebackAnalysis}
 					className='mt-2 px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700'
 				>
-					Force Open Modal
+					Force Open Modal 
 				</button>
-			</div>
+			</div> */}
 
 			{/* Tabs and Search */}
 			<div className='bg-white rounded-xl shadow-sm border border-gray-100'>
