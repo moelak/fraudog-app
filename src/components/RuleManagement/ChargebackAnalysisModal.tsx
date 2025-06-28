@@ -48,7 +48,7 @@ const ChargebackAnalysisModal = observer(() => {
 
 			// Extended fail-safe timer (30 seconds total)
 			failSafeTimerRef.current = setTimeout(() => {
-				console.log('Fail-safe timer triggered - no rules generated in 30 seconds');
+				console.log('Fail-safe timer triggered - no rules generated in 40 seconds');
 				setShowSuccessModal(false);
 				setShowFailureAlert(true);
 				
