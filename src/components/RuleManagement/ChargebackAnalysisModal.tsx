@@ -209,7 +209,7 @@ const ChargebackAnalysisModal = observer(() => {
 					</div>
 
 					{/* Content - Reverted to original max-height */}
-					<div className='px-6 pb-6 max-h-96 overflow-y-auto'>
+					<div className='px-6 pb-6 max-h-[35rem] overflow-y-auto'>
 						{activeTab === 'analysis' ? (
 							<div className='space-y-6'>
 								{/* Upload Section */}
