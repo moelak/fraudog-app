@@ -16,6 +16,7 @@ const ChargebackAnalysisModal = observer(() => {
 	const [errorMessage, setErrorMessage] = useState('');
 	const [animationData, setAnimationData] = useState(null);
 	const [initialRuleCount, setInitialRuleCount] = useState(0);
+	const [showFailureAlert, setShowFailureAlert] = useState(false);
 
 	// Load Lottie animation
 	useEffect(() => {
@@ -31,21 +32,47 @@ const ChargebackAnalysisModal = observer(() => {
 		loadAnimation();
 	}, []);
 
-	// Monitor rule count changes to auto-close modal
+	// Monitor rule count changes and implement fail-safe logic
 	useEffect(() => {
-		if (showSuccessModal && initialRuleCount > 0) {
-			const currentRuleCount = ruleManagementStore.inProgressRules.length;
-			// If we have new rules added (more than initial count), auto-close after a delay
-			if (currentRuleCount > initialRuleCount) {
-				const timer = setTimeout(() => {
+		if (showSuccessModal) {
+			// Start 10-second timer for fail-safe
+			const failSafeTimer = setTimeout(() => {
+				const currentRuleCount = ruleManagementStore.inProgressRules.length;
+				
+				// If no new rules were added, show failure alert
+				if (currentRuleCount <= initialRuleCount) {
 					setShowSuccessModal(false);
-					setActiveTab('rules'); // Switch to Generated Rules tab
-				}, 3000); // 3 second delay to show the success state
+					setShowFailureAlert(true);
+					
+					// Auto-dismiss failure alert after 3 seconds
+					setTimeout(() => {
+						setShowFailureAlert(false);
+					}, 3000);
+				}
+			}, 10000); // 10 seconds
 
-				return () => clearTimeout(timer);
-			}
+			// Check for successful rule addition
+			const checkRulesTimer = setInterval(() => {
+				const currentRuleCount = ruleManagementStore.inProgressRules.length;
+				
+				// If we have new rules added (more than initial count), auto-close after a delay
+				if (currentRuleCount > initialRuleCount) {
+					clearTimeout(failSafeTimer);
+					clearInterval(checkRulesTimer);
+					
+					setTimeout(() => {
+						setShowSuccessModal(false);
+						setActiveTab('rules'); // Switch to Generated Rules tab
+					}, 2000); // 2 second delay to show the success state
+				}
+			}, 1000); // Check every second
+
+			return () => {
+				clearTimeout(failSafeTimer);
+				clearInterval(checkRulesTimer);
+			};
 		}
-	}, [showSuccessModal, initialRuleCount, ruleManagementStore.inProgressRules.length]);
+	}, [showSuccessModal, initialRuleCount]);
 
 	const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
@@ -130,6 +157,7 @@ const ChargebackAnalysisModal = observer(() => {
 		setIsAnalyzing(false);
 		setActiveTab('analysis');
 		setShowSuccessModal(false);
+		setShowFailureAlert(false);
 		ruleManagementStore.closeChargebackAnalysis();
 	};
 
@@ -141,10 +169,10 @@ const ChargebackAnalysisModal = observer(() => {
 				{/* Background overlay */}
 				<div className='fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity' onClick={handleClose} />
 
-				{/* Modal panel */}
-				<div className='inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full'>
+				{/* Modal panel with increased height */}
+				<div className='inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full max-h-[90vh] min-h-[80vh] flex flex-col'>
 					{/* Header */}
-					<div className='bg-white px-6 pt-6 pb-4'>
+					<div className='bg-white px-6 pt-6 pb-4 flex-shrink-0'>
 						<div className='flex items-center justify-between mb-6'>
 							<h3 className='text-xl font-semibold text-gray-900'>Chargeback Analysis</h3>
 							<button type='button' onClick={handleClose} className='text-gray-400 hover:text-gray-600 transition-colors'>
@@ -180,8 +208,8 @@ const ChargebackAnalysisModal = observer(() => {
 						</div>
 					</div>
 
-					{/* Content */}
-					<div className='px-6 pb-6 max-h-96 overflow-y-auto'>
+					{/* Content with flex-grow for proper height distribution */}
+					<div className='px-6 pb-6 flex-grow overflow-y-auto'>
 						{activeTab === 'analysis' ? (
 							<div className='space-y-6'>
 								{/* Upload Section */}
@@ -327,22 +355,33 @@ const ChargebackAnalysisModal = observer(() => {
 			{/* Success Modal - Full Screen with Lottie Animation */}
 			{showSuccessModal && (
 				<div className='fixed inset-0 z-[60] bg-white flex flex-col items-center justify-center'>
-					{/* Lottie Animation */}
+					{/* Lottie Animation - Increased Size */}
 					{animationData && (
 						<div className='mb-8'>
 							<Lottie 
 								animationData={animationData} 
-								style={{ width: 200, height: 200 }}
+								style={{ width: 300, height: 300 }}
 								loop={true}
 							/>
 						</div>
 					)}
 					
-					{/* Success Message */}
+					{/* Success Message - Updated Text */}
 					<div className='max-w-md text-center'>
-						<h2 className='text-xl font-semibold text-green-600 mb-3'>Upload Successful</h2>
+						<p className='text-gray-700 text-lg'>
+							Our AI is processing it now. The generated rules will appear in real-time in the <strong>Generated Rules</strong> tab.
+						</p>
+					</div>
+				</div>
+			)}
+
+			{/* Failure Alert Modal */}
+			{showFailureAlert && (
+				<div className='fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50'>
+					<div className='bg-white rounded-xl shadow-xl p-6 max-w-md text-center'>
+						<h2 className='text-xl font-semibold text-red-600 mb-3'>Processing Failed</h2>
 						<p className='text-gray-700'>
-							Your file has been uploaded. Our AI is processing it now. The generated rules will appear in real-time in the <strong>Generated Rules</strong> tab.
+							Something went wrong. Please try again.
 						</p>
 					</div>
 				</div>
