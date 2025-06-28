@@ -424,7 +424,7 @@ const ChargebackAnalysisModal = observer(() => {
 						<div className='mb-8'>
 							<Lottie 
 								animationData={animationData} 
-								style={{ width: 300, height: 300 }}
+								style={{ width: 500, height: 500 }}
 								loop={true}
 							/>
 						</div>
