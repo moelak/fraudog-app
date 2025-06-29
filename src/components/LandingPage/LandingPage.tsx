@@ -201,7 +201,7 @@ const LandingPage = observer(() => {
 
 										{/* Robot Image */}
 										<img
-                      id="footstep-start"
+                         id="footstep-start"
 											src='/images/roboAI.png'
 											alt='AI Fraud Detection Robot'
 											className='relative z-10 w-[580px] h-[580px] object-contain drop-shadow-2xl'
