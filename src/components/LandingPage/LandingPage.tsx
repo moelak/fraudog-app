@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import AuthModal from '../Auth/AuthModal';
 import BoltBadge from '../BoltBadge/BoltBadge';
 import { observer } from 'mobx-react-lite';
+import FootstepCanvas from './FootstepCanvas';
 
 const LandingPage = observer(() => {
 	const navigate = useNavigate();
@@ -79,6 +80,8 @@ const LandingPage = observer(() => {
 
 	return (
 		<>
+
+          <FootstepCanvas />
 			<div className='min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white overflow-x-hidden relative'>
 				{/* Animated Background */}
 				<div className='fixed inset-0 z-0'>
