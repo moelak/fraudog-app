@@ -211,7 +211,7 @@ const LandingPage = observer(() => {
 										/>
                      
 									</div>
-                      <FootstepCanvas />
+                     
 								</div>
 							</div>
 						</div>
