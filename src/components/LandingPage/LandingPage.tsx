@@ -149,16 +149,16 @@ const LandingPage = observer(() => {
 				</nav>
 
 				{/* Vertical Footsteps Trail - Positioned in center */}
-				<div className='fixed left-1/2 transform -translate-x-1/2 z-10 pointer-events-none'>
-					{/* Footstep 1 - Below robot */}
+				<div className='hidden lg:block fixed left-1/2 transform -translate-x-1/2 z-20 pointer-events-none'>
+					{/* Footstep 1 - Right after hero section */}
 					<img
 						src='/images/left-footstep.svg'
 						alt='Footstep'
-						className='absolute footstep step-1 opacity-0 w-8 h-8'
+						className='absolute footstep step-1 opacity-0 w-12 h-12'
 						style={{ 
-							top: '120vh',
+							top: '90vh',
 							transform: 'translateX(-50%) rotate(180deg)',
-							left: '-10px'
+							left: '-15px'
 						}}
 					/>
 					
@@ -166,23 +166,23 @@ const LandingPage = observer(() => {
 					<img
 						src='/images/right-footstep.svg'
 						alt='Footstep'
-						className='absolute footstep step-2 opacity-0 w-8 h-8'
+						className='absolute footstep step-2 opacity-0 w-12 h-12'
 						style={{ 
-							top: '140vh',
+							top: '110vh',
 							transform: 'translateX(-50%) rotate(180deg)',
-							left: '10px'
+							left: '15px'
 						}}
 					/>
 					
-					{/* Footstep 3 */}
+					{/* Footstep 3 - Features section */}
 					<img
 						src='/images/left-footstep.svg'
 						alt='Footstep'
-						className='absolute footstep step-3 opacity-0 w-8 h-8'
+						className='absolute footstep step-3 opacity-0 w-12 h-12'
 						style={{ 
-							top: '180vh',
+							top: '140vh',
 							transform: 'translateX(-50%) rotate(180deg)',
-							left: '-10px'
+							left: '-15px'
 						}}
 					/>
 					
@@ -190,23 +190,23 @@ const LandingPage = observer(() => {
 					<img
 						src='/images/right-footstep.svg'
 						alt='Footstep'
-						className='absolute footstep step-4 opacity-0 w-8 h-8'
+						className='absolute footstep step-4 opacity-0 w-12 h-12'
 						style={{ 
-							top: '220vh',
+							top: '170vh',
 							transform: 'translateX(-50%) rotate(180deg)',
-							left: '10px'
+							left: '15px'
 						}}
 					/>
 					
-					{/* Footstep 5 */}
+					{/* Footstep 5 - Results section */}
 					<img
 						src='/images/left-footstep.svg'
 						alt='Footstep'
-						className='absolute footstep step-5 opacity-0 w-8 h-8'
+						className='absolute footstep step-5 opacity-0 w-12 h-12'
 						style={{ 
-							top: '260vh',
+							top: '200vh',
 							transform: 'translateX(-50%) rotate(180deg)',
-							left: '-10px'
+							left: '-15px'
 						}}
 					/>
 					
@@ -214,23 +214,23 @@ const LandingPage = observer(() => {
 					<img
 						src='/images/right-footstep.svg'
 						alt='Footstep'
-						className='absolute footstep step-6 opacity-0 w-8 h-8'
+						className='absolute footstep step-6 opacity-0 w-12 h-12'
 						style={{ 
-							top: '300vh',
+							top: '230vh',
 							transform: 'translateX(-50%) rotate(180deg)',
-							left: '10px'
+							left: '15px'
 						}}
 					/>
 					
-					{/* Footstep 7 */}
+					{/* Footstep 7 - Why Us section */}
 					<img
 						src='/images/left-footstep.svg'
 						alt='Footstep'
-						className='absolute footstep step-7 opacity-0 w-8 h-8'
+						className='absolute footstep step-7 opacity-0 w-12 h-12'
 						style={{ 
-							top: '340vh',
+							top: '260vh',
 							transform: 'translateX(-50%) rotate(180deg)',
-							left: '-10px'
+							left: '-15px'
 						}}
 					/>
 					
@@ -238,11 +238,35 @@ const LandingPage = observer(() => {
 					<img
 						src='/images/right-footstep.svg'
 						alt='Footstep'
-						className='absolute footstep step-8 opacity-0 w-8 h-8'
+						className='absolute footstep step-8 opacity-0 w-12 h-12'
 						style={{ 
-							top: '380vh',
+							top: '290vh',
 							transform: 'translateX(-50%) rotate(180deg)',
-							left: '10px'
+							left: '15px'
+						}}
+					/>
+
+					{/* Footstep 9 - Platform section */}
+					<img
+						src='/images/left-footstep.svg'
+						alt='Footstep'
+						className='absolute footstep step-9 opacity-0 w-12 h-12'
+						style={{ 
+							top: '320vh',
+							transform: 'translateX(-50%) rotate(180deg)',
+							left: '-15px'
+						}}
+					/>
+					
+					{/* Footstep 10 */}
+					<img
+						src='/images/right-footstep.svg'
+						alt='Footstep'
+						className='absolute footstep step-10 opacity-0 w-12 h-12'
+						style={{ 
+							top: '350vh',
+							transform: 'translateX(-50%) rotate(180deg)',
+							left: '15px'
 						}}
 					/>
 				</div>
@@ -562,16 +586,17 @@ const LandingPage = observer(() => {
 					@keyframes fadeStep {
 						from {
 							opacity: 0;
-							transform: translateY(10px) scale(0.9);  
+							transform: translateY(10px) scale(0.9) rotate(180deg);  
 						}
 						to {
 							opacity: 1;
-							transform: translateY(0) scale(1);
+							transform: translateY(0) scale(1) rotate(180deg);
 						}
 					}
 
 					.footstep { 
 						opacity: 0;
+						filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 					}
 
 					.step-1.animate  { 
@@ -612,6 +637,16 @@ const LandingPage = observer(() => {
 					.step-8.animate  {
 						animation: fadeStep 0.8s ease-out forwards;
 						animation-delay: 2.1s;
+					}
+
+					.step-9.animate  {
+						animation: fadeStep 0.8s ease-out forwards;
+						animation-delay: 2.4s;
+					}
+
+					.step-10.animate  {
+						animation: fadeStep 0.8s ease-out forwards;
+						animation-delay: 2.7s;
 					}
 				`}</style>
 			</div>
