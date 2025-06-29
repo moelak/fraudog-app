@@ -307,7 +307,7 @@ const LandingPage = observer(() => {
 							</div>
 						</div>
 
-						{/* Right Visual - Robot Image */}
+						{/* Right Visual - Robot Image */} 
 						<div className='hidden lg:flex relative justify-end'>
 							<div className='relative'>
 								{/* Robot Image with Effects */}
@@ -328,44 +328,8 @@ const LandingPage = observer(() => {
 									</div>
 								</div>
 							</div>
-						</div
-                 
+						</div>
 					</div>
-
-          	<img
-						src='/images/left-footstep.svg'
-						alt='Footstep'
-						className='absolute footstep step-1 opacity-0 w-12 h-12'
-						style={{ 
-							top: '90vh',
-							transform: 'translateX(-50%) rotate(180deg)',
-							left: '-15px'
-						}}
-					/>
-					
-					{/* Footstep 2 */}
-					<img
-						src='/images/right-footstep.svg'
-						alt='Footstep'
-						className='absolute footstep step-2 opacity-0 w-12 h-12'
-						style={{ 
-							top: '110vh', 
-							transform: 'translateX(-50%) rotate(180deg)',
-							left: '15px'
-						}}
-					/>
-					
-					{/* Footstep 3 - Features section */}
-					<img
-						src='/images/left-footstep.svg'
-						alt='Footstep'
-						className='absolute footstep step-3 opacity-0 w-12 h-12'
-						style={{ 
-							top: '140vh',
-							transform: 'translateX(-50%) rotate(180deg)',
-							left: '-15px'
-						}}
-					/>
 				</section>
 
 				{/* Section 2: Features - Content Left */}
