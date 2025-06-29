@@ -81,7 +81,7 @@ const LandingPage = observer(() => {
 	return (
 		<>
 
-          <FootstepCanvas />
+     
 			<div className='min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white overflow-x-hidden relative'>
 				{/* Animated Background */}
 				<div className='fixed inset-0 z-0'>
@@ -209,6 +209,7 @@ const LandingPage = observer(() => {
 												filter: 'drop-shadow(0 0 30px rgba(147, 51, 234, 0.3))',
 											}}
 										/>
+                         <FootstepCanvas />
 									</div>
 								</div>
 							</div>
