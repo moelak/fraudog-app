@@ -4,7 +4,6 @@ import { useAuth } from '../../hooks/useAuth';
 import AuthModal from '../Auth/AuthModal';
 import BoltBadge from '../BoltBadge/BoltBadge';
 import { observer } from 'mobx-react-lite';
-import FootstepCanvas from './FootstepCanvas';
 
 const LandingPage = observer(() => {
 	const navigate = useNavigate();
@@ -80,8 +79,6 @@ const LandingPage = observer(() => {
 
 	return (
 		<>
-
-     
 			<div className='min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white overflow-x-hidden relative'>
 				{/* Animated Background */}
 				<div className='fixed inset-0 z-0'>
@@ -151,8 +148,7 @@ const LandingPage = observer(() => {
 					</div>
 				</nav>
 
-			
-			
+				
 
 				{/* Section 1: Hero Header - Centered */}
 				<section id='home' className='relative min-h-screen flex justify-center pt-16'>
@@ -201,7 +197,6 @@ const LandingPage = observer(() => {
 
 										{/* Robot Image */}
 										<img
-                      id="footstep-start"
 											src='/images/roboAI.png'
 											alt='AI Fraud Detection Robot'
 											className='relative z-10 w-[580px] h-[580px] object-contain drop-shadow-2xl'
@@ -209,18 +204,7 @@ const LandingPage = observer(() => {
 												filter: 'drop-shadow(0 0 30px rgba(147, 51, 234, 0.3))',
 											}}
 										/>
-
-                    						<img
-											src='/images/roboAI.png'
-											alt='AI Fraud Detection Robot'
-											className='relative z-10 w-[580px] h-[580px] object-contain drop-shadow-2xl'
-											style={{
-												filter: 'drop-shadow(0 0 30px rgba(147, 51, 234, 0.3))',
-											}}
-										/>
-                     
 									</div>
-                     
 								</div>
 							</div>
 						</div>
