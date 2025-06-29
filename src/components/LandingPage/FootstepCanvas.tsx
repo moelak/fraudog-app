@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+// components/Footsteps.tsx
+import { useEffect, useState } from 'react';
 
-const leftFoot = [
+const foot = [
   [50.86759744022923,-21.798383338076917,54.16000854997335,-23.917474843549847,57.778065334829385,-25.310771525314685,61.579706305344985,-24.823762596975733,65.0168431653022,-22.69100336700319,65.22736925598322,-19.777045647294724,63.09649708656406,-16.826669881834157,59.66512409715465,-15.356252875428147,56.12216018899968,-14.92259970211097,52.06404407417057,-16.231839553378,50.2945579442406,-18.938589556263246],
   [60.12039562389232,-12.45714817900668,63.92394094034509,-14.994440399059425,68.75013312287521,-15.737202635924493,73.10937504616481,-14.878459739068003,76.36064492186433,-12.559833524837757,77.6863729180915,-9.181208344485064,75.4625672565435,-5.673231626251427,71.79886053681197,-3.7381471592011817,66.8618942467243,-3.4903609701416993,62.29264392518654,-5.1248680438596885,58.98975517513061,-8.760952968033395],
   [65.57414109270752,1.1797411270282658,69.37768640916029,-1.3575510930244814,74.20387859169041,-2.1003133298895467,78.56312051498001,-1.241570433033059,81.81439039067953,1.0770557811971881,83.14011838690669,4.455680961549877,80.9163127253587,7.963657679783514,77.25260600562717,9.898742146833756,72.3156397155395,10.146528335893239,67.74638939400174,8.512021262175251,64.44350064394581,4.875936338001546],
@@ -9,96 +10,40 @@ const leftFoot = [
 ];
 
 const path = [
-  56.2, 162.4, 83.4, 172.8, 107.98, 192.87, 121.58, 221.35, 124.81, 256.3,
-  141.64, 293.84, 168.83, 311.96, 203.78, 336.56, 238.08, 344.97, 278.21, 341.09,
-  316.4, 329.44, 343.59, 310.67, 370.77, 275.72, 359.12, 244.65, 344.23, 207.11,
-  355.24, 168.92, 394.07, 137.2, 438.09, 137.85, 487.28, 174.1, 507.99, 221.99,
-  513.17, 269.24, 500.87, 318.44, 480.16, 354.68, 453.63, 396.87, 414.14, 427.93,
-  372.72, 447.35, 320.29, 442.17, 272.39, 427.93, 218.02, 441.53, 185.66, 472.6,
-  160.42, 514.67, 168.23, 557.54, 200.59, 598.97, 232.96, 627.44, 273.09, 651.39,
-  320.34, 663.04, 368.23, 663.69, 417.42, 649.45, 460.79, 626.15, 509.34, 593.14,
-  530.7, 556.89, 559.93, 517.92, 582.43, 484.12, 597.16, 459.03, 621.03, 438.11,
-  651.37, 429.44, 686.37, 432.05, 726.19, 421.69, 748.57, 397.89, 778.63, 367.51,
-  792.63, 335.08, 795.46, 294.86, 790.32, 255.27, 776.32, 225.34, 746.37, 192.73,
-  713.8, 199.06, 674.31, 207.51, 638.48, 190.31, 613.65, 146.75, 621.6, 103.45,
-  665.51, 60.97, 716.18, 48.5, 763.64, 51.24, 810.1, 71.53, 842.41, 97.98, 879.6,
-  131.15, 903.68, 175.24, 915.95, 219.32, 902.13, 270.16, 880.14, 315.02, 884.51,
-  370.9, 909.77, 407.97, 947.07, 439.85, 990.64, 439.27, 1036.87, 414.23, 1070.33,
-  387.05, 1100.61, 351.45, 1119.94, 306.8, 1128.54, 259.67, 1122.67, 208.8,
-  1106.89, 162.16, 1082.4, 108.81, 1050.2, 81.73, 1016.63, 46.43,
+  [580, 300], [600, 360], [620, 420], [640, 480], [660, 540],
+  [680, 600], [700, 660], [720, 720], [740, 780], [760, 840]
 ];
 
-function drawFoot(ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, flip = false) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angle);
-  if (flip) ctx.scale(-1, 1);
-  ctx.translate(-50, -20);
-  ctx.fillStyle = '#fff';
-  ctx.beginPath();
-  for (const shape of leftFoot) {
-    for (let i = 0; i < shape.length; i += 2) {
-      const px = shape[i];
-      const py = shape[i + 1];
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    }
-  }
-  ctx.fill();
-  ctx.restore();
-}
-
-const FootstepCanvas = () => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+function Foot({ x, y, index }: { x: number; y: number; index: number }) {
+  const [footPath, setFootPath] = useState<string>('');
 
   useEffect(() => {
-    setTimeout(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      const robot = document.getElementById('footstep-start');
-      if (!robot) return;
-      const box = robot.getBoundingClientRect();
-
-      const offsetX = box.left + box.width / 2;
-      const offsetY = window.scrollY + box.bottom;
-
-      const baseX = path[0];
-      const baseY = path[1];
-
-      for (let i = 0; i < path.length; i += 2) { 
-        path[i] = path[i] - baseX + offsetX;
-        path[i + 1] = path[i + 1] - baseY + offsetY;
-      }
-
-      for (let i = 2; i < path.length - 2; i += 20) {
-        const x1 = path[i];
-        const y1 = path[i + 1];
-        const x2 = path[i + 2];
-        const y2 = path[i + 3];
-        const angle = Math.atan2(y2 - y1, x2 - x1);
-        const flip = (i / 20) % 2 === 0;
-        drawFoot(ctx, x1, y1, angle, flip);
-      }
-    }, 100);
-  }, []);
+    // flatten foot array into a path string
+    const d = foot.map(points => {
+      return `M ${points[0] + x} ${points[1] + y} ` + points.slice(2).reduce((acc, val, i) => {
+        const coord = i % 2 === 0 ? val + x : val + y;
+        return acc + ' ' + coord;
+      }, '');
+    }).join(' ');
+    setFootPath(d);
+  }, [x, y]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={window.innerWidth}
-      height={document.body.scrollHeight}
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        pointerEvents: 'none',
-        zIndex: 2,
-      }}
+    <path
+      d={footPath}
+      fill='white'
+      transform={`rotate(${index % 2 === 0 ? 20 : -20} ${x} ${y}) scale(${index % 2 === 0 ? 0.25 : -0.25}, 0.25)`}
+      opacity={0.9}
     />
   );
-};
+}
 
-export default FootstepCanvas;
+export default function Footsteps() {
+  return (
+    <svg className='absolute top-0 left-0 w-full h-full pointer-events-none z-10'>
+      {path.map(([x, y], i) => (
+        <Foot key={i} x={x} y={y} index={i} />
+      ))}
+    </svg>
+  );
+}
