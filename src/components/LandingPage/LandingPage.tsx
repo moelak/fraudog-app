@@ -148,7 +148,7 @@ const LandingPage = observer(() => {
 					</div>
 				</nav>
 
-				{/* Vertical Footsteps Trail - Positioned in center */}
+			
 			
 
 				{/* Section 1: Hero Header - Centered */}
