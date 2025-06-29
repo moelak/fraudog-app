@@ -18,7 +18,7 @@ const LandingPage = observer(() => {
 		return null;
 	}
 
-	const handleSignIn = () => {
+	const handleSignIn = () => { 
 		setAuthMode('signin');
 		setIsAuthModalOpen(true);
 	};
@@ -203,31 +203,23 @@ const LandingPage = observer(() => {
 											}}
 										/>
 
-                    										<img
-											src='/images/right-footstep.svg'
+										<img
+											src='/images/foot-steps.svg'
 											alt='Footsteps'
-											className='absolute footstep z-0 w-24 step-1 opacity-0 top-[75%] right-[40%] transform -translate-x-1/2 translate-y-12 rotate-5'  
-										/> 
+											className='absolute  footstep z-0 w-24 step-2 opacity-0 top-[75%] right-[50%] transform -translate-x-1/2 translate-y-12 rotate-[5deg]'
+										/>
 
-
-
-               										<img
-											src='/images/left-footstep.svg'
+										<img
+											src='/images/foot-steps.svg'
 											alt='Footsteps'
-											className='absolute footstep z-0 w-24 step-2 opacity-0 top-[85%] right-[30%] transform -translate-x-1/2 translate-y-12 rotate-5'  
-										/> 
+											className='absolute footstep z-0 w-24 step-3 opacity-0 top-[90%] right-[68%] transform -translate-x-1/2 translate-y-12'
+										/>
 
-                           										<img
-											src='/images/right-footstep.svg'
+										<img
+											src='/images/foot-steps.svg'
 											alt='Footsteps'
-											className='absolute footstep z-0 w-24 step-3 opacity-0 top-[105%] right-[40%] transform -translate-x-1/2 translate-y-12 rotate-5'  
-										/> 
-
-                                               										<img
-											src='/images/left-footstep.svg'
-											alt='Footsteps'
-											className='absolute footstep z-0 w-24 step-4 opacity-0 top-[110%] right-[30%] transform -translate-x-1/2 translate-y-12 rotate-5'  
-										/> 
+											className='absolute  footstep z-0 w-24 step-4 opacity-0 top-[108%] right-[80%] transform -translate-x-1/2 translate-y-12 rotate-[-5deg]'
+										/>
 									</div>
 								</div>
 							</div>
