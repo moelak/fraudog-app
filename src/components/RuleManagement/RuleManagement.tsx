@@ -49,6 +49,9 @@ const RuleManagement = observer(() => {
 
 	const searchColumns = ruleManagementStore.getSearchColumns();
 
+	// Get current tab info for mobile dropdown
+	const currentTab = tabs.find(tab => tab.id === ruleManagementStore.activeTab) || tabs[0];
+
 	// if (loading) {
 	// 	return (
 	// 		<div className='flex items-center justify-center py-12'>
@@ -70,16 +73,20 @@ const RuleManagement = observer(() => {
 		<div className='space-y-6'>
 			<div className='flex justify-between items-center'>
 				<div>
-					<h1 className='text-3xl font-bold text-gray-900'>Rule Management</h1>
-					<p className='mt-2 text-gray-600'>Create and manage fraud detection rules</p>
+					<h1 className='text-2xl md:text-3xl font-bold text-gray-900'>Rule Management</h1>
+					<p className='mt-2 text-gray-600'>
+						<span className='block sm:inline'>Create and manage</span>
+						<span className='block sm:inline sm:ml-1'>fraud detection rules</span>
+					</p>
 				</div>
 
 				<div className='relative inline-block text-left'>
 					<Menu as='div' className='relative'>
-						<Menu.Button className='inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm'>
-							<PlusIcon className='h-5 w-5 mr-2' />
-							Create New Rule
-							<ChevronUpDownIcon className='ml-2 h-4 w-4 text-white' aria-hidden='true' />
+						<Menu.Button className='inline-flex items-center px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm text-sm md:text-base'>
+							<PlusIcon className='h-4 w-4 md:h-5 md:w-5 mr-2' />
+							<span className='hidden sm:inline'>Create New Rule</span>
+							<span className='sm:hidden'>Create</span>
+							<ChevronUpDownIcon className='ml-2 h-3 w-3 md:h-4 md:w-4 text-white' aria-hidden='true' />
 						</Menu.Button>
 						<Transition
 							as={Fragment}
@@ -120,39 +127,91 @@ const RuleManagement = observer(() => {
 			{/* Tabs and Search */}
 			<div className='bg-white rounded-xl shadow-sm border border-gray-100'>
 				<div className='border-b border-gray-200'>
-					<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between p-6 space-y-4 sm:space-y-0'>
-						{/* Tabs */}
-						<nav className='flex space-x-8'>
-							{tabs.map((tab) => (
-								<button
-									key={tab.id}
-									onClick={() => ruleManagementStore.setActiveTab(tab.id)}
-									className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-										ruleManagementStore.activeTab === tab.id
-											? 'border-blue-500 text-blue-600'
-											: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-									}`}
-								>
-									<span>{tab.name}</span>
-									<span
-										className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-											ruleManagementStore.activeTab === tab.id ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+					<div className='p-6 space-y-4'>
+						{/* Desktop Tabs - Hidden on mobile */}
+						<div className='hidden md:block'>
+							<nav className='flex space-x-8'>
+								{tabs.map((tab) => (
+									<button
+										key={tab.id}
+										onClick={() => ruleManagementStore.setActiveTab(tab.id)}
+										className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+											ruleManagementStore.activeTab === tab.id
+												? 'border-blue-500 text-blue-600'
+												: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
 										}`}
 									>
-										{tab.count}
-									</span>
-								</button>
-							))}
-						</nav>
+										<span>{tab.name}</span>
+										<span
+											className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+												ruleManagementStore.activeTab === tab.id ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+											}`}
+										>
+											{tab.count}
+										</span>
+									</button>
+								))}
+							</nav>
+						</div>
 
-						{/* Search Section */}
-						<div className='flex flex-col sm:flex-row gap-3 sm:items-center'>
+						{/* Mobile Tab Dropdown - Visible only on mobile */}
+						<div className='md:hidden'>
+							<Menu as='div' className='relative'>
+								<Menu.Button className='w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors'>
+									<div className='flex items-center space-x-2'>
+										<span>{currentTab.name}</span>
+										<span className='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800'>
+											{currentTab.count}
+										</span>
+									</div>
+									<ChevronDownIcon className='h-5 w-5 text-gray-400' aria-hidden='true' />
+								</Menu.Button>
+								<Transition
+									as={Fragment}
+									enter='transition ease-out duration-100'
+									enterFrom='transform opacity-0 scale-95'
+									enterTo='transform opacity-100 scale-100'
+									leave='transition ease-in duration-75'
+									leaveFrom='transform opacity-100 scale-100'
+									leaveTo='transform opacity-0 scale-95'
+								>
+									<Menu.Items className='absolute left-0 right-0 mt-1 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20'>
+										<div className='py-1'>
+											{tabs.map((tab) => (
+												<Menu.Item key={tab.id}>
+													{({ active }) => (
+														<button
+															onClick={() => ruleManagementStore.setActiveTab(tab.id)}
+															className={`${
+																active ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+															} ${
+																ruleManagementStore.activeTab === tab.id ? 'bg-blue-100 text-blue-800 font-medium' : ''
+															} flex items-center justify-between w-full px-4 py-2 text-sm transition-colors`}
+														>
+															<span>{tab.name}</span>
+															<span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+																ruleManagementStore.activeTab === tab.id ? 'bg-blue-200 text-blue-900' : 'bg-gray-100 text-gray-800'
+															}`}>
+																{tab.count}
+															</span>
+														</button>
+													)}
+												</Menu.Item>
+											))}
+										</div>
+									</Menu.Items>
+								</Transition>
+							</Menu>
+						</div>
+
+						{/* Search Section - Side by side on desktop, stacked on mobile */}
+						<div className='flex flex-col md:flex-row md:items-center gap-3'>
 							{/* Search Column Dropdown */}
-							<div className='relative'>
-								<Menu as='div' className='relative inline-block text-left'>
-									<Menu.Button className='inline-flex items-center justify-between w-full sm:w-40 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors'>
+							<div className='w-full md:w-48'>
+								<Menu as='div' className='relative inline-block text-left w-full'>
+									<Menu.Button className='inline-flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors'>
 										<span className='truncate'>{ruleManagementStore.getSearchColumnDisplayName(ruleManagementStore.searchColumn)}</span>
-										<ChevronDownIcon className='ml-2 h-4 w-4 text-gray-400' aria-hidden='true' />
+										<ChevronDownIcon className='ml-2 h-4 w-4 text-gray-400 flex-shrink-0' aria-hidden='true' />
 									</Menu.Button>
 									<Transition
 										as={Fragment}
@@ -163,7 +222,7 @@ const RuleManagement = observer(() => {
 										leaveFrom='transform opacity-100 scale-100'
 										leaveTo='transform opacity-0 scale-95'
 									>
-										<Menu.Items className='absolute right-0 mt-1 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20'>
+										<Menu.Items className='absolute left-0 right-0 md:right-auto md:w-48 mt-1 origin-top-left md:origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20'>
 											<div className='py-1'>
 												{searchColumns.map((column) => (
 													<Menu.Item key={column.value}>
@@ -187,8 +246,8 @@ const RuleManagement = observer(() => {
 								</Menu>
 							</div>
 
-							{/* Search Input */}
-							<div className='relative flex-1 sm:flex-initial'>
+							{/* Search Input - Fixed width on desktop */}
+							<div className='relative w-full md:w-80'>
 								<div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
 									<MagnifyingGlassIcon className='h-5 w-5 text-gray-400' />
 								</div>
@@ -197,7 +256,7 @@ const RuleManagement = observer(() => {
 									placeholder={`Search by ${ruleManagementStore.getSearchColumnDisplayName(ruleManagementStore.searchColumn).toLowerCase()}...`}
 									value={ruleManagementStore.searchQuery}
 									onChange={(e) => ruleManagementStore.setSearchQuery(e.target.value)}
-									className='block w-full sm:w-64 pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors'
+									className='block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors'
 								/>
 							</div>
 						</div>
