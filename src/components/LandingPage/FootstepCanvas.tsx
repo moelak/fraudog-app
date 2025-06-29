@@ -1,4 +1,3 @@
-// components/Footsteps.tsx
 import { useEffect, useState } from 'react';
 
 const foot = [
@@ -15,36 +14,38 @@ const path = [
 ];
 
 function Foot({ x, y, index }: { x: number; y: number; index: number }) {
-  const [footPath, setFootPath] = useState<string>('');
-
-  useEffect(() => {
-    // flatten foot array into a path string
-    const d = foot.map(points => {
-      return `M ${points[0] + x} ${points[1] + y} ` + points.slice(2).reduce((acc, val, i) => {
-        const coord = i % 2 === 0 ? val + x : val + y;
-        return acc + ' ' + coord;
-      }, '');
-    }).join(' ');
-    setFootPath(d);
-  }, [x, y]);
+  const footPaths = foot.map(points => {
+    const commands = [`M ${points[0] + x} ${points[1] + y}`];
+    for (let i = 2; i < points.length; i += 6) {
+      const [cp1x, cp1y, cp2x, cp2y, endx, endy] = points.slice(i, i + 6);
+      commands.push(
+        `C ${cp1x + x} ${cp1y + y}, ${cp2x + x} ${cp2y + y}, ${endx + x} ${endy + y}`
+      );
+    }
+    return commands.join(' ');
+  });
 
   return (
-    <path
-      d={footPath}
-      fill='white'
-      transform={`rotate(${index % 2 === 0 ? 20 : -20} ${x} ${y}) scale(${index % 2 === 0 ? 0.25 : -0.25}, 0.25)`}
-      opacity={0.9}
-    />
+    <>
+      {footPaths.map((d, i) => (
+        <path
+          key={i}
+          d={d}
+          fill="white"
+          opacity={0.9}
+          transform={`rotate(${index % 2 === 0 ? 15 : -15} ${x} ${y}) scale(${index % 2 === 0 ? 0.3 : -0.3}, 0.3)`}
+        />
+      ))}
+    </>
   );
 }
 
 export default function Footsteps() {
   return (
-    <svg className='absolute top-0 left-0 w-full h-full pointer-events-none z-10'>
+    <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-10">
       {path.map(([x, y], i) => (
         <Foot key={i} x={x} y={y} index={i} />
       ))}
     </svg>
   );
 }
- 
