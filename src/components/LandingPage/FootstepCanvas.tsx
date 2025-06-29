@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import FootstepCanvas from './FootstepCanvas';
 
 const FootstepCanvas = () => {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
