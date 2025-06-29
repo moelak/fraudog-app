@@ -209,6 +209,15 @@ const LandingPage = observer(() => {
 												filter: 'drop-shadow(0 0 30px rgba(147, 51, 234, 0.3))',
 											}}
 										/>
+
+                    						<img
+											src='/images/roboAI.png'
+											alt='AI Fraud Detection Robot'
+											className='relative z-10 w-[580px] h-[580px] object-contain drop-shadow-2xl'
+											style={{
+												filter: 'drop-shadow(0 0 30px rgba(147, 51, 234, 0.3))',
+											}}
+										/>
                      
 									</div>
                      
