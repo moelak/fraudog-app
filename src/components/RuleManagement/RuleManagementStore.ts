@@ -19,9 +19,12 @@ export interface Rule {
   updated_at: string;
 }
 
+export type SearchColumn = 'all' | 'name' | 'category' | 'description' | 'condition';
+
 export class RuleManagementStore {
   activeTab: 'active' | 'all' | 'attention' | 'deleted' = 'all';
   searchQuery = '';
+  searchColumn: SearchColumn = 'all';
   isCreateModalOpen = false;
   isEditModalOpen = false;
   isChargebackAnalysisOpen = false;
@@ -114,6 +117,10 @@ deduplicateRules = (rules: Rule[]): Rule[] => {
     this.searchQuery = query;
   }
 
+  setSearchColumn = (column: SearchColumn) => {
+    this.searchColumn = column;
+  }
+
   openCreateModal = () => {
     this.isCreateModalOpen = true;
     this.editingRule = null;
@@ -202,14 +209,29 @@ deduplicateRules = (rules: Rule[]): Rule[] => {
       filtered = filtered.filter(rule => rule.is_deleted && ['active', 'inactive', 'warning'].includes(rule.status));
     }
 
-    // Filter by search query
+    // Filter by search query and selected column
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
-      filtered = filtered.filter(rule =>
-        rule.name.toLowerCase().includes(query) ||
-        rule.description.toLowerCase().includes(query) ||
-        rule.category.toLowerCase().includes(query)
-      );
+      filtered = filtered.filter(rule => {
+        switch (this.searchColumn) {
+          case 'name':
+            return rule.name.toLowerCase().includes(query);
+          case 'category':
+            return rule.category.toLowerCase().includes(query);
+          case 'description':
+            return rule.description.toLowerCase().includes(query);
+          case 'condition':
+            return rule.condition.toLowerCase().includes(query);
+          case 'all':
+          default:
+            return (
+              rule.name.toLowerCase().includes(query) ||
+              rule.description.toLowerCase().includes(query) ||
+              rule.category.toLowerCase().includes(query) ||
+              rule.condition.toLowerCase().includes(query)
+            );
+        }
+      });
     }
 
     return filtered;
@@ -231,6 +253,35 @@ deduplicateRules = (rules: Rule[]): Rule[] => {
       ).length,
       deleted: allowedRules.filter(rule => rule.is_deleted).length
     };
+  }
+
+  // Helper method to get search column display name
+  getSearchColumnDisplayName = (column: SearchColumn): string => {
+    switch (column) {
+      case 'all':
+        return 'All Columns';
+      case 'name':
+        return 'Rule';
+      case 'category':
+        return 'Category';
+      case 'description':
+        return 'Description';
+      case 'condition':
+        return 'Rule Condition';
+      default:
+        return 'All Columns';
+    }
+  }
+
+  // Get available search columns
+  getSearchColumns = (): Array<{ value: SearchColumn; label: string }> => {
+    return [
+      { value: 'all', label: 'All Columns' },
+      { value: 'name', label: 'Rule' },
+      { value: 'category', label: 'Category' },
+      { value: 'description', label: 'Description' },
+      { value: 'condition', label: 'Rule Condition' },
+    ];
   }
 }
 
