@@ -11,7 +11,7 @@ const foot = [
 ]
  
 const path = [
-  [290, 500], [310, 560]
+  [290, 500], [310, 560] 
 ];
 
 function Foot({ x, y, index }: { x: number; y: number; index: number }) {
