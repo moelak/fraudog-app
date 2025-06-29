@@ -34,6 +34,18 @@ const Dashboard = observer(() => {
 		{ name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
 	];
 
+	const handleCloseSidebar = () => {
+		dashboardStore.closeSidebar();
+	};
+
+	const handleOpenSidebar = () => {
+		dashboardStore.openSidebar();
+	};
+
+	const handleOverlayClick = () => {
+		dashboardStore.closeSidebar();
+	};
+
 	return (
 		<div className='flex h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden'>
 			{/* Sidebar */}
@@ -45,8 +57,12 @@ const Dashboard = observer(() => {
 				<div className='flex h-full flex-col'>
 					<div className='flex h-16 items-center justify-between px-4 bg-gradient-to-r from-blue-600 to-blue-700'>
 						<span className='text-2xl font-bold text-white'>Fraud-dog</span>
-						<button className='lg:hidden text-white' onClick={dashboardStore.closeSidebar}>
-							<span className='sr-only'>Close sidebar</span>
+						<button 
+							className='lg:hidden text-white hover:text-gray-200 transition-colors p-1 rounded-md hover:bg-white/10' 
+							onClick={handleCloseSidebar}
+							type="button"
+							aria-label="Close sidebar"
+						>
 							<svg className='h-6 w-6' fill='none' viewBox='0 0 24 24' strokeWidth='1.5' stroke='currentColor'>
 								<path strokeLinecap='round' strokeLinejoin='round' d='M6 18L18 6M6 6l12 12' />
 							</svg>
@@ -59,6 +75,7 @@ const Dashboard = observer(() => {
 								<Link
 									key={item.name}
 									to={item.href}
+									onClick={handleCloseSidebar} // Close sidebar when navigation item is clicked on mobile
 									className={`${
 										isActive ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
 									} group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition duration-150 ease-in-out`}
@@ -82,8 +99,12 @@ const Dashboard = observer(() => {
 				<div className='sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm'>
 					<div className='flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8'>
 						{/* Left side - Mobile menu button */}
-						<button className='text-gray-500 lg:hidden' onClick={dashboardStore.openSidebar}>
-							<span className='sr-only'>Open sidebar</span>
+						<button 
+							className='text-gray-500 hover:text-gray-700 lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors' 
+							onClick={handleOpenSidebar}
+							type="button"
+							aria-label="Open sidebar"
+						>
 							<svg className='h-6 w-6' fill='none' viewBox='0 0 24 24' strokeWidth='1.5' stroke='currentColor'>
 								<path strokeLinecap='round' strokeLinejoin='round' d='M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5' />
 							</svg>
@@ -171,7 +192,13 @@ const Dashboard = observer(() => {
 			</div>
 
 			{/* Overlay for mobile sidebar */}
-			{dashboardStore.isSidebarOpen && <div className='fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden' onClick={dashboardStore.closeSidebar} />}
+			{dashboardStore.isSidebarOpen && (
+				<div 
+					className='fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden' 
+					onClick={handleOverlayClick}
+					aria-hidden="true"
+				/>
+			)}
 
 			{/* AI Chat Components */}
 			<AIChatButton />

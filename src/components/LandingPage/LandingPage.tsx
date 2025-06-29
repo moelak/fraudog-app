@@ -18,7 +18,7 @@ const LandingPage = observer(() => {
 		return null;
 	}
 
-	const handleSignIn = () => {
+	const handleSignIn = () => { 
 		setAuthMode('signin');
 		setIsAuthModalOpen(true);
 	};

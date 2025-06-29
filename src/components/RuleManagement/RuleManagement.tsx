@@ -47,6 +47,8 @@ const RuleManagement = observer(() => {
 		console.log('New modal state:', ruleManagementStore.isChargebackAnalysisOpen);
 	};
 
+	const searchColumns = ruleManagementStore.getSearchColumns();
+
 	// if (loading) {
 	// 	return (
 	// 		<div className='flex items-center justify-center py-12'>
@@ -115,19 +117,6 @@ const RuleManagement = observer(() => {
 				</div>
 			</div>
 
-			{/* Debug info - remove this after testing */}
-			{/* <div className='bg-yellow-50 border border-yellow-200 rounded-lg p-4'>
-				<p className='text-yellow-800 text-sm'>
-					Debug: Chargeback Analysis Modal Open: {ruleManagementStore.isChargebackAnalysisOpen ? 'true' : 'false'}
-				</p>
-				<button 
-					onClick={handleOpenChargebackAnalysis}
-					className='mt-2 px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700'
-				>
-					Force Open Modal 
-				</button>
-			</div> */}
-
 			{/* Tabs and Search */}
 			<div className='bg-white rounded-xl shadow-sm border border-gray-100'>
 				<div className='border-b border-gray-200'>
@@ -156,18 +145,61 @@ const RuleManagement = observer(() => {
 							))}
 						</nav>
 
-						{/* Search Bar */}
-						<div className='relative'>
-							<div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
-								<MagnifyingGlassIcon className='h-5 w-5 text-gray-400' />
+						{/* Search Section */}
+						<div className='flex flex-col sm:flex-row gap-3 sm:items-center'>
+							{/* Search Column Dropdown */}
+							<div className='relative'>
+								<Menu as='div' className='relative inline-block text-left'>
+									<Menu.Button className='inline-flex items-center justify-between w-full sm:w-40 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors'>
+										<span className='truncate'>{ruleManagementStore.getSearchColumnDisplayName(ruleManagementStore.searchColumn)}</span>
+										<ChevronDownIcon className='ml-2 h-4 w-4 text-gray-400' aria-hidden='true' />
+									</Menu.Button>
+									<Transition
+										as={Fragment}
+										enter='transition ease-out duration-100'
+										enterFrom='transform opacity-0 scale-95'
+										enterTo='transform opacity-100 scale-100'
+										leave='transition ease-in duration-75'
+										leaveFrom='transform opacity-100 scale-100'
+										leaveTo='transform opacity-0 scale-95'
+									>
+										<Menu.Items className='absolute right-0 mt-1 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20'>
+											<div className='py-1'>
+												{searchColumns.map((column) => (
+													<Menu.Item key={column.value}>
+														{({ active }) => (
+															<button
+																onClick={() => ruleManagementStore.setSearchColumn(column.value)}
+																className={`${
+																	active ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+																} ${
+																	ruleManagementStore.searchColumn === column.value ? 'bg-blue-100 text-blue-800 font-medium' : ''
+																} block w-full text-left px-4 py-2 text-sm transition-colors`}
+															>
+																{column.label}
+															</button>
+														)}
+													</Menu.Item>
+												))}
+											</div>
+										</Menu.Items>
+									</Transition>
+								</Menu>
 							</div>
-							<input
-								type='text'
-								placeholder='Search rules...'
-								value={ruleManagementStore.searchQuery}
-								onChange={(e) => ruleManagementStore.setSearchQuery(e.target.value)}
-								className='block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm'
-							/>
+
+							{/* Search Input */}
+							<div className='relative flex-1 sm:flex-initial'>
+								<div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+									<MagnifyingGlassIcon className='h-5 w-5 text-gray-400' />
+								</div>
+								<input
+									type='text'
+									placeholder={`Search by ${ruleManagementStore.getSearchColumnDisplayName(ruleManagementStore.searchColumn).toLowerCase()}...`}
+									value={ruleManagementStore.searchQuery}
+									onChange={(e) => ruleManagementStore.setSearchQuery(e.target.value)}
+									className='block w-full sm:w-64 pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors'
+								/>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -372,7 +404,7 @@ const RuleManagement = observer(() => {
 						</h3>
 						<p className='mt-1 text-sm text-gray-500'>
 							{ruleManagementStore.searchQuery
-								? 'Try adjusting your search terms or filters.'
+								? `Try adjusting your search terms or search in a different column.`
 								: ruleManagementStore.activeTab === 'deleted'
 								? 'Deleted rules will appear here when you delete them.'
 								: 'Get started by creating a new fraud detection rule.'}
