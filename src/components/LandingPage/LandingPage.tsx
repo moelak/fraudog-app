@@ -204,6 +204,11 @@ const LandingPage = observer(() => {
 												filter: 'drop-shadow(0 0 30px rgba(147, 51, 234, 0.3))',
 											}}
 										/>
+                    										<img
+											src='/images/foot-steps.svg'
+											alt='Footsteps'
+											className='absolute  footstep z-0 w-24 step-2 opacity-0 top-[75%] right-[50%] transform -translate-x-1/2 translate-y-12 rotate-[5deg]'
+										/>
 									</div>
 								</div>
 							</div>
