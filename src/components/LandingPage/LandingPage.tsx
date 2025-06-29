@@ -209,11 +209,9 @@ const LandingPage = observer(() => {
 												filter: 'drop-shadow(0 0 30px rgba(147, 51, 234, 0.3))',
 											}}
 										/>
-                    
+                         <FootstepCanvas />
 									</div>
-                  
 								</div>
-                     <FootstepCanvas />
 							</div>
 						</div>
 					</div>
