@@ -73,16 +73,20 @@ const RuleManagement = observer(() => {
 		<div className='space-y-6'>
 			<div className='flex justify-between items-center'>
 				<div>
-					<h1 className='text-3xl font-bold text-gray-900'>Rule Management</h1>
-					<p className='mt-2 text-gray-600'>Create and manage fraud detection rules</p>
+					<h1 className='text-2xl md:text-3xl font-bold text-gray-900'>Rule Management</h1>
+					<p className='mt-2 text-gray-600'>
+						<span className='block sm:inline'>Create and manage</span>
+						<span className='block sm:inline sm:ml-1'>fraud detection rules</span>
+					</p>
 				</div>
 
 				<div className='relative inline-block text-left'>
 					<Menu as='div' className='relative'>
-						<Menu.Button className='inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm'>
-							<PlusIcon className='h-5 w-5 mr-2' />
-							Create New Rule
-							<ChevronUpDownIcon className='ml-2 h-4 w-4 text-white' aria-hidden='true' />
+						<Menu.Button className='inline-flex items-center px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm text-sm md:text-base'>
+							<PlusIcon className='h-4 w-4 md:h-5 md:w-5 mr-2' />
+							<span className='hidden sm:inline'>Create New Rule</span>
+							<span className='sm:hidden'>Create</span>
+							<ChevronUpDownIcon className='ml-2 h-3 w-3 md:h-4 md:w-4 text-white' aria-hidden='true' />
 						</Menu.Button>
 						<Transition
 							as={Fragment}
@@ -200,12 +204,12 @@ const RuleManagement = observer(() => {
 							</Menu>
 						</div>
 
-						{/* Search Section - Stacked vertically on mobile */}
-						<div className='space-y-3'>
-							{/* Search Column Dropdown - Full width on mobile */}
-							<div className='w-full md:w-auto'>
-								<Menu as='div' className='relative inline-block text-left w-full md:w-auto'>
-									<Menu.Button className='inline-flex items-center justify-between w-full md:w-40 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors'>
+						{/* Search Section - Side by side on desktop, stacked on mobile */}
+						<div className='flex flex-col md:flex-row md:items-center gap-3'>
+							{/* Search Column Dropdown */}
+							<div className='w-full md:w-48'>
+								<Menu as='div' className='relative inline-block text-left w-full'>
+									<Menu.Button className='inline-flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors'>
 										<span className='truncate'>{ruleManagementStore.getSearchColumnDisplayName(ruleManagementStore.searchColumn)}</span>
 										<ChevronDownIcon className='ml-2 h-4 w-4 text-gray-400 flex-shrink-0' aria-hidden='true' />
 									</Menu.Button>
@@ -242,8 +246,8 @@ const RuleManagement = observer(() => {
 								</Menu>
 							</div>
 
-							{/* Search Input - Full width on mobile */}
-							<div className='relative w-full'>
+							{/* Search Input - Fixed width on desktop */}
+							<div className='relative w-full md:w-80'>
 								<div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
 									<MagnifyingGlassIcon className='h-5 w-5 text-gray-400' />
 								</div>
