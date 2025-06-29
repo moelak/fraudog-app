@@ -349,7 +349,7 @@ const LandingPage = observer(() => {
 						alt='Footstep'
 						className='absolute footstep step-2 opacity-0 w-12 h-12'
 						style={{ 
-							top: '110vh',
+							top: '110vh', 
 							transform: 'translateX(-50%) rotate(180deg)',
 							left: '15px'
 						}}
