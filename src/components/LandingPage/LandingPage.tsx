@@ -329,7 +329,10 @@ const LandingPage = observer(() => {
 								</div>
 							</div>
 						</div
-                 	<img
+                 
+					</div>
+
+          	<img
 						src='/images/left-footstep.svg'
 						alt='Footstep'
 						className='absolute footstep step-1 opacity-0 w-12 h-12'
@@ -363,7 +366,6 @@ const LandingPage = observer(() => {
 							left: '-15px'
 						}}
 					/>
-					</div>
 				</section>
 
 				{/* Section 2: Features - Content Left */}
