@@ -20,9 +20,23 @@ const DeleteConfirmModal = observer(() => {
 		try {
 			if (deleteType === 'soft') {
 				await softDeleteRule(rule.id);
+
+				// ✅ Update MobX store to reflect soft-deleted rule
+				const updatedRule = {
+					...rule,
+					is_deleted: true,
+					updated_at: new Date().toISOString(),
+				};
+				ruleManagementStore.updateRuleInStore(updatedRule);
+
 				showSuccessToast('Rule moved to deleted rules successfully.');
 			} else {
 				await permanentDeleteRule(rule.id);
+
+				// ✅ Optionally remove rule completely from MobX store (optional but recommended)
+				ruleManagementStore.rules = ruleManagementStore.rules.filter((r) => r.id !== rule.id);
+				ruleManagementStore.inProgressRules = ruleManagementStore.inProgressRules.filter((r) => r.id !== rule.id);
+
 				showSuccessToast('Rule permanently deleted.');
 			}
 
