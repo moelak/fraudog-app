@@ -228,9 +228,20 @@ const ChargebackAnalysisModal = observer(() => {
 		ruleManagementStore.closeChargebackAnalysis();
 	};
 
-	// Helper function to format numbers with commas
-	const formatNumber = (num: number): string => {
+	// Helper function to format numbers with commas - with null safety
+	const formatNumber = (num: number | undefined | null): string => {
+		if (num === undefined || num === null || isNaN(num)) {
+			return '—';
+		}
 		return num.toLocaleString();
+	};
+
+	// Helper function to safely get effectiveness percentage
+	const formatEffectiveness = (effectiveness: number | undefined | null): string => {
+		if (effectiveness === undefined || effectiveness === null || isNaN(effectiveness)) {
+			return '—';
+		}
+		return `${effectiveness}%`;
 	};
 
 	// Loading shimmer component for Generated Rules
@@ -380,14 +391,14 @@ const ChargebackAnalysisModal = observer(() => {
 														</div>
 														<span
 															className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-																rule.effectiveness >= 90
+																(rule.effectiveness || 0) >= 90
 																	? 'bg-green-100 text-green-800'
-																	: rule.effectiveness >= 70
+																	: (rule.effectiveness || 0) >= 70
 																	? 'bg-yellow-100 text-yellow-800'
 																	: 'bg-red-100 text-red-800'
 															}`}
 														>
-															{rule.isCalculating ? 'Calculating...' : `${rule.effectiveness}% confidence`}
+															{rule.isCalculating ? 'Calculating...' : `${formatEffectiveness(rule.effectiveness)} confidence`}
 														</span>
 													</div>
 
@@ -421,8 +432,8 @@ const ChargebackAnalysisModal = observer(() => {
 																<LoadingShimmer />
 															) : (
 																<>
-																	<div className={`text-2xl font-bold ${ruleManagementStore.getEffectivenessColorClass(rule.effectiveness)}`}>
-																		{rule.effectiveness}%
+																	<div className={`text-2xl font-bold ${ruleManagementStore.getEffectivenessColorClass(rule.effectiveness || 0)}`}>
+																		{formatEffectiveness(rule.effectiveness)}
 																	</div>
 																	<div className='text-xs text-gray-500'>Effectiveness</div>
 																</>

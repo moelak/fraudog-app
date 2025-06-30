@@ -53,9 +53,20 @@ const RuleManagement = observer(() => {
 	// Get current tab info for mobile dropdown
 	const currentTab = tabs.find(tab => tab.id === ruleManagementStore.activeTab) || tabs[0];
 
-	// Helper function to format numbers with commas
-	const formatNumber = (num: number): string => {
+	// Helper function to format numbers with commas - with null safety
+	const formatNumber = (num: number | undefined | null): string => {
+		if (num === undefined || num === null || isNaN(num)) {
+			return '—';
+		}
 		return num.toLocaleString();
+	};
+
+	// Helper function to safely get effectiveness percentage
+	const formatEffectiveness = (effectiveness: number | undefined | null): string => {
+		if (effectiveness === undefined || effectiveness === null || isNaN(effectiveness)) {
+			return '—';
+		}
+		return `${effectiveness}%`;
 	};
 
 	// Loading shimmer component
@@ -421,15 +432,17 @@ const RuleManagement = observer(() => {
 												<EffectivenessSpinner />
 											) : (
 												<div className='flex items-center'>
-													<div className={`text-sm font-medium ${ruleManagementStore.getEffectivenessColorClass(rule.effectiveness)}`}>
-														{rule.effectiveness}%
+													<div className={`text-sm font-medium ${ruleManagementStore.getEffectivenessColorClass(rule.effectiveness || 0)}`}>
+														{formatEffectiveness(rule.effectiveness)}
 													</div>
-													<div className='ml-2 w-16 bg-gray-200 rounded-full h-2'>
-														<div
-															className={`h-2 rounded-full ${ruleManagementStore.getEffectivenessBackgroundClass(rule.effectiveness)}`}
-															style={{ width: `${rule.effectiveness}%` }}
-														/>
-													</div>
+													{rule.effectiveness !== undefined && rule.effectiveness !== null && !isNaN(rule.effectiveness) && (
+														<div className='ml-2 w-16 bg-gray-200 rounded-full h-2'>
+															<div
+																className={`h-2 rounded-full ${ruleManagementStore.getEffectivenessBackgroundClass(rule.effectiveness)}`}
+																style={{ width: `${rule.effectiveness}%` }}
+															/>
+														</div>
+													)}
 												</div>
 											)}
 											{!rule.isCalculating && (
