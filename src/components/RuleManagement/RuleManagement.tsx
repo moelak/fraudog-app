@@ -87,7 +87,7 @@ const RuleManagement = observer(() => {
 		</div>
 	);
 
-	// Table loading component
+	// Table loading component - Simplified without progress bar
 	const TableLoadingState = () => (
 		<div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
 			<div className="flex flex-col items-center justify-center py-12">
@@ -100,32 +100,19 @@ const RuleManagement = observer(() => {
 				</div>
 
 				{/* Loading message */}
-				<h3 className="text-lg font-medium text-gray-900 mb-2">
+				<h3 className="text-lg font-medium text-gray-900 mb-4">
 					{ruleManagementStore.getLoadingMessage()}
 				</h3>
 				
-				{/* Progress bar */}
-				<div className="w-80 bg-gray-200 rounded-full h-2 mb-4">
-					<div 
-						className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
-						style={{ width: `${ruleManagementStore.tableLoadingProgress}%` }}
-					></div>
-				</div>
-				
-				{/* Progress percentage */}
-				<p className="text-sm text-gray-600 mb-6"> 
-					{Math.round(ruleManagementStore.tableLoadingProgress)}% complete
-				</p>
-
 				{/* Loading details */}
 				<div className="text-center max-w-md">
 					<p className="text-sm text-gray-500">
-						Processing fraud detection rules and calculating effectiveness metrics...
+						Please wait while we prepare your fraud detection rules...
 					</p>
 				</div>
 
 				{/* Animated dots */}
-				<div className="flex space-x-1 mt-4">
+				<div className="flex space-x-1 mt-6">
 					<div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
 					<div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
 					<div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
