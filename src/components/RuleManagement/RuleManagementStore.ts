@@ -133,87 +133,48 @@ export class RuleManagementStore {
     }
   }
 
- private performSetRules = async (newRules: Rule[]) => {
+
+  private performSetRules = async (newRules: Rule[]) => {
   const mainRules = newRules.filter(rule => ['active', 'inactive', 'warning'].includes(rule.status));
   const inProgressRules = newRules.filter(rule => rule.status === 'in progress');
 
   const uncalculatedMainRules = mainRules.filter(rule => !this.calculatedRules.has(rule.id));
   const uncalculatedInProgressRules = inProgressRules.filter(rule => !this.calculatedRules.has(rule.id));
 
-  const hasNewRules = uncalculatedMainRules.length > 0 || uncalculatedInProgressRules.length > 0;
+  const alreadyCalculatedMain = mainRules.filter(rule => this.calculatedRules.has(rule.id));
+  const alreadyCalculatedInProgress = inProgressRules.filter(rule => this.calculatedRules.has(rule.id));
 
-  if (!this.isInitialized || hasNewRules) {
-    this.isTableLoading = true;
-    this.tableLoadingProgress = 0;
-  }
-
-  // Get already calculated rules
-  const alreadyCalculatedMainRules = mainRules.filter(rule => this.calculatedRules.has(rule.id));
-  const alreadyCalculatedInProgressRules = inProgressRules.filter(rule => this.calculatedRules.has(rule.id));
-
-  const existingCalculatedMain = alreadyCalculatedMainRules.map(rule => {
+  const keepMain = alreadyCalculatedMain.map(rule => {
     const existing = this.rules.find(r => r.id === rule.id);
     return existing?.hasCalculated ? existing : this.generateMockData(rule);
   });
 
-  this.rules = [...existingCalculatedMain];
-
-  if (this.isTableLoading) {
-    this.tableLoadingProgress = 25;
-    await new Promise(res => setTimeout(res, 100));
-  }
-
-  // Process uncalculated main rules concurrently in small batches
-  if (uncalculatedMainRules.length > 0) {
-    const processedMain: Rule[] = [];
-    const batchSize = 5;
-    for (let i = 0; i < uncalculatedMainRules.length; i += batchSize) {
-      const batch = uncalculatedMainRules.slice(i, i + batchSize);
-      const results = await Promise.all(batch.map(rule => this.generateMockDataWithIterations(rule)));
-      processedMain.push(...results);
-      this.tableLoadingProgress = 25 + ((i + batch.length) / uncalculatedMainRules.length) * 50;
-    }
-    this.rules = [...this.rules, ...processedMain];
-  } else if (this.isTableLoading) {
-    this.tableLoadingProgress = 75;
-    await new Promise(res => setTimeout(res, 50));
-  }
-
-  const existingCalculatedProgress = alreadyCalculatedInProgressRules.map(rule => {
+  const keepInProgress = alreadyCalculatedInProgress.map(rule => {
     const existing = this.inProgressRules.find(r => r.id === rule.id);
     return existing?.hasCalculated ? existing : this.generateMockData(rule);
   });
 
-  this.inProgressRules = this.deduplicateRules(existingCalculatedProgress);
+  this.isTableLoading = true;
+  this.tableLoadingProgress = 10;
 
-  if (uncalculatedInProgressRules.length > 0) {
-    const processedProgress: Rule[] = [];
-    const batchSize = 5;
-    for (let i = 0; i < uncalculatedInProgressRules.length; i += batchSize) {
-      const batch = uncalculatedInProgressRules.slice(i, i + batchSize);
-      const results = await Promise.all(batch.map(rule => this.generateMockDataWithIterations(rule)));
-      processedProgress.push(...results);
-      this.tableLoadingProgress = 75 + ((i + batch.length) / uncalculatedInProgressRules.length) * 20;
-    }
-    this.inProgressRules = this.deduplicateRules([
-      ...this.inProgressRules,
-      ...processedProgress
-    ]).sort((a, b) => (b.effectiveness || 0) - (a.effectiveness || 0));
-  } else if (this.isTableLoading) {
-    this.tableLoadingProgress = 95;
-    await new Promise(res => setTimeout(res, 50));
-  }
+  // Start concurrent processing of new rules
+  const [processedMain, processedInProgress] = await Promise.all([
+    Promise.all(uncalculatedMainRules.map(rule => this.generateMockDataWithIterations(rule))),
+    Promise.all(uncalculatedInProgressRules.map(rule => this.generateMockDataWithIterations(rule)))
+  ]);
 
-  // Final step
-  if (this.isTableLoading) {
-    this.tableLoadingProgress = 100;
-    await new Promise(res => setTimeout(res, 150));
-    this.isTableLoading = false;
-    this.tableLoadingProgress = 0;
-  }
+  this.tableLoadingProgress = 90;
 
+  this.rules = [...keepMain, ...processedMain];
+  this.inProgressRules = this.deduplicateRules([...keepInProgress, ...processedInProgress])
+    .sort((a, b) => (b.effectiveness || 0) - (a.effectiveness || 0));
+
+  this.tableLoadingProgress = 100;
+  this.isTableLoading = false;
+  this.tableLoadingProgress = 0;
   this.isInitialized = true;
 };
+
  
 
   addInProgressRule = async (rule: Rule) => {
