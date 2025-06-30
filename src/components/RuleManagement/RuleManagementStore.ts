@@ -157,7 +157,11 @@ export class RuleManagementStore {
       Promise.all(uncalculatedInProgressRules.map(rule => this.generateMockDataWithIterations(rule)))
     ]);
 
-    this.rules = [...keepMain, ...processedMain];
+    // Sort main rules by effectiveness (descending)
+    this.rules = [...keepMain, ...processedMain]
+      .sort((a, b) => (b.effectiveness || 0) - (a.effectiveness || 0));
+    
+    // Sort in progress rules by effectiveness (descending)
     this.inProgressRules = this.deduplicateRules([...keepInProgress, ...processedInProgress])
       .sort((a, b) => (b.effectiveness || 0) - (a.effectiveness || 0));
 
@@ -188,7 +192,7 @@ export class RuleManagementStore {
         this.inProgressRules.push(processedRule);
       }
       
-      // Sort by effectiveness and ensure deduplication
+      // Sort by effectiveness (descending) and ensure deduplication
       this.inProgressRules = this.deduplicateRules(this.inProgressRules)
         .sort((a, b) => (b.effectiveness || 0) - (a.effectiveness || 0));
     }
@@ -227,7 +231,7 @@ export class RuleManagementStore {
       }
     }
     
-    // Sort by effectiveness and ensure deduplication
+    // Sort by effectiveness (descending) and ensure deduplication
     this.inProgressRules = this.deduplicateRules(this.inProgressRules)
       .sort((a, b) => (b.effectiveness || 0) - (a.effectiveness || 0));
   }
@@ -390,7 +394,8 @@ export class RuleManagementStore {
       });
     }
 
-    return filtered;
+    // Sort by effectiveness in descending order (highest first)
+    return filtered.sort((a, b) => (b.effectiveness || 0) - (a.effectiveness || 0));
   }
 
   getTabCounts = (rules: Rule[]) => {
