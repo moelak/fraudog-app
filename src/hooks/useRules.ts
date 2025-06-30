@@ -55,6 +55,26 @@ export function useRules() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper function to generate mock data for a rule
+  const generateMockData = (rule: Rule): Rule => {
+    // Generate catches between 50-150
+    const catches = Math.floor(Math.random() * 101) + 50; // 50-150
+    
+    // Generate false positives between 1-40, ensuring it's less than catches
+    const maxFalsePositives = Math.min(40, catches - 1);
+    const false_positives = Math.floor(Math.random() * maxFalsePositives) + 1; // 1 to maxFalsePositives
+    
+    // Calculate effectiveness: 1 - (falsePositives / catches)
+    const effectiveness = Math.round((1 - (false_positives / catches)) * 1000) / 10; // Round to 1 decimal
+    
+    return {
+      ...rule,
+      catches,
+      false_positives,
+      effectiveness
+    };
+  };
+
   const fetchRules = async () => {
     if (!user) {
       setRules([]);
@@ -74,8 +94,11 @@ export function useRules() {
 
       if (fetchError) throw fetchError;
 
-      setRules(data || []);
-      ruleManagementStore.setRules(data || []);
+      // Generate mock data for all rules
+      const rulesWithMockData = (data || []).map(rule => generateMockData(rule));
+
+      setRules(rulesWithMockData);
+      ruleManagementStore.setRules(rulesWithMockData);
     } catch (err) {
       console.error('Error fetching rules:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch rules');
@@ -136,17 +159,19 @@ export function useRules() {
             }
 
             if (payload.eventType === 'INSERT') {
-              if (rule.status === 'in progress') {
-                ruleManagementStore.addInProgressRule(rule);
+              const ruleWithMockData = generateMockData(rule);
+              if (ruleWithMockData.status === 'in progress') {
+                ruleManagementStore.addInProgressRule(ruleWithMockData);
               } else {
                 fetchRules();
               }
             } else if (payload.eventType === 'UPDATE') {
-              if (rule.status === 'in progress') {
-                ruleManagementStore.updateInProgressRule(rule);
+              const ruleWithMockData = generateMockData(rule);
+              if (ruleWithMockData.status === 'in progress') {
+                ruleManagementStore.updateInProgressRule(ruleWithMockData);
               } else {
                 // If rule was moved from 'in progress' to another status, remove from in progress
-                ruleManagementStore.removeInProgressRule(rule.id);
+                ruleManagementStore.removeInProgressRule(ruleWithMockData.id);
                 fetchRules();
               }
             } else if (payload.eventType === 'DELETE') {

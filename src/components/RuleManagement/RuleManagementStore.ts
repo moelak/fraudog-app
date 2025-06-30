@@ -40,74 +40,107 @@ export class RuleManagementStore {
     makeAutoObservable(this);
   }
 
-setRules = (newRules: Rule[]) => {
-  // Filter out rules with status 'in progress' for main rules display
-  this.rules = newRules.filter(rule => ['active', 'inactive', 'warning'].includes(rule.status));
-  // Keep in progress rules separate and deduplicated
-  const inProgressRules = newRules.filter(rule => rule.status === 'in progress');
-  this.inProgressRules = this.deduplicateRules(inProgressRules);
-}
-
-addInProgressRule = (rule: Rule) => {
-  if (rule.status === 'in progress') {
-    // Check if rule already exists to prevent duplicates
-    const existingIndex = this.inProgressRules.findIndex(existingRule => existingRule.id === rule.id);
+  // Helper function to generate mock data for a rule
+  generateMockData = (rule: Rule): Rule => {
+    // Generate catches between 50-150
+    const catches = Math.floor(Math.random() * 101) + 50; // 50-150
     
-    if (existingIndex !== -1) {
-      // Update existing rule instead of adding duplicate
-      this.inProgressRules[existingIndex] = rule;
-    } else {
-      // Add new rule
-      this.inProgressRules.push(rule);
-    }
+    // Generate false positives between 1-40, ensuring it's less than catches
+    const maxFalsePositives = Math.min(40, catches - 1);
+    const false_positives = Math.floor(Math.random() * maxFalsePositives) + 1; // 1 to maxFalsePositives
     
-    // Ensure the array remains deduplicated
-    this.inProgressRules = this.deduplicateRules(this.inProgressRules);
+    // Calculate effectiveness: 1 - (falsePositives / catches)
+    const effectiveness = Math.round((1 - (false_positives / catches)) * 1000) / 10; // Round to 1 decimal
+    
+    return {
+      ...rule,
+      catches,
+      false_positives,
+      effectiveness
+    };
   }
-}
 
-removeInProgressRule = (ruleId: string) => {
-  this.inProgressRules = this.inProgressRules.filter(rule => rule.id !== ruleId);
-}
-
-updateInProgressRule = (updatedRule: Rule) => {
-  const index = this.inProgressRules.findIndex(rule => rule.id === updatedRule.id);
-  if (index !== -1) {
-    if (updatedRule.status === 'in progress') {
-      this.inProgressRules[index] = updatedRule;
-    } else {
-      // Rule status changed from in progress, remove from this list
-      this.inProgressRules.splice(index, 1);
-    }
-  }
-  
-  // Ensure the array remains deduplicated after update
-  this.inProgressRules = this.deduplicateRules(this.inProgressRules);
-}
-
-// Helper method to deduplicate rules by ID
-deduplicateRules = (rules: Rule[]): Rule[] => {
-  const uniqueRules = new Map<string, Rule>();
-  
-  rules.forEach(rule => {
-    const existingRule = uniqueRules.get(rule.id);
+  setRules = (newRules: Rule[]) => {
+    // Filter out rules with status 'in progress' for main rules display
+    const mainRules = newRules.filter(rule => ['active', 'inactive', 'warning'].includes(rule.status));
     
-    if (!existingRule) {
-      // First occurrence of this rule ID
-      uniqueRules.set(rule.id, rule);
-    } else {
-      // Rule already exists, keep the one with the latest updated_at timestamp
-      const existingTime = new Date(existingRule.updated_at).getTime();
-      const newTime = new Date(rule.updated_at).getTime();
+    // Generate mock data for main rules
+    this.rules = mainRules.map(rule => this.generateMockData(rule));
+    
+    // Keep in progress rules separate and deduplicated
+    const inProgressRules = newRules.filter(rule => rule.status === 'in progress');
+    this.inProgressRules = this.deduplicateRules(inProgressRules.map(rule => this.generateMockData(rule)));
+  }
+
+  addInProgressRule = (rule: Rule) => {
+    if (rule.status === 'in progress') {
+      // Generate mock data for the new rule
+      const ruleWithMockData = this.generateMockData(rule);
       
-      if (newTime > existingTime) {
-        uniqueRules.set(rule.id, rule);
+      // Check if rule already exists to prevent duplicates
+      const existingIndex = this.inProgressRules.findIndex(existingRule => existingRule.id === ruleWithMockData.id);
+      
+      if (existingIndex !== -1) {
+        // Update existing rule instead of adding duplicate
+        this.inProgressRules[existingIndex] = ruleWithMockData;
+      } else {
+        // Add new rule
+        this.inProgressRules.push(ruleWithMockData);
+      }
+      
+      // Sort by effectiveness in descending order
+      this.inProgressRules.sort((a, b) => b.effectiveness - a.effectiveness);
+      
+      // Ensure the array remains deduplicated
+      this.inProgressRules = this.deduplicateRules(this.inProgressRules);
+    }
+  }
+
+  removeInProgressRule = (ruleId: string) => {
+    this.inProgressRules = this.inProgressRules.filter(rule => rule.id !== ruleId);
+  }
+
+  updateInProgressRule = (updatedRule: Rule) => {
+    const index = this.inProgressRules.findIndex(rule => rule.id === updatedRule.id);
+    if (index !== -1) {
+      if (updatedRule.status === 'in progress') {
+        // Generate mock data for the updated rule
+        this.inProgressRules[index] = this.generateMockData(updatedRule);
+        // Re-sort by effectiveness
+        this.inProgressRules.sort((a, b) => b.effectiveness - a.effectiveness);
+      } else {
+        // Rule status changed from in progress, remove from this list
+        this.inProgressRules.splice(index, 1);
       }
     }
-  });
-  
-  return Array.from(uniqueRules.values());
-}
+    
+    // Ensure the array remains deduplicated after update
+    this.inProgressRules = this.deduplicateRules(this.inProgressRules);
+  }
+
+  // Helper method to deduplicate rules by ID
+  deduplicateRules = (rules: Rule[]): Rule[] => {
+    const uniqueRules = new Map<string, Rule>();
+    
+    rules.forEach(rule => {
+      const existingRule = uniqueRules.get(rule.id);
+      
+      if (!existingRule) {
+        // First occurrence of this rule ID
+        uniqueRules.set(rule.id, rule);
+      } else {
+        // Rule already exists, keep the one with the latest updated_at timestamp
+        const existingTime = new Date(existingRule.updated_at).getTime();
+        const newTime = new Date(rule.updated_at).getTime();
+        
+        if (newTime > existingTime) {
+          uniqueRules.set(rule.id, rule);
+        }
+      }
+    });
+    
+    return Array.from(uniqueRules.values());
+  }
 
   setActiveTab = (tab: 'active' | 'all' | 'attention' | 'deleted') => {
     this.activeTab = tab;
@@ -282,6 +315,20 @@ deduplicateRules = (rules: Rule[]): Rule[] => {
       { value: 'description', label: 'Description' },
       { value: 'condition', label: 'Rule Condition' },
     ];
+  }
+
+  // Helper method to get effectiveness color class
+  getEffectivenessColorClass = (effectiveness: number): string => {
+    if (effectiveness >= 90) return 'text-green-600';
+    if (effectiveness >= 70) return 'text-yellow-600';
+    return 'text-red-600';
+  }
+
+  // Helper method to get effectiveness background color class
+  getEffectivenessBackgroundClass = (effectiveness: number): string => {
+    if (effectiveness >= 90) return 'bg-green-500';
+    if (effectiveness >= 70) return 'bg-yellow-500';
+    return 'bg-red-500';
   }
 }
 
