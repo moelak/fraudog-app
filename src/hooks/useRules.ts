@@ -20,6 +20,8 @@ export interface Rule {
   user_id: string;
   created_at: string;
   updated_at: string;
+  isCalculating?: boolean;
+  hasCalculated?: boolean;
 }
 
 export interface CreateRuleData {
@@ -51,6 +53,7 @@ export function useRules() {
   const { user } = useAuth();
   const subscriptionRef = useRef<any>(null);
   const isSubscribedRef = useRef(false);
+  const hasInitializedRef = useRef(false);
   const [rules, setRules] = useState<Rule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +78,50 @@ export function useRules() {
       if (fetchError) throw fetchError;
 
       setRules(data || []);
-      ruleManagementStore.setRules(data || []);
+      
+      // Only call setRules if this is the first initialization
+      if (!hasInitializedRef.current) {
+        hasInitializedRef.current = true;
+        await ruleManagementStore.setRules(data || []);
+      } else {
+        // For subsequent updates, check if there are actually new rules
+        const currentRuleIds = new Set(ruleManagementStore.rules.map(r => r.id));
+        const currentInProgressIds = new Set(ruleManagementStore.inProgressRules.map(r => r.id));
+        
+        // Check if there are any new rules
+        const hasNewRules = (data || []).some(rule => 
+          !currentRuleIds.has(rule.id) && !currentInProgressIds.has(rule.id)
+        );
+        
+        if (hasNewRules) {
+          // Only update if there are genuinely new rules
+          await ruleManagementStore.setRules(data || []);
+        } else {
+          // Just update the rules without recalculating
+          const mainRules = (data || []).filter(rule => ['active', 'inactive', 'warning'].includes(rule.status));
+          const inProgressRules = (data || []).filter(rule => rule.status === 'in progress');
+          
+          // Update main rules while preserving calculated values
+          ruleManagementStore.rules = mainRules.map(rule => {
+            const existingRule = ruleManagementStore.rules.find(r => r.id === rule.id);
+            if (existingRule && existingRule.hasCalculated) {
+              return { ...rule, ...existingRule };
+            }
+            return rule;
+          });
+          
+          // Update in progress rules while preserving calculated values
+          ruleManagementStore.inProgressRules = ruleManagementStore.deduplicateRules(
+            inProgressRules.map(rule => {
+              const existingRule = ruleManagementStore.inProgressRules.find(r => r.id === rule.id);
+              if (existingRule && existingRule.hasCalculated) {
+                return { ...rule, ...existingRule };
+              }
+              return rule;
+            })
+          );
+        }
+      }
     } catch (err) {
       console.error('Error fetching rules:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch rules');
@@ -123,7 +169,7 @@ export function useRules() {
             schema: 'public',
             table: 'rules',
           },
-          (payload) => {
+          async (payload) => {
             console.log('Realtime rule change:', payload);
 
             if (!mounted) return;
@@ -137,13 +183,13 @@ export function useRules() {
 
             if (payload.eventType === 'INSERT') {
               if (rule.status === 'in progress') {
-                ruleManagementStore.addInProgressRule(rule);
+                await ruleManagementStore.addInProgressRule(rule);
               } else {
                 fetchRules();
               }
             } else if (payload.eventType === 'UPDATE') {
               if (rule.status === 'in progress') {
-                ruleManagementStore.updateInProgressRule(rule);
+                await ruleManagementStore.updateInProgressRule(rule);
               } else {
                 // If rule was moved from 'in progress' to another status, remove from in progress
                 ruleManagementStore.removeInProgressRule(rule.id);

@@ -18,6 +18,7 @@ import {
 	ChevronDownIcon,
 	ChevronRightIcon,
 	ChevronUpDownIcon,
+	InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { Fragment } from 'react';
 
@@ -52,22 +53,39 @@ const RuleManagement = observer(() => {
 	// Get current tab info for mobile dropdown
 	const currentTab = tabs.find(tab => tab.id === ruleManagementStore.activeTab) || tabs[0];
 
-	// if (loading) {
-	// 	return (
-	// 		<div className='flex items-center justify-center py-12'>
-	// 			<div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600'></div>
-	// 			<span className='ml-2 text-gray-600'>Loading rules...</span>
-	// 		</div>
-	// 	);
-	// }
+	// Helper function to format numbers with commas - with null safety
+	const formatNumber = (num: number | undefined | null): string => {
+		if (num === undefined || num === null || isNaN(num)) {
+			return '—';
+		}
+		return num.toLocaleString();
+	};
 
-	// if (error) {
-	// 	return (
-	// 		<div className='bg-red-50 border border-red-200 rounded-lg p-4'>
-	// 			<p className='text-red-700'>Error loading rules: {error}</p>
-	// 		</div>
-	// 	);
-	// }
+	// Helper function to safely get effectiveness percentage
+	const formatEffectiveness = (effectiveness: number | undefined | null): string => {
+		if (effectiveness === undefined || effectiveness === null || isNaN(effectiveness)) {
+			return '—';
+		}
+		return `${effectiveness}%`;
+	};
+
+	// Loading shimmer component
+	const LoadingShimmer = () => (
+		<div className="animate-pulse">
+			<div className="h-4 bg-gray-200 rounded w-12 mb-1"></div>
+			<div className="h-3 bg-gray-200 rounded w-16"></div>
+		</div>
+	);
+
+	// Spinner component for effectiveness
+	const EffectivenessSpinner = () => (
+		<div className="flex items-center">
+			<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+			<div className="animate-pulse">
+				<div className="h-4 bg-gray-200 rounded w-8"></div>
+			</div>
+		</div>
+	);
 
 	return (
 		<div className='space-y-6'>
@@ -121,6 +139,20 @@ const RuleManagement = observer(() => {
 							</Menu.Items>
 						</Transition>
 					</Menu>
+				</div>
+			</div>
+
+			{/* Demo Notice */}
+			<div className='bg-blue-50 border border-blue-200 rounded-lg p-4'>
+				<div className='flex items-start'>
+					<InformationCircleIcon className='h-5 w-5 text-blue-400 mt-0.5 mr-3 flex-shrink-0' />
+					<div>
+						<h4 className='text-sm font-medium text-blue-800'>Demo Notice</h4>
+						<p className='text-sm text-blue-700 mt-1'>
+							The Catches, False Positives, and Effectiveness values shown in this demo are randomly generated mock data. 
+							In a production environment, these would be calculated from actual fraud detection results.
+						</p>
+					</div>
 				</div>
 			</div>
 
@@ -263,7 +295,7 @@ const RuleManagement = observer(() => {
 					</div>
 				</div>
 
-				{/* Rules Table - Removed max-height and overflow to prevent scrolling issues */}
+				{/* Rules Table */}
 				<div className='overflow-x-auto h-[600px]'>
 					<table className='min-w-full divide-y divide-gray-200'>
 						<thead className='bg-gray-50'>
@@ -355,43 +387,50 @@ const RuleManagement = observer(() => {
 
 										{/* Catches */}
 										<td className='px-6 py-4 whitespace-nowrap'>
-											<div className='text-sm font-medium text-gray-900'>{rule.catches > 0 ? rule.catches.toLocaleString() : '—'}</div>
-											{/* <div className='text-xs text-gray-500'>fraud caught</div> */}
+											{rule.isCalculating ? (
+												<LoadingShimmer />
+											) : (
+												<>
+													<div className='text-sm font-medium text-gray-900'>{formatNumber(rule.catches)}</div>
+													<div className='text-xs text-gray-500'>catches</div>
+												</>
+											)}
 										</td>
 
 										{/* False Positives */}
 										<td className='px-6 py-4 whitespace-nowrap'>
-											<div className='text-sm font-medium text-gray-900'>{rule.false_positives > 0 ? rule.false_positives.toLocaleString() : '—'}</div>
-											{/* <div className='text-xs text-gray-500'>false flags</div> */}
+											{rule.isCalculating ? (
+												<LoadingShimmer />
+											) : (
+												<>
+													<div className='text-sm font-medium text-gray-900'>{formatNumber(rule.false_positives)}</div>
+													<div className='text-xs text-gray-500'>false positives</div>
+												</>
+											)}
 										</td>
 
 										{/* Effectiveness */}
 										<td className='px-6 py-4 whitespace-nowrap'>
-											<div className='flex items-center'>
-												<div
-													className={`text-sm font-medium ${
-														rule.effectiveness >= 90
-															? 'text-green-600'
-															: rule.effectiveness >= 70
-															? 'text-yellow-600'
-															: rule.effectiveness > 0
-															? 'text-red-600'
-															: 'text-gray-400'
-													}`}
-												>
-													{rule.effectiveness > 0 ? `${rule.effectiveness}%` : '—'}
-												</div>
-												{rule.effectiveness > 0 && (
-													<div className={`ml-2 w-16 bg-gray-200 rounded-full h-2`}>
-														<div
-															className={`h-2 rounded-full ${
-																rule.effectiveness >= 90 ? 'bg-green-500' : rule.effectiveness >= 70 ? 'bg-yellow-500' : 'bg-red-500'
-															}`}
-															style={{ width: `${rule.effectiveness}%` }}
-														/>
+											{rule.isCalculating ? (
+												<EffectivenessSpinner />
+											) : (
+												<div className='flex items-center'>
+													<div className={`text-sm font-medium ${ruleManagementStore.getEffectivenessColorClass(rule.effectiveness || 0)}`}>
+														{formatEffectiveness(rule.effectiveness)}
 													</div>
-												)}
-											</div>
+													{rule.effectiveness !== undefined && rule.effectiveness !== null && !isNaN(rule.effectiveness) && (
+														<div className='ml-2 w-16 bg-gray-200 rounded-full h-2'>
+															<div
+																className={`h-2 rounded-full ${ruleManagementStore.getEffectivenessBackgroundClass(rule.effectiveness)}`}
+																style={{ width: `${rule.effectiveness}%` }}
+															/>
+														</div>
+													)}
+												</div>
+											)}
+											{!rule.isCalculating && (
+												<div className='text-xs text-gray-500 mt-1'>effective</div>
+											)}
 										</td>
 
 										{/* Actions */}

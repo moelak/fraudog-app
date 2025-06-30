@@ -4,7 +4,7 @@ import { ruleManagementStore } from './RuleManagementStore';
 import { useRules } from '../../hooks/useRules';
 import { uploadFile } from '../../utils/fileUpload';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
-import { XMarkIcon, CloudArrowUpIcon, DocumentTextIcon, SparklesIcon, PencilIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CloudArrowUpIcon, DocumentTextIcon, SparklesIcon, PencilIcon, CheckIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import Lottie from 'lottie-react';
 
 const ChargebackAnalysisModal = observer(() => {
@@ -228,6 +228,30 @@ const ChargebackAnalysisModal = observer(() => {
 		ruleManagementStore.closeChargebackAnalysis();
 	};
 
+	// Helper function to format numbers with commas - with null safety
+	const formatNumber = (num: number | undefined | null): string => {
+		if (num === undefined || num === null || isNaN(num)) {
+			return '—';
+		}
+		return num.toLocaleString();
+	};
+
+	// Helper function to safely get effectiveness percentage
+	const formatEffectiveness = (effectiveness: number | undefined | null): string => {
+		if (effectiveness === undefined || effectiveness === null || isNaN(effectiveness)) {
+			return '—';
+		}
+		return `${effectiveness}%`;
+	};
+
+	// Loading shimmer component for Generated Rules
+	const LoadingShimmer = () => (
+		<div className="animate-pulse">
+			<div className="h-6 bg-gray-200 rounded w-16 mb-1"></div>
+			<div className="h-4 bg-gray-200 rounded w-20"></div>
+		</div>
+	);
+
 	if (!ruleManagementStore.isChargebackAnalysisOpen) return null;
 
 	return (
@@ -340,6 +364,19 @@ const ChargebackAnalysisModal = observer(() => {
 							</div>
 						) : (
 							<div className='space-y-6'>
+								{/* Demo Notice for Generated Rules */}
+								<div className='bg-blue-50 border border-blue-200 rounded-lg p-4'>
+									<div className='flex items-start'>
+										<InformationCircleIcon className='h-5 w-5 text-blue-400 mt-0.5 mr-3 flex-shrink-0' />
+										<div>
+											<h4 className='text-sm font-medium text-blue-800'>Demo Notice</h4>
+											<p className='text-sm text-blue-700 mt-1'>
+												The rules below are ranked by effectiveness (highest first). The Catches, False Positives, and Effectiveness values are randomly generated mock data for demonstration purposes.
+											</p>
+										</div>
+									</div>
+								</div>
+
 								{/* Generated Rules */}
 								{ruleManagementStore.inProgressRules.length > 0 ? (
 									<div>
@@ -354,14 +391,14 @@ const ChargebackAnalysisModal = observer(() => {
 														</div>
 														<span
 															className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-																rule.effectiveness >= 90
+																(rule.effectiveness || 0) >= 90
 																	? 'bg-green-100 text-green-800'
-																	: rule.effectiveness >= 70
+																	: (rule.effectiveness || 0) >= 70
 																	? 'bg-yellow-100 text-yellow-800'
 																	: 'bg-red-100 text-red-800'
 															}`}
 														>
-															{rule.effectiveness > 0 ? `${rule.effectiveness}% confidence` : 'Processing...'}
+															{rule.isCalculating ? 'Calculating...' : `${formatEffectiveness(rule.effectiveness)} confidence`}
 														</span>
 													</div>
 
@@ -371,32 +408,52 @@ const ChargebackAnalysisModal = observer(() => {
 
 													<div className='grid grid-cols-3 gap-4 mb-4'>
 														<div className='text-center'>
-															<div className='text-2xl font-bold text-green-600'>{rule.catches > 0 ? rule.catches : '—'}</div>
-															<div className='text-xs text-gray-500'>Expected Catches</div>
+															{rule.isCalculating ? (
+																<LoadingShimmer />
+															) : (
+																<>
+																	<div className='text-2xl font-bold text-green-600'>{formatNumber(rule.catches)}</div>
+																	<div className='text-xs text-gray-500'>Expected Catches</div>
+																</>
+															)}
 														</div>
 														<div className='text-center'>
-															<div className='text-2xl font-bold text-red-600'>{rule.false_positives > 0 ? rule.false_positives : '—'}</div>
-															<div className='text-xs text-gray-500'>Est. False Positives</div>
+															{rule.isCalculating ? (
+																<LoadingShimmer />
+															) : (
+																<>
+																	<div className='text-2xl font-bold text-red-600'>{formatNumber(rule.false_positives)}</div>
+																	<div className='text-xs text-gray-500'>Est. False Positives</div>
+																</>
+															)}
 														</div>
 														<div className='text-center'>
-															<div className='text-2xl font-bold text-blue-600'>
-																{rule.effectiveness > 0 ? `${rule.effectiveness}%` : '—'}
-															</div>
-															<div className='text-xs text-gray-500'>Effectiveness</div>
+															{rule.isCalculating ? (
+																<LoadingShimmer />
+															) : (
+																<>
+																	<div className={`text-2xl font-bold ${ruleManagementStore.getEffectivenessColorClass(rule.effectiveness || 0)}`}>
+																		{formatEffectiveness(rule.effectiveness)}
+																	</div>
+																	<div className='text-xs text-gray-500'>Effectiveness</div>
+																</>
+															)}
 														</div>
 													</div>
 
 													<div className='flex justify-end space-x-3'>
 														<button 
 															onClick={() => handleEditRule(rule)}
-															className='inline-flex items-center px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors'
+															disabled={rule.isCalculating}
+															className='inline-flex items-center px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
 														>
 															<PencilIcon className='h-4 w-4 mr-2' />
 															Edit
 														</button>
 														<button
 															onClick={() => handleImplementRule(rule.id)}
-															className='inline-flex items-center px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors'
+															disabled={rule.isCalculating}
+															className='inline-flex items-center px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
 														>
 															<CheckIcon className='h-4 w-4 mr-2' />
 															Implement Rule
