@@ -39,6 +39,8 @@ export class RuleManagementStore {
   isEditingFromGenerated = false; // Track if editing from Generated Rules section
   isCalculatingMetrics = false; // Track if we're calculating metrics for the table
   calculatedRules = new Set<string>(); // Track which rules have been calculated
+  isTableLoading = false; // Track if the entire table is loading
+  tableLoadingProgress = 0; // Track loading progress (0-100)
 
   constructor() {
     makeAutoObservable(this);
@@ -134,6 +136,10 @@ export class RuleManagementStore {
   }
 
   setRules = async (newRules: Rule[]) => {
+    // Start table loading
+    this.isTableLoading = true;
+    this.tableLoadingProgress = 0;
+
     // Filter out rules with status 'in progress' for main rules display
     const mainRules = newRules.filter(rule => ['active', 'inactive', 'warning'].includes(rule.status));
     
@@ -163,12 +169,25 @@ export class RuleManagementStore {
     this.rules = initialRules;
     this.isCalculatingMetrics = uncalculatedMainRules.length > 0;
     
+    // Update progress
+    this.tableLoadingProgress = 25;
+    
     // Generate mock data with iterations for new main rules only
     if (uncalculatedMainRules.length > 0) {
+      const totalRules = uncalculatedMainRules.length;
+      let completedRules = 0;
+      
       await Promise.all(
-        uncalculatedMainRules.map(rule => this.generateMockDataWithIterations(rule))
+        uncalculatedMainRules.map(async (rule) => {
+          await this.generateMockDataWithIterations(rule);
+          completedRules++;
+          // Update progress (25% to 75% for main rules)
+          this.tableLoadingProgress = 25 + (completedRules / totalRules) * 50;
+        })
       );
       this.isCalculatingMetrics = false;
+    } else {
+      this.tableLoadingProgress = 75;
     }
     
     // Handle in progress rules
@@ -197,10 +216,28 @@ export class RuleManagementStore {
     
     // Generate mock data for new in progress rules with iterations
     if (uncalculatedInProgressRules.length > 0) {
+      const totalInProgressRules = uncalculatedInProgressRules.length;
+      let completedInProgressRules = 0;
+      
       await Promise.all(
-        uncalculatedInProgressRules.map(rule => this.generateMockDataWithIterations(rule))
+        uncalculatedInProgressRules.map(async (rule) => {
+          await this.generateMockDataWithIterations(rule);
+          completedInProgressRules++;
+          // Update progress (75% to 95% for in progress rules)
+          this.tableLoadingProgress = 75 + (completedInProgressRules / totalInProgressRules) * 20;
+        })
       );
+    } else {
+      this.tableLoadingProgress = 95;
     }
+
+    // Final loading delay to ensure smooth transition
+    await new Promise(resolve => setTimeout(resolve, 500));
+    this.tableLoadingProgress = 100;
+    
+    // Small delay before hiding loading
+    await new Promise(resolve => setTimeout(resolve, 200));
+    this.isTableLoading = false;
   }
 
   addInProgressRule = async (rule: Rule) => {
@@ -497,6 +534,19 @@ export class RuleManagementStore {
   // Method to clear calculated rules (useful for testing)
   clearCalculatedRules = () => {
     this.calculatedRules.clear();
+  }
+
+  // Get loading status message based on progress
+  getLoadingMessage = (): string => {
+    if (this.tableLoadingProgress < 25) {
+      return 'Loading rules from database...';
+    } else if (this.tableLoadingProgress < 75) {
+      return 'Calculating fraud detection metrics...';
+    } else if (this.tableLoadingProgress < 95) {
+      return 'Processing generated rules...';
+    } else {
+      return 'Finalizing data...';
+    }
   }
 }
 
