@@ -214,7 +214,7 @@ export class RuleManagementStore {
 
   this.isInitialized = true;
 };
-
+ 
 
   addInProgressRule = async (rule: Rule) => {
     if (rule.status === 'in progress') {
