@@ -467,7 +467,7 @@ export class RuleManagementStore {
     this.isInitialized = false;
   }
 
-  // Get loading status message
+  // Get loading status message - simplified to avoid database references
   getLoadingMessage = (): string => {
     return 'Processing fraud detection rules and calculating effectiveness metrics...';
   }
