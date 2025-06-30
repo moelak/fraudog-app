@@ -58,6 +58,24 @@ const RuleManagement = observer(() => {
 		return num.toLocaleString();
 	};
 
+	// Loading shimmer component
+	const LoadingShimmer = () => (
+		<div className="animate-pulse">
+			<div className="h-4 bg-gray-200 rounded w-12 mb-1"></div>
+			<div className="h-3 bg-gray-200 rounded w-16"></div>
+		</div>
+	);
+
+	// Spinner component for effectiveness
+	const EffectivenessSpinner = () => (
+		<div className="flex items-center">
+			<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+			<div className="animate-pulse">
+				<div className="h-4 bg-gray-200 rounded w-8"></div>
+			</div>
+		</div>
+	);
+
 	// if (loading) {
 	// 	return (
 	// 		<div className='flex items-center justify-center py-12'>
@@ -375,30 +393,48 @@ const RuleManagement = observer(() => {
 
 										{/* Catches */}
 										<td className='px-6 py-4 whitespace-nowrap'>
-											<div className='text-sm font-medium text-gray-900'>{formatNumber(rule.catches)}</div>
-											<div className='text-xs text-gray-500'>catches</div>
+											{rule.isCalculating ? (
+												<LoadingShimmer />
+											) : (
+												<>
+													<div className='text-sm font-medium text-gray-900'>{formatNumber(rule.catches)}</div>
+													<div className='text-xs text-gray-500'>catches</div>
+												</>
+											)}
 										</td>
 
 										{/* False Positives */}
 										<td className='px-6 py-4 whitespace-nowrap'>
-											<div className='text-sm font-medium text-gray-900'>{formatNumber(rule.false_positives)}</div>
-											<div className='text-xs text-gray-500'>false positives</div>
+											{rule.isCalculating ? (
+												<LoadingShimmer />
+											) : (
+												<>
+													<div className='text-sm font-medium text-gray-900'>{formatNumber(rule.false_positives)}</div>
+													<div className='text-xs text-gray-500'>false positives</div>
+												</>
+											)}
 										</td>
 
 										{/* Effectiveness */}
 										<td className='px-6 py-4 whitespace-nowrap'>
-											<div className='flex items-center'>
-												<div className={`text-sm font-medium ${ruleManagementStore.getEffectivenessColorClass(rule.effectiveness)}`}>
-													{rule.effectiveness}%
+											{rule.isCalculating ? (
+												<EffectivenessSpinner />
+											) : (
+												<div className='flex items-center'>
+													<div className={`text-sm font-medium ${ruleManagementStore.getEffectivenessColorClass(rule.effectiveness)}`}>
+														{rule.effectiveness}%
+													</div>
+													<div className='ml-2 w-16 bg-gray-200 rounded-full h-2'>
+														<div
+															className={`h-2 rounded-full ${ruleManagementStore.getEffectivenessBackgroundClass(rule.effectiveness)}`}
+															style={{ width: `${rule.effectiveness}%` }}
+														/>
+													</div>
 												</div>
-												<div className='ml-2 w-16 bg-gray-200 rounded-full h-2'>
-													<div
-														className={`h-2 rounded-full ${ruleManagementStore.getEffectivenessBackgroundClass(rule.effectiveness)}`}
-														style={{ width: `${rule.effectiveness}%` }}
-													/>
-												</div>
-											</div>
-											<div className='text-xs text-gray-500 mt-1'>effective</div>
+											)}
+											{!rule.isCalculating && (
+												<div className='text-xs text-gray-500 mt-1'>effective</div>
+											)}
 										</td>
 
 										{/* Actions */}

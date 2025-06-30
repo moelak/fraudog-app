@@ -17,6 +17,7 @@ export interface Rule {
   user_id: string;
   created_at: string;
   updated_at: string;
+  isCalculating?: boolean; // Track if this rule is still calculating
 }
 
 export type SearchColumn = 'all' | 'name' | 'category' | 'description' | 'condition';
@@ -35,12 +36,62 @@ export class RuleManagementStore {
   rules: Rule[] = [];
   inProgressRules: Rule[] = []; // Track in progress rules separately
   isEditingFromGenerated = false; // Track if editing from Generated Rules section
+  isCalculatingMetrics = false; // Track if we're calculating metrics for the table
 
   constructor() {
     makeAutoObservable(this);
   }
 
-  // Helper function to generate mock data for a rule
+  // Helper function to generate mock data for a rule with iterations
+  generateMockDataWithIterations = async (rule: Rule): Promise<Rule> => {
+    // Mark rule as calculating
+    const ruleWithCalculating = { ...rule, isCalculating: true };
+    
+    // Number of iterations (5-10 random iterations)
+    const iterations = Math.floor(Math.random() * 6) + 5; // 5-10 iterations
+    
+    let finalRule = ruleWithCalculating;
+    
+    for (let i = 0; i < iterations; i++) {
+      // Generate new values for each iteration
+      const catches = Math.floor(Math.random() * 101) + 50; // 50-150
+      const maxFalsePositives = Math.min(40, catches - 1);
+      const false_positives = Math.floor(Math.random() * maxFalsePositives) + 1;
+      const effectiveness = Math.round((1 - (false_positives / catches)) * 1000) / 10;
+      
+      finalRule = {
+        ...finalRule,
+        catches,
+        false_positives,
+        effectiveness,
+        isCalculating: i < iterations - 1 // Only false on the last iteration
+      };
+      
+      // Update the rule in the appropriate array during iterations
+      if (rule.status === 'in progress') {
+        const index = this.inProgressRules.findIndex(r => r.id === rule.id);
+        if (index !== -1) {
+          this.inProgressRules[index] = finalRule;
+          // Re-sort by effectiveness after each update
+          this.inProgressRules.sort((a, b) => b.effectiveness - a.effectiveness);
+        }
+      } else {
+        const index = this.rules.findIndex(r => r.id === rule.id);
+        if (index !== -1) {
+          this.rules[index] = finalRule;
+        }
+      }
+      
+      // Wait between iterations (200-500ms)
+      if (i < iterations - 1) {
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 300 + 200));
+      }
+    }
+    
+    return finalRule;
+  }
+
+  // Helper function to generate mock data for a rule (single iteration)
   generateMockData = (rule: Rule): Rule => {
     // Generate catches between 50-150
     const catches = Math.floor(Math.random() * 101) + 50; // 50-150
@@ -56,40 +107,55 @@ export class RuleManagementStore {
       ...rule,
       catches,
       false_positives,
-      effectiveness
+      effectiveness,
+      isCalculating: false
     };
   }
 
-  setRules = (newRules: Rule[]) => {
+  setRules = async (newRules: Rule[]) => {
     // Filter out rules with status 'in progress' for main rules display
     const mainRules = newRules.filter(rule => ['active', 'inactive', 'warning'].includes(rule.status));
     
-    // Generate mock data for main rules
-    this.rules = mainRules.map(rule => this.generateMockData(rule));
+    // Set initial rules with calculating state
+    this.rules = mainRules.map(rule => ({ ...rule, isCalculating: true, catches: 0, false_positives: 0, effectiveness: 0 }));
+    this.isCalculatingMetrics = true;
+    
+    // Generate mock data with iterations for main rules
+    const rulesWithMockData = await Promise.all(
+      mainRules.map(rule => this.generateMockDataWithIterations(rule))
+    );
+    
+    this.rules = rulesWithMockData;
+    this.isCalculatingMetrics = false;
     
     // Keep in progress rules separate and deduplicated
     const inProgressRules = newRules.filter(rule => rule.status === 'in progress');
-    this.inProgressRules = this.deduplicateRules(inProgressRules.map(rule => this.generateMockData(rule)));
+    this.inProgressRules = this.deduplicateRules(inProgressRules.map(rule => ({ ...rule, isCalculating: true, catches: 0, false_positives: 0, effectiveness: 0 })));
+    
+    // Generate mock data for in progress rules with iterations
+    await Promise.all(
+      this.inProgressRules.map(rule => this.generateMockDataWithIterations(rule))
+    );
   }
 
-  addInProgressRule = (rule: Rule) => {
+  addInProgressRule = async (rule: Rule) => {
     if (rule.status === 'in progress') {
-      // Generate mock data for the new rule
-      const ruleWithMockData = this.generateMockData(rule);
+      // Start with calculating state
+      const ruleWithCalculating = { ...rule, isCalculating: true, catches: 0, false_positives: 0, effectiveness: 0 };
       
       // Check if rule already exists to prevent duplicates
-      const existingIndex = this.inProgressRules.findIndex(existingRule => existingRule.id === ruleWithMockData.id);
+      const existingIndex = this.inProgressRules.findIndex(existingRule => existingRule.id === ruleWithCalculating.id);
       
       if (existingIndex !== -1) {
         // Update existing rule instead of adding duplicate
-        this.inProgressRules[existingIndex] = ruleWithMockData;
+        this.inProgressRules[existingIndex] = ruleWithCalculating;
       } else {
         // Add new rule
-        this.inProgressRules.push(ruleWithMockData);
+        this.inProgressRules.push(ruleWithCalculating);
       }
       
-      // Sort by effectiveness in descending order
-      this.inProgressRules.sort((a, b) => b.effectiveness - a.effectiveness);
+      // Generate mock data with iterations
+      await this.generateMockDataWithIterations(ruleWithCalculating);
       
       // Ensure the array remains deduplicated
       this.inProgressRules = this.deduplicateRules(this.inProgressRules);
@@ -100,14 +166,16 @@ export class RuleManagementStore {
     this.inProgressRules = this.inProgressRules.filter(rule => rule.id !== ruleId);
   }
 
-  updateInProgressRule = (updatedRule: Rule) => {
+  updateInProgressRule = async (updatedRule: Rule) => {
     const index = this.inProgressRules.findIndex(rule => rule.id === updatedRule.id);
     if (index !== -1) {
       if (updatedRule.status === 'in progress') {
-        // Generate mock data for the updated rule
-        this.inProgressRules[index] = this.generateMockData(updatedRule);
-        // Re-sort by effectiveness
-        this.inProgressRules.sort((a, b) => b.effectiveness - a.effectiveness);
+        // Start with calculating state
+        const ruleWithCalculating = { ...updatedRule, isCalculating: true, catches: 0, false_positives: 0, effectiveness: 0 };
+        this.inProgressRules[index] = ruleWithCalculating;
+        
+        // Generate mock data with iterations
+        await this.generateMockDataWithIterations(ruleWithCalculating);
       } else {
         // Rule status changed from in progress, remove from this list
         this.inProgressRules.splice(index, 1);

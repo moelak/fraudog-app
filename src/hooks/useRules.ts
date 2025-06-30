@@ -20,6 +20,7 @@ export interface Rule {
   user_id: string;
   created_at: string;
   updated_at: string;
+  isCalculating?: boolean;
 }
 
 export interface CreateRuleData {
@@ -55,26 +56,6 @@ export function useRules() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Helper function to generate mock data for a rule
-  const generateMockData = (rule: Rule): Rule => {
-    // Generate catches between 50-150
-    const catches = Math.floor(Math.random() * 101) + 50; // 50-150
-    
-    // Generate false positives between 1-40, ensuring it's less than catches
-    const maxFalsePositives = Math.min(40, catches - 1);
-    const false_positives = Math.floor(Math.random() * maxFalsePositives) + 1; // 1 to maxFalsePositives
-    
-    // Calculate effectiveness: 1 - (falsePositives / catches)
-    const effectiveness = Math.round((1 - (false_positives / catches)) * 1000) / 10; // Round to 1 decimal
-    
-    return {
-      ...rule,
-      catches,
-      false_positives,
-      effectiveness
-    };
-  };
-
   const fetchRules = async () => {
     if (!user) {
       setRules([]);
@@ -94,11 +75,9 @@ export function useRules() {
 
       if (fetchError) throw fetchError;
 
-      // Generate mock data for all rules
-      const rulesWithMockData = (data || []).map(rule => generateMockData(rule));
-
-      setRules(rulesWithMockData);
-      ruleManagementStore.setRules(rulesWithMockData);
+      setRules(data || []);
+      // Use the store's async setRules method to handle loading states
+      await ruleManagementStore.setRules(data || []);
     } catch (err) {
       console.error('Error fetching rules:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch rules');
@@ -146,7 +125,7 @@ export function useRules() {
             schema: 'public',
             table: 'rules',
           },
-          (payload) => {
+          async (payload) => {
             console.log('Realtime rule change:', payload);
 
             if (!mounted) return;
@@ -159,19 +138,17 @@ export function useRules() {
             }
 
             if (payload.eventType === 'INSERT') {
-              const ruleWithMockData = generateMockData(rule);
-              if (ruleWithMockData.status === 'in progress') {
-                ruleManagementStore.addInProgressRule(ruleWithMockData);
+              if (rule.status === 'in progress') {
+                await ruleManagementStore.addInProgressRule(rule);
               } else {
                 fetchRules();
               }
             } else if (payload.eventType === 'UPDATE') {
-              const ruleWithMockData = generateMockData(rule);
-              if (ruleWithMockData.status === 'in progress') {
-                ruleManagementStore.updateInProgressRule(ruleWithMockData);
+              if (rule.status === 'in progress') {
+                await ruleManagementStore.updateInProgressRule(rule);
               } else {
                 // If rule was moved from 'in progress' to another status, remove from in progress
-                ruleManagementStore.removeInProgressRule(ruleWithMockData.id);
+                ruleManagementStore.removeInProgressRule(rule.id);
                 fetchRules();
               }
             } else if (payload.eventType === 'DELETE') {

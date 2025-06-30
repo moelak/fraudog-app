@@ -233,6 +233,14 @@ const ChargebackAnalysisModal = observer(() => {
 		return num.toLocaleString();
 	};
 
+	// Loading shimmer component for Generated Rules
+	const LoadingShimmer = () => (
+		<div className="animate-pulse">
+			<div className="h-6 bg-gray-200 rounded w-16 mb-1"></div>
+			<div className="h-4 bg-gray-200 rounded w-20"></div>
+		</div>
+	);
+
 	if (!ruleManagementStore.isChargebackAnalysisOpen) return null;
 
 	return (
@@ -379,7 +387,7 @@ const ChargebackAnalysisModal = observer(() => {
 																	: 'bg-red-100 text-red-800'
 															}`}
 														>
-															{rule.effectiveness}% confidence
+															{rule.isCalculating ? 'Calculating...' : `${rule.effectiveness}% confidence`}
 														</span>
 													</div>
 
@@ -389,32 +397,52 @@ const ChargebackAnalysisModal = observer(() => {
 
 													<div className='grid grid-cols-3 gap-4 mb-4'>
 														<div className='text-center'>
-															<div className='text-2xl font-bold text-green-600'>{formatNumber(rule.catches)}</div>
-															<div className='text-xs text-gray-500'>Expected Catches</div>
+															{rule.isCalculating ? (
+																<LoadingShimmer />
+															) : (
+																<>
+																	<div className='text-2xl font-bold text-green-600'>{formatNumber(rule.catches)}</div>
+																	<div className='text-xs text-gray-500'>Expected Catches</div>
+																</>
+															)}
 														</div>
 														<div className='text-center'>
-															<div className='text-2xl font-bold text-red-600'>{formatNumber(rule.false_positives)}</div>
-															<div className='text-xs text-gray-500'>Est. False Positives</div>
+															{rule.isCalculating ? (
+																<LoadingShimmer />
+															) : (
+																<>
+																	<div className='text-2xl font-bold text-red-600'>{formatNumber(rule.false_positives)}</div>
+																	<div className='text-xs text-gray-500'>Est. False Positives</div>
+																</>
+															)}
 														</div>
 														<div className='text-center'>
-															<div className={`text-2xl font-bold ${ruleManagementStore.getEffectivenessColorClass(rule.effectiveness)}`}>
-																{rule.effectiveness}%
-															</div>
-															<div className='text-xs text-gray-500'>Effectiveness</div>
+															{rule.isCalculating ? (
+																<LoadingShimmer />
+															) : (
+																<>
+																	<div className={`text-2xl font-bold ${ruleManagementStore.getEffectivenessColorClass(rule.effectiveness)}`}>
+																		{rule.effectiveness}%
+																	</div>
+																	<div className='text-xs text-gray-500'>Effectiveness</div>
+																</>
+															)}
 														</div>
 													</div>
 
 													<div className='flex justify-end space-x-3'>
 														<button 
 															onClick={() => handleEditRule(rule)}
-															className='inline-flex items-center px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors'
+															disabled={rule.isCalculating}
+															className='inline-flex items-center px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
 														>
 															<PencilIcon className='h-4 w-4 mr-2' />
 															Edit
 														</button>
 														<button
 															onClick={() => handleImplementRule(rule.id)}
-															className='inline-flex items-center px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors'
+															disabled={rule.isCalculating}
+															className='inline-flex items-center px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
 														>
 															<CheckIcon className='h-4 w-4 mr-2' />
 															Implement Rule
