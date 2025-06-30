@@ -155,7 +155,7 @@ export class RuleManagementStore {
   });
 
   this.isTableLoading = true;
-  this.tableLoadingProgress = 10;
+  // this.tableLoadingProgress = 10;
 
   // Start concurrent processing of new rules
   const [processedMain, processedInProgress] = await Promise.all([
@@ -163,7 +163,7 @@ export class RuleManagementStore {
     Promise.all(uncalculatedInProgressRules.map(rule => this.generateMockDataWithIterations(rule)))
   ]);
 
-  this.tableLoadingProgress = 90;
+  this.tableLoadingProgress = 90; 
 
   this.rules = [...keepMain, ...processedMain];
   this.inProgressRules = this.deduplicateRules([...keepInProgress, ...processedInProgress])
