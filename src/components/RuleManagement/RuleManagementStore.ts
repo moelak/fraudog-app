@@ -464,6 +464,16 @@ export class RuleManagementStore {
     this.calculatedRules.clear();
     this.isInitialized = false;
   }
+
+  updateRuleInStore = (updatedRule: Rule) => {
+  this.rules = this.rules.map(rule =>
+    rule.id === updatedRule.id ? updatedRule : rule
+  );
+  this.inProgressRules = this.inProgressRules.map(rule =>
+    rule.id === updatedRule.id ? updatedRule : rule
+  );
+};
+
 }
 
 export const ruleManagementStore = new RuleManagementStore();
