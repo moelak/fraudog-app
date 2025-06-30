@@ -87,7 +87,6 @@ export function useRules() {
         // For subsequent updates, check if there are actually new rules
         const currentRuleIds = new Set(ruleManagementStore.rules.map(r => r.id));
         const currentInProgressIds = new Set(ruleManagementStore.inProgressRules.map(r => r.id));
-        const newRuleIds = new Set((data || []).map(r => r.id));
         
         // Check if there are any new rules
         const hasNewRules = (data || []).some(rule => 
