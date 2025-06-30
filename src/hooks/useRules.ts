@@ -21,6 +21,7 @@ export interface Rule {
   created_at: string;
   updated_at: string;
   isCalculating?: boolean;
+  hasCalculated?: boolean;
 }
 
 export interface CreateRuleData {
@@ -55,6 +56,7 @@ export function useRules() {
   const [rules, setRules] = useState<Rule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasInitializedRef = useRef(false);
 
   const fetchRules = async () => {
     if (!user) {
@@ -76,8 +78,36 @@ export function useRules() {
       if (fetchError) throw fetchError;
 
       setRules(data || []);
-      // Use the store's async setRules method to handle loading states
-      await ruleManagementStore.setRules(data || []);
+      
+      // Only call setRules if this is the first initialization or if rules have actually changed
+      if (!hasInitializedRef.current) {
+        hasInitializedRef.current = true;
+        await ruleManagementStore.setRules(data || []);
+      } else {
+        // For subsequent updates, just update the rules without recalculating
+        const mainRules = (data || []).filter(rule => ['active', 'inactive', 'warning'].includes(rule.status));
+        const inProgressRules = (data || []).filter(rule => rule.status === 'in progress');
+        
+        // Update main rules while preserving calculated values
+        ruleManagementStore.rules = mainRules.map(rule => {
+          const existingRule = ruleManagementStore.rules.find(r => r.id === rule.id);
+          if (existingRule && existingRule.hasCalculated) {
+            return { ...rule, ...existingRule };
+          }
+          return rule;
+        });
+        
+        // Update in progress rules while preserving calculated values
+        ruleManagementStore.inProgressRules = ruleManagementStore.deduplicateRules(
+          inProgressRules.map(rule => {
+            const existingRule = ruleManagementStore.inProgressRules.find(r => r.id === rule.id);
+            if (existingRule && existingRule.hasCalculated) {
+              return { ...rule, ...existingRule };
+            }
+            return rule;
+          })
+        );
+      }
     } catch (err) {
       console.error('Error fetching rules:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch rules');
