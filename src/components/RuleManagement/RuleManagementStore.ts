@@ -39,7 +39,6 @@ export class RuleManagementStore {
   isEditingFromGenerated = false; // Track if editing from Generated Rules section
   isCalculatingMetrics = false; // Track if we're calculating metrics for the table
   calculatedRules = new Set<string>(); // Track which rules have been calculated
-  isTableLoading = false; // Track if the entire table is loading
   isInitialized = false; // Track if the store has been initialized
   loadingPromise: Promise<void> | null = null; // Track ongoing loading operation
 
@@ -152,9 +151,7 @@ export class RuleManagementStore {
       return existing?.hasCalculated ? existing : this.generateMockData(rule);
     });
 
-    this.isTableLoading = true;
-
-    // Start concurrent processing of new rules
+    // Process new rules immediately without loading state
     const [processedMain, processedInProgress] = await Promise.all([
       Promise.all(uncalculatedMainRules.map(rule => this.generateMockDataWithIterations(rule))),
       Promise.all(uncalculatedInProgressRules.map(rule => this.generateMockDataWithIterations(rule)))
@@ -164,10 +161,6 @@ export class RuleManagementStore {
     this.inProgressRules = this.deduplicateRules([...keepInProgress, ...processedInProgress])
       .sort((a, b) => (b.effectiveness || 0) - (a.effectiveness || 0));
 
-    // Add a brief delay for the "Finalizing data..." message
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    this.isTableLoading = false;
     this.isInitialized = true;
   };
 
@@ -465,11 +458,6 @@ export class RuleManagementStore {
   clearCalculatedRules = () => {
     this.calculatedRules.clear();
     this.isInitialized = false;
-  }
-
-  // Get loading status message - simplified to avoid database references
-  getLoadingMessage = (): string => {
-    return 'Processing fraud detection rules and calculating effectiveness metrics...';
   }
 }
 
