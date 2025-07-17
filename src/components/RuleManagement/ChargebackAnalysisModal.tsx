@@ -5,7 +5,6 @@ import { useRules } from '../../hooks/useRules';
 import { uploadFile } from '../../utils/fileUpload';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 import { XMarkIcon, CloudArrowUpIcon, DocumentTextIcon, SparklesIcon, PencilIcon, CheckIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
-import Lottie from 'lottie-react';
 
 const ChargebackAnalysisModal = observer(() => {
 	const { implementRule } = useRules();

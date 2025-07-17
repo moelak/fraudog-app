@@ -117,7 +117,7 @@ const RuleManagement = observer(() => {
 						>
 							<Menu.Items className='absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10'>
 								<Menu.Item>
-									{({ active }) => (
+									{({ active }: { active: boolean }) => (
 										<button
 											onClick={ruleManagementStore.openCreateModal}
 											className={`${active ? 'bg-blue-100' : ''} block px-4 py-2 text-sm text-gray-700 w-full text-left`}
@@ -127,7 +127,7 @@ const RuleManagement = observer(() => {
 									)}
 								</Menu.Item>
 								<Menu.Item>
-									{({ active }) => (
+									{({ active }: { active: boolean }) => (
 										<button
 											onClick={handleOpenChargebackAnalysis}
 											className={`${active ? 'bg-blue-100' : ''} block px-4 py-2 text-sm text-gray-700 w-full text-left`}
@@ -211,7 +211,7 @@ const RuleManagement = observer(() => {
 										<div className='py-1'>
 											{tabs.map((tab) => (
 												<Menu.Item key={tab.id}>
-													{({ active }) => (
+													{({ active }: { active: boolean }) => (
 														<button
 															onClick={() => ruleManagementStore.setActiveTab(tab.id)}
 															className={`${
@@ -258,7 +258,7 @@ const RuleManagement = observer(() => {
 											<div className='py-1'>
 												{searchColumns.map((column) => (
 													<Menu.Item key={column.value}>
-														{({ active }) => (
+														{({ active }: { active: boolean }) => (
 															<button
 																onClick={() => ruleManagementStore.setSearchColumn(column.value)}
 																className={`${
