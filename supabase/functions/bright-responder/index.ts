@@ -1,5 +1,19 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-Deno.serve(async (req)=>{
+import OpenAI from 'https://deno.land/x/openai@v4.20.0/mod.ts';
+
+interface RuleResult {
+  rule_name: string;
+  description: string;
+  risk_score: number;
+  conditions: string;
+  metadata?: Record<string, unknown>;
+}
+
+const openai = new OpenAI({
+  apiKey: Deno.env.get('OPENAI_API_KEY'),
+});
+
+Deno.serve(async (req) => {
   console.log('Edge function triggered');
   console.log('Request method:', req.method);
   console.log('Request headers:', Object.fromEntries(req.headers.entries()));
@@ -92,74 +106,90 @@ Deno.serve(async (req)=>{
       clientId,
       dataLength: csvData.length
     });
-    // Get ngrok URL
-    const { data: ngrokData, error: ngrokError } = await supabaseClient.schema('api').from('ngrok_config').select('url').limit(1).single();
-    if (ngrokError || !ngrokData?.url) {
-      console.error('Ngrok error:', ngrokError);
-      throw new Error(`Could not get ngrok URL: ${ngrokError?.message}`);
-    }
-    console.log('Ngrok URL:', ngrokData.url);
     // Validate CSV data structure
     if (!Array.isArray(csvData) || csvData.length === 0) {
       throw new Error('CSV data is not a valid array or is empty');
     }
-    // Convert JSON data back to CSV format
-    const headers = Object.keys(csvData[0] || {});
-    if (headers.length === 0) {
-      throw new Error('No headers found in CSV data');
-    }
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map((row)=>headers.map((h)=>{
-          const value = row[h] || '';
-          // Escape commas and quotes in CSV values
-          return typeof value === 'string' && (value.includes(',') || value.includes('"')) ? `"${value.replace(/"/g, '""')}"` : value;
-        }).join(','))
-    ].join('\n');
-    console.log('CSV content preview:', csvContent.substring(0, 200) + '...');
-    // Create FormData with CSV
-    const formData = new FormData();
-    formData.append('client_id', clientId);
-    const csvBlob = new Blob([
-      csvContent
-    ], {
-      type: 'text/csv'
-    });
-    formData.append('csv', csvBlob, fileName);
-    console.log('Sending to server:', `${ngrokData.url}/api/upload`);
-    // Send to your server with timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(()=>controller.abort(), 30000); // 30 second timeout
+
+    // Prepare data for OpenAI
+    const dataSample = JSON.stringify(csvData.slice(0, 5), null, 2); // Only send first 5 rows as example
+    
     try {
-      const response = await fetch(`${ngrokData.url}/api/upload`, {
-        method: 'POST',
-        body: formData,
-        signal: controller.signal
+      // Call OpenAI API
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4-turbo-preview",
+        messages: [
+          {
+            role: "system",
+            content: `You are a senior fraud data analyst with a decade of experience in the remittance, payment, and crypto industries. Your job is to investigate the data sent to you to examine and identify patterns for high fraud risk that has resulted in chargebacks. You will also identify patterns that do not fit high fraud risk so as to not confuse good customers from fraudsters, causing further friction on good customers. 
+            Return a JSON array of rule conditions with the following structure for each pattern:
+            {
+              "rule_name": "string",
+              "description": "string",
+              "risk_score": number (1-100),
+              "conditions": "string",
+              "metadata": {}
+            }
+            The data shared is a CSV file of chargebacks in the period. The conditions created should be using AND conditions, using column titles as the data features Create both boolean and numeric conditions. The risk_score metric is based on the percentage of transactions in the file that fit the conditions.   `
+          },
+          {
+            role: "user",
+            content: `Analyze this transaction data for potential fraud:\n\n${dataSample}\n\nReturn a summary of the patterns found, and suggest rules to be created in each JSON array that can be used to identify future fraud activity based on the applied file.`
+          }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.2,
+        max_tokens: 5000
       });
-      clearTimeout(timeoutId);
-      console.log('Server response status:', response.status);
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Server error response:', errorText);
-        throw new Error(`Server responded with ${response.status}: ${errorText}`);
+
+      // Parse the response
+      const content = completion.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('No content in OpenAI response');
       }
-      const responseText = await response.text();
-      console.log('Server response:', responseText);
+
+      let ruleResults: RuleResult[] = [];
+      try {
+        const parsedContent = JSON.parse(content);
+        // Handle both direct array and object with array property responses
+        ruleResults = Array.isArray(parsedContent) 
+          ? parsedContent 
+          : parsedContent.results || parsedContent.violations || [];
+      } catch (parseError) {
+        console.error('Error parsing OpenAI response:', parseError);
+        throw new Error('Failed to parse OpenAI response as JSON');
+      }
+
+      // Insert results into database
+      const { data: insertData, error: insertError } = await supabaseClient
+        .from('rules')
+        .insert(ruleResults.map(rule => ({
+          client_id: clientId,
+          file_name: fileName,
+          ...rule,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          status: 'active',
+          form_secret: Deno.env.get('FORM_SECRET') // Include form_secret for RLS
+        })))
+        .select();
+
+      if (insertError) {
+        console.error('Error inserting rules:', insertError);
+        throw new Error(`Failed to save rules: ${insertError.message}`);
+      }
+
       return new Response(JSON.stringify({
         success: true,
-        message: 'Data forwarded successfully',
-        server_response: responseText
+        message: 'Data processed successfully with OpenAI',
+        rules_processed: ruleResults.length,
+        rules: ruleResults
       }), {
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
       });
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      if (fetchError.name === 'AbortError') {
-        throw new Error('Request to server timed out');
-      }
-      throw fetchError;
+    } catch (openaiError) {
+      console.error('OpenAI API error:', openaiError);
+      throw new Error(`OpenAI processing failed: ${openaiError.message}`);
     }
   } catch (error) {
     console.error('Edge function error:', error);
