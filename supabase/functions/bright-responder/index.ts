@@ -164,12 +164,16 @@ Deno.serve(async (req) => {
       const { data: insertData, error: insertError } = await supabaseClient
         .from('rules')
         .insert(ruleResults.map(rule => ({
-          client_id: clientId,
-          file_name: fileName,
-          ...rule,
+          user_id: rule.user_id, // This should be set from the authenticated user's ID
+          name: rule.name,
+          description: rule.description || '',
+          category: rule.category || 'Other',
+          condition: rule.condition || '',
+          severity: rule.severity || 'Medium',
+          status: 'in progress',
+          source: 'AI',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          status: 'active',
           form_secret: Deno.env.get('FORM_SECRET') // Include form_secret for RLS
         })))
         .select();

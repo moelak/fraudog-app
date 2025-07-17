@@ -6,6 +6,7 @@ import Overview from '../Overview/Overview';
 import Reports from '../Reports/Reports';
 import Settings from '../Settings/Settings';
 import RuleManagement from '../RuleManagement/RuleManagement';
+import TestOpenAIPage from '../RuleManagement/TestOpenAIPage';
 import Visualization from '../Visualization/Visualization';
 import Monitoring from '../Monitoring/Monitoring';
 import Chargebacks from '../Chargebacks/Chargebacks';
@@ -30,13 +31,22 @@ const Dashboard = observer(() => {
 		{ name: 'Chargebacks', href: '/dashboard/chargebacks', icon: CreditCardIcon },
 		{ name: 'Reports', href: '/dashboard/reports', icon: DocumentTextIcon },
 		{ name: 'Chat Assistant', href: '/dashboard/assistant', icon: ChatBubbleLeftRightIcon },
-		// { name: 'User Management', href: '/dashboard/users', icon: UsersIcon },
+	    { name: 'User Management', href: '/dashboard/users', icon: UsersIcon },
 		{ name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
 	];
 
-	const handleCloseSidebar = () => {
-		dashboardStore.closeSidebar();
-	};
+  const navigation = [
+    { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
+    { name: 'Rule Management', href: '/dashboard/rules', icon: ShieldCheckIcon },
+	{ name: 'API Tester', href: '/dashboard/test-openai', icon: ShieldCheckIcon },
+    { name: 'Visualization', href: '/dashboard/visualization', icon: ChartBarIcon },
+    { name: 'Monitoring', href: '/dashboard/monitoring', icon: EyeIcon },
+    { name: 'Chargebacks', href: '/dashboard/chargebacks', icon: CreditCardIcon },
+    { name: 'Reports', href: '/dashboard/reports', icon: DocumentTextIcon },
+    { name: 'Chat Assistant', href: '/dashboard/assistant', icon: ChatBubbleLeftRightIcon },
+    { name: 'User Management', href: '/dashboard/users', icon: UsersIcon },
+    { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
+  ];
 
 	const handleOpenSidebar = () => {
 		dashboardStore.openSidebar();
