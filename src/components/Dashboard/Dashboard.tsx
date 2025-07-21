@@ -11,6 +11,7 @@ import Monitoring from '../Monitoring/Monitoring';
 import Chargebacks from '../Chargebacks/Chargebacks';
 import ChatAssistant from '../ChatAssistant/ChatAssistant';
 import UserManagement from '../UserManagement/UserManagement';
+import TestOpenAI from '../RuleManagement/TestOpenAI';
 import AIChat from '../AIChat/AIChat';
 import AIChatButton from '../AIChat/AIChatButton';
 import AccountMenu from '../Auth/AccountMenu';
@@ -179,6 +180,7 @@ const Dashboard = observer(() => {
 							<Routes>
 								<Route path='/' element={<Overview />} />
 								<Route path='/rules' element={<RuleManagement />} />
+								<Route path='/test-openai' element={<TestOpenAI />} />
 								<Route path='/visualization' element={<Visualization />} />
 								<Route path='/monitoring' element={<Monitoring />} />
 								<Route path='/chargebacks' element={<Chargebacks />} />

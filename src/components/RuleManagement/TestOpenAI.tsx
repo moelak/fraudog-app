@@ -32,7 +32,7 @@ const TestOpenAI: React.FC = () => {
         const value = values[index] || '';
         obj[header] = isNaN(Number(value)) ? value : Number(value);
         return obj;
-      }, {} as Record<string, any>);
+      }, {} as Record<string, string | number>);
     });
   };
 
@@ -153,9 +153,10 @@ const TestOpenAI: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
-      <Title level={2}>OpenAI Rule Generation Tester</Title>
-      <Card>
+    <div className="space-y-6">
+      <div className="bg-white shadow rounded-lg p-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">OpenAI API Tester</h1>
+        <Card>
         <div style={{ marginBottom: '24px' }}>
           <Upload {...uploadProps}>
             <Button icon={<UploadOutlined />} loading={loading}>
@@ -257,7 +258,8 @@ const TestOpenAI: React.FC = () => {
             </div>
           </div>
         )}
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 };
