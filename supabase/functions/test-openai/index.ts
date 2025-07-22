@@ -1,41 +1,83 @@
-import OpenAI from 'https://deno.land/x/openai@v4.20.0/mod.ts';
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import OpenAI from 'https://esm.sh/openai@4.20.1'
 
-const openai = new OpenAI({
-  apiKey: Deno.env.get('OPENAI_API_KEY'),
-});
-
-interface TestRuleResult {
-  rule_name: string;
-  description: string;
-  risk_score: number;
-  conditions: string;
-  metadata?: Record<string, unknown>;
+// Types
+interface TransactionRecord {
+  [key: string]: any;
 }
 
 interface OpenAIResponse {
-  rules: TestRuleResult[];
+  rules: Array<{
+    rule_name: string;
+    description: string;
+    risk_score: number;
+    conditions: string;
+    outcome: string;
+    metadata: {
+      pattern_type: string;
+      confidence_level: number;
+      expected_false_positive_rate: number;
+    };
+  }>;
 }
 
-Deno.serve(async (req) => {
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Content-Type': 'application/json',
+interface APIResponse {
+  success: boolean;
+  chatCompletionRules?: OpenAIResponse;
+  assistantsAPIRules?: OpenAIResponse;
+  chatCompletionError?: string;
+  assistantsAPIError?: string;
+  debugInfo: {
+    chatCompletion: {
+      originalRecords?: string;
+      processedRecords?: string;
+      originalTokens?: string;
+      processedTokens?: string;
+      samplingApplied?: boolean;
+    };
+    assistantsAPI: {
+      fileId?: string;
+      assistantId?: string;
+      threadId?: string;
+      runId?: string;
+      processingTime?: number;
+    };
   };
+  debugVersion: string;
+  timestamp: string;
+}
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, content-type, apikey, x-client-info',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Content-Type': 'application/json'
+};
+
+serve(async (req) => {
+  console.log('=== FUNCTION START ===');
+  console.log('Request method:', req.method);
+  console.log('Request URL:', req.url);
+  
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('OPTIONS request, returning CORS headers');
+    console.log('Handling CORS preflight request');
     return new Response('ok', { headers: corsHeaders });
   }
 
   // Initialize debug headers with CORS headers (will be updated with debug info later)
-  let debugHeaders: Record<string, string> = { ...corsHeaders };
-  
+  const debugHeaders = new Headers({
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, content-type, apikey, x-client-info',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Content-Type': 'application/json'
+  });
+
   try {
-    // Check if OpenAI API key is configured
-    const apiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!apiKey) {
-      console.error('OpenAI API key is not configured');
+    // Validate OpenAI API key
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) {
       return new Response(
         JSON.stringify({ error: 'OpenAI API key is not configured' }),
         { status: 500, headers: corsHeaders }
@@ -54,7 +96,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { testData } = requestData;
+    const { testData, csvContent, fileName } = requestData;
+    
+    // Debug logging
+    console.log('Request data keys:', Object.keys(requestData));
+    console.log('testData type:', typeof testData);
+    console.log('testData length:', Array.isArray(testData) ? testData.length : 'not array');
+    console.log('csvContent length:', csvContent ? csvContent.length : 'not provided');
+    console.log('fileName:', fileName);
     
     if (!testData) {
       console.error('No testData found in request');
@@ -64,39 +113,281 @@ Deno.serve(async (req) => {
       );
     }
     
-    console.log('testData validation passed');
-    console.log('testData type:', typeof testData);
-    console.log('testData is array:', Array.isArray(testData));
-    if (Array.isArray(testData)) {
-      console.log('testData length:', testData.length);
-      console.log('First record keys:', testData[0] ? Object.keys(testData[0]) : 'no first record');
+    // Parse testData if it's a string
+    let parsedTestData;
+    try {
+      if (typeof testData === 'string') {
+        parsedTestData = JSON.parse(testData);
+      } else {
+        parsedTestData = testData;
+      }
+    } catch (parseError) {
+      console.error('Error parsing testData:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid testData format - must be valid JSON' }),
+        { status: 400, headers: debugHeaders }
+      );
     }
     
-    // Estimate token count (rough approximation: 1 token ≈ 4 characters)
-    const originalDataString = JSON.stringify(testData);
-    const originalTokenEstimate = Math.ceil(originalDataString.length / 4);
-    console.log(`Original data size: ${originalDataString.length} chars, ~${originalTokenEstimate} tokens`);
-    
-    // Force sampling if data is large
-    let shouldSample = false;
-    if (Array.isArray(testData) && testData.length > 50) {
-      shouldSample = true;
-    } else if (originalTokenEstimate > 50000) {
-      shouldSample = true;
+    if (!Array.isArray(parsedTestData)) {
+      console.error('testData is not an array:', typeof parsedTestData);
+      return new Response(
+        JSON.stringify({ error: 'testData must be an array of transaction records' }),
+        { status: 400, headers: debugHeaders }
+      );
     }
 
-    // Update debug headers with initial data info
-    debugHeaders = {
-      ...debugHeaders,
-      'X-Debug-Original-Records': Array.isArray(testData) ? testData.length.toString() : '0',
-      'X-Debug-Processed-Records': '0', // Will be updated after processing
-      'X-Debug-Original-Tokens': originalTokenEstimate.toString(),
-      'X-Debug-Processed-Tokens': '0', // Will be updated after processing
-      'X-Debug-Sampling-Applied': shouldSample.toString(),
+    // Initialize OpenAI
+    const openai = new OpenAI({
+      apiKey: openaiApiKey,
+    });
+
+    // Helper function for Chat Completions API (existing approach)
+    const callChatCompletionsAPI = async (processedData: TransactionRecord[], originalData: TransactionRecord[]) => {
+      try {
+        console.log('Chat Completions API: Starting call...');
+        console.log('Chat Completions API: Data length:', processedData.length);
+        const completion = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: [
+            {
+              role: 'system',
+              content: `You are a senior fraud data analyst. Analyze the provided transaction data and generate exactly 3 fraud detection rules in JSON format:
+              {
+                "rules": [{
+                  "rule_name": "descriptive name",
+                  "description": "detailed explanation",
+                  "risk_score": number (1-100),
+                  "conditions": "SQL-like conditions",
+                  "outcome": "string (friction applied to payment apps e.g. KYC, 3DS, Manual Review)",
+                  "metadata": {
+                    "pattern_type": "string",
+                    "confidence_level": number (1-100),
+                    "expected_false_positive_rate": number (0-1)
+                  }
+                }]
+              }`
+            },
+            {
+              role: 'user',
+              content: `Analyze this transaction data and generate 3 fraud detection rules: ${JSON.stringify(processedData)}`
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 2000
+        });
+
+        console.log('Chat Completions API: OpenAI call completed');
+        console.log('Chat Completions API: Response received, processing...');
+        
+        const responseContent = completion.choices[0]?.message?.content;
+        if (!responseContent) {
+          throw new Error('No response content from OpenAI');
+        }
+
+        // Extract JSON from response (handle markdown code blocks)
+        let jsonString = responseContent.trim();
+        
+        // Remove markdown code blocks if present
+        const jsonMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          jsonString = jsonMatch[1].trim();
+        }
+        
+        // If no code blocks, try to find JSON object
+        if (!jsonMatch) {
+          const jsonStart = jsonString.indexOf('{');
+          const jsonEnd = jsonString.lastIndexOf('}');
+          if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+            jsonString = jsonString.substring(jsonStart, jsonEnd + 1);
+          }
+        }
+
+        let parsedResponse;
+        try {
+          parsedResponse = JSON.parse(jsonString);
+        } catch (parseError) {
+          throw new Error(`Failed to parse JSON response: ${parseError.message}. Raw content: ${responseContent}`);
+        }
+        
+        if (!parsedResponse.rules || !Array.isArray(parsedResponse.rules)) {
+          throw new Error(`Invalid response format: expected { rules: [...] }. Got: ${JSON.stringify(parsedResponse)}`);
+        }
+
+        return {
+          success: true,
+          data: parsedResponse,
+          debugInfo: {
+            originalRecords: Array.isArray(originalData) ? originalData.length.toString() : '0',
+            processedRecords: Array.isArray(processedData) ? processedData.length.toString() : '0',
+            originalTokens: estimateTokens(JSON.stringify(originalData)).toString(),
+            processedTokens: estimateTokens(JSON.stringify(processedData)).toString(),
+            samplingApplied: Array.isArray(originalData) && Array.isArray(processedData) && originalData.length > processedData.length
+          }
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error.message,
+          debugInfo: {
+            originalRecords: Array.isArray(originalData) ? originalData.length.toString() : '0',
+            processedRecords: '0',
+            originalTokens: estimateTokens(JSON.stringify(originalData)).toString(),
+            processedTokens: '0',
+            samplingApplied: false
+          }
+        };
+      }
     };
 
+    // Helper function for Assistants API with Code Interpreter
+    const callAssistantsAPI = async () => {
+      if (!csvContent || !fileName) {
+        return {
+          success: false,
+          error: 'CSV content and filename required for Assistants API',
+          debugInfo: {}
+        };
+      }
+
+      const startTime = Date.now();
+      
+      try {
+        // Step 1: Upload CSV file
+        const file = await openai.files.create({
+          file: new File([csvContent], fileName, { type: 'text/csv' }),
+          purpose: 'assistants'
+        });
+
+        // Step 2: Create Assistant with Code Interpreter (v2 format)
+        const assistant = await openai.beta.assistants.create({
+          name: "Fraud Detection Analyst",
+          instructions: `You are a senior fraud data analyst. Analyze the uploaded CSV transaction data and generate exactly 3 fraud detection rules in JSON format:
+          {
+            "rules": [{
+              "rule_name": "descriptive name",
+              "description": "detailed explanation",
+              "risk_score": number (1-100),
+              "conditions": "SQL-like conditions",
+              "outcome": "string (friction applied to payment apps e.g. KYC, 3DS, Manual Review)",
+              "metadata": {
+                "pattern_type": "string",
+                "confidence_level": number (1-100),
+                "expected_false_positive_rate": number (0-1)
+              }
+            }]
+          }`,
+          tools: [{ type: "code_interpreter" }],
+          model: "gpt-4o"
+        });
+
+        // Step 3: Create Thread
+        const thread = await openai.beta.threads.create();
+
+        // Step 4: Create message with file attachment
+        await openai.beta.threads.messages.create(thread.id, {
+          role: "user",
+          content: "Please analyze the uploaded transaction data and generate 3 fraud detection rules. Use code interpreter to thoroughly analyze the data patterns.",
+          attachments: [{
+            file_id: file.id,
+            tools: [{ type: "code_interpreter" }]
+          }]
+        });
+
+        // Step 5: Create and run
+        const run = await openai.beta.threads.runs.create(thread.id, {
+          assistant_id: assistant.id
+        });
+
+        // Step 6: Poll for completion
+        let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+        let attempts = 0;
+        const maxAttempts = 30; // 30 seconds max wait
+        
+        while (runStatus.status === 'queued' || runStatus.status === 'in_progress') {
+          if (attempts >= maxAttempts) {
+            throw new Error('Assistant API timeout - run did not complete in time');
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+          runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+          attempts++;
+        }
+
+        if (runStatus.status !== 'completed') {
+          throw new Error(`Assistant run failed with status: ${runStatus.status}`);
+        }
+
+        // Get the messages
+        const messages = await openai.beta.threads.messages.list(thread.id);
+        const assistantMessage = messages.data.find(msg => msg.role === 'assistant');
+        
+        if (!assistantMessage || !assistantMessage.content[0] || assistantMessage.content[0].type !== 'text') {
+          throw new Error('No valid response from assistant');
+        }
+
+        const responseText = assistantMessage.content[0].text.value;
+        
+        // Extract JSON from response (handle markdown code blocks and various formats)
+        let jsonString = responseText.trim();
+        
+        // Remove markdown code blocks if present
+        const jsonMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          jsonString = jsonMatch[1].trim();
+        }
+        
+        // If no code blocks, try to find JSON object with rules
+        if (!jsonMatch) {
+          const rulesMatch = jsonString.match(/\{[\s\S]*?"rules"[\s\S]*?\}/);
+          if (rulesMatch) {
+            jsonString = rulesMatch[0];
+          } else {
+            // Fallback: find any JSON object
+            const jsonStart = jsonString.indexOf('{');
+            const jsonEnd = jsonString.lastIndexOf('}');
+            if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+              jsonString = jsonString.substring(jsonStart, jsonEnd + 1);
+            }
+          }
+        }
+
+        let parsedResponse;
+        try {
+          parsedResponse = JSON.parse(jsonString);
+        } catch (parseError) {
+          throw new Error(`Failed to parse JSON from assistant response: ${parseError.message}. Raw content: ${responseText}`);
+        }
+        
+        if (!parsedResponse.rules || !Array.isArray(parsedResponse.rules)) {
+          throw new Error(`Invalid response format from assistant: expected { rules: [...] }. Got: ${JSON.stringify(parsedResponse)}`);
+        }
+
+        const processingTime = Date.now() - startTime;
+
+        return {
+          success: true,
+          data: parsedResponse,
+          debugInfo: {
+            fileId: file.id,
+            assistantId: assistant.id,
+            threadId: thread.id,
+            runId: run.id,
+            processingTime
+          }
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error.message,
+          debugInfo: {
+            processingTime: Date.now() - startTime
+          }
+        };
+      }
+    };
+    
     // Helper function to randomly sample data using Fisher-Yates shuffle
-    const sampleData = (data: any[], maxSize: number = 50): any[] => {
+    const sampleData = (data: TransactionRecord[], maxSize: number = 50): TransactionRecord[] => {
       if (!Array.isArray(data)) {
         return data;
       }
@@ -117,21 +408,34 @@ Deno.serve(async (req) => {
       return sampled;
     };
 
-    // Handle large datasets by sampling to avoid token limits
-    console.log(`Original testData type: ${typeof testData}, isArray: ${Array.isArray(testData)}`);
-    if (Array.isArray(testData)) {
-      console.log(`Original testData length: ${testData.length}`);
+    // Helper function to estimate tokens
+    const estimateTokens = (text: string): number => {
+      return Math.ceil(text.length / 4);
+    };
+
+    console.log('testData validation passed');
+    console.log('parsedTestData type:', typeof parsedTestData);
+    console.log('parsedTestData is array:', Array.isArray(parsedTestData));
+    console.log('parsedTestData length:', parsedTestData.length);
+    console.log('First record keys:', parsedTestData[0] ? Object.keys(parsedTestData[0]) : 'no first record');
+    
+    // Estimate token count (rough approximation: 1 token ≈ 4 characters)
+    const originalDataString = JSON.stringify(parsedTestData);
+    const originalTokenEstimate = Math.ceil(originalDataString.length / 4);
+    console.log(`Original data size: ${originalDataString.length} chars, ~${originalTokenEstimate} tokens`);
+    
+    // Force sampling if data is large
+    let shouldSample = false;
+    if (parsedTestData.length > 50) {
+      shouldSample = true;
+      console.log(`Sampling triggered: ${parsedTestData.length} records > 50`);
+    } else if (originalTokenEstimate > 50000) {
+      shouldSample = true;
+      console.log(`Sampling triggered: ${originalTokenEstimate} tokens > 50000`);
     }
     
-    // Apply sampling based on our shouldSample flag
-    let processedData;
-    if (shouldSample) {
-      console.log('APPLYING SAMPLING...');
-      processedData = sampleData(testData, 50);
-    } else {
-      console.log('NO SAMPLING NEEDED');
-      processedData = testData;
-    }
+    // Apply sampling if needed
+    const processedData = shouldSample ? sampleData(parsedTestData as TransactionRecord[], 50) : parsedTestData as TransactionRecord[];
     
     console.log(`Processed data type: ${typeof processedData}, isArray: ${Array.isArray(processedData)}`);
     if (Array.isArray(processedData)) {
@@ -143,148 +447,54 @@ Deno.serve(async (req) => {
     const processedTokenEstimate = Math.ceil(processedDataString.length / 4);
     console.log(`Processed data size: ${processedDataString.length} chars, ~${processedTokenEstimate} tokens`);
     
-    if (Array.isArray(testData) && testData.length > 50) {
-      console.log(`SAMPLING SUMMARY: Original ${testData.length} -> Processed ${Array.isArray(processedData) ? processedData.length : 'not array'}`);
+    if (Array.isArray(parsedTestData) && parsedTestData.length > 50) {
+      console.log(`SAMPLING SUMMARY: Original ${parsedTestData.length} -> Processed ${Array.isArray(processedData) ? processedData.length : 'not array'}`);
     }
+
+    // Call both APIs with appropriate data
+    console.log('Starting dual API calls...');
+    console.log('Chat Completions API will use sampled data:', Array.isArray(processedData) ? processedData.length : 'not array', 'records');
+    console.log('Assistants API will use original data:', Array.isArray(parsedTestData) ? parsedTestData.length : 'not array', 'records');
     
-    // Update debug headers with processed data info
-    debugHeaders = {
-      ...debugHeaders,
-      'X-Debug-Processed-Records': Array.isArray(processedData) ? processedData.length.toString() : '0',
-      'X-Debug-Processed-Tokens': processedTokenEstimate.toString(),
+    // Chat Completions API with sampled data (for efficiency)
+    const chatCompletionResult = await callChatCompletionsAPI(processedData, parsedTestData);
+    console.log('Chat Completions API completed:', chatCompletionResult.success);
+    
+    // Assistants API with original full data (for comprehensive analysis)
+    const assistantsAPIResult = await callAssistantsAPI();
+    console.log('Assistants API completed:', assistantsAPIResult.success);
+
+    const response: APIResponse = {
+      success: chatCompletionResult.success || assistantsAPIResult.success,
+      chatCompletionRules: chatCompletionResult.success ? chatCompletionResult.data : undefined,
+      assistantsAPIRules: assistantsAPIResult.success ? assistantsAPIResult.data : undefined,
+      chatCompletionError: chatCompletionResult.success ? undefined : chatCompletionResult.error,
+      assistantsAPIError: assistantsAPIResult.success ? undefined : assistantsAPIResult.error,
+      debugInfo: {
+        chatCompletion: chatCompletionResult.debugInfo,
+        assistantsAPI: assistantsAPIResult.debugInfo
+      },
+      debugVersion: 'v1.2.0',
+      timestamp: new Date().toISOString()
     };
-    
-    try {
-      // APPROACH DECISION:
-      // We're using Chat Completions API here because we receive pre-parsed JSON data from the frontend.
-      // 
-      // For ACTUAL CSV FILE UPLOADS, use the Assistants API with Code Interpreter:
-      // 1. Upload CSV file: POST /v1/files (with purpose: "assistants")
-      // 2. Create Assistant: POST /v1/assistants (with tools: [{"type": "code_interpreter"}])
-      // 3. Create Thread: POST /v1/threads (with messages containing file_ids)
-      // 4. Create Run: POST /v1/threads/{thread_id}/runs
-      // 5. Poll Run status and retrieve messages when completed
-      // 
-      // This approach is better for complex data analysis, but adds complexity and latency.
-      // Since our frontend already parses CSV to JSON, Chat Completions is more efficient.
-      
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `You are a senior fraud data analyst with expertise in creating fraud detection rules. 
-            
-            Analyze the provided transaction data and generate exactly 3 fraud detection rules in this JSON format:
-            {
-              "rules": [{
-                "rule_name": "string (descriptive name for the rule)",
-                "description": "string (detailed explanation of what this rule detects)",
-                "risk_score": number (1-100, where 100 is highest risk),
-                "conditions": "string (SQL-like conditions that define when this rule triggers)",
-                "metadata": {
-                  "pattern_type": "string (e.g., 'geographic', 'behavioral', 'amount-based')",
-                  "confidence": "string (high/medium/low)",
-                  "false_positive_risk": "string (high/medium/low)"
-                }
-              }]
-            }
-            
-            Focus on the most statistically significant patterns that indicate fraud risk. Consider:
-            - Geographic inconsistencies (IP vs billing vs shipping countries)
-            - Transaction amount patterns
-            - Merchant risk factors
-            - Payment method risks
-            - Flagged transaction patterns
-            
-            Make the conditions specific and actionable for a fraud detection system.`
-          },
-          {
-            role: "user",
-            content: `Analyze this transaction data for fraud patterns and generate 3 high-quality fraud detection rules:\n\n${JSON.stringify(processedData, null, 2)}`
-          }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.1,
-        max_tokens: 3000
-      });
 
-      const responseContent = completion.choices[0]?.message?.content;
-      if (!responseContent) {
-        throw new Error('No content in OpenAI response');
-      }
-      console.log('OpenAI Response Content:', responseContent);
+    console.log('Dual API calls completed');
+    console.log('Chat Completion success:', chatCompletionResult.success);
+    console.log('Assistants API success:', assistantsAPIResult.success);
 
-      // Parse and validate the response
-      let parsedResponse: OpenAIResponse;
-      try {
-        parsedResponse = JSON.parse(responseContent);
-        
-        if (!parsedResponse.rules || !Array.isArray(parsedResponse.rules)) {
-          throw new Error('Invalid response format: expected { rules: [...] }');
-        }
-        
-        // Extract debug info from headers to include in response body
-        const debugInfo = {
-          originalRecords: debugHeaders['X-Debug-Original-Records'] || '0',
-          processedRecords: debugHeaders['X-Debug-Processed-Records'] || '0',
-          originalTokens: debugHeaders['X-Debug-Original-Tokens'] || '0',
-          processedTokens: debugHeaders['X-Debug-Processed-Tokens'] || '0',
-          samplingApplied: debugHeaders['X-Debug-Sampling-Applied'] === 'true'
-        };
-        
-        return new Response(
-          JSON.stringify({
-            success: true,
-            data: parsedResponse,
-            rawResponse: responseContent,
-            debugVersion: 'v2.1-debug-in-body',
-            timestamp: new Date().toISOString(),
-            debugInfo: debugInfo
-          }),
-          { headers: debugHeaders }
-        );
-
-      } catch (parseError) {
-        console.error('Error parsing OpenAI response:', parseError);
-        console.error('Raw response content:', responseContent);
-        
-        return new Response(
-          JSON.stringify({ 
-            error: 'Failed to parse OpenAI response',
-            details: parseError.message,
-            response: responseContent
-          }),
-          { status: 500, headers: debugHeaders }
-        );
-      }
-
-    } catch (apiError) {
-      console.error('OpenAI API Error:', apiError);
-      console.error('API Error details:', {
-        name: apiError.name,
-        message: apiError.message,
-        stack: apiError.stack,
-        status: apiError.status,
-        statusText: apiError.statusText
-      });
-      return new Response(
-        JSON.stringify({
-          error: 'Failed to process request with OpenAI',
-          details: apiError.message,
-          errorType: apiError.name,
-          status: apiError.status || 'unknown'
-        }),
-        { status: 500, headers: debugHeaders }
-      );
-    }
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: debugHeaders
+    });
 
   } catch (error) {
-    console.error('Unexpected error in test-openai function:', error);
+    console.error('Error in test-openai function:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Internal server error',
-        details: error.message
+        details: error.message,
+        debugVersion: 'v1.2.0',
+        timestamp: new Date().toISOString()
       }),
       { status: 500, headers: debugHeaders }
     );

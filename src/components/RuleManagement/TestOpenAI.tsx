@@ -6,10 +6,49 @@ import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 const { Title } = Typography;
 const { TextArea } = Input;
 
+interface OpenAIRule {
+  rule_name: string;
+  description: string;
+  risk_score: number;
+  conditions: string;
+  outcome: string;
+  metadata: {
+    pattern_type: string;
+    confidence_level: number;
+    expected_false_positive_rate: number;
+  };
+}
+
+interface OpenAIResponse {
+  rules: OpenAIRule[];
+}
+
+interface DualAPIResult {
+  chatCompletion: {
+    success: boolean;
+    data?: OpenAIResponse;
+    error?: string;
+    debugInfo: {
+      originalRecords?: string;
+      processedRecords?: string;
+      originalTokens?: string;
+      processedTokens?: string;
+      samplingApplied?: boolean;
+    };
+  };
+  assistantsAPI: {
+    success: boolean;
+    data?: OpenAIResponse;
+    error?: string;
+    debugInfo: Record<string, unknown>;
+  };
+}
+
 interface TestResult {
   success: boolean;
-  data: unknown;
-  rawResponse: string;
+  data: DualAPIResult;
+  debugVersion: string;
+  timestamp: string;
 }
 
 const TestOpenAI: React.FC = () => {
@@ -19,6 +58,8 @@ const TestOpenAI: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showLargeDatasetModal, setShowLargeDatasetModal] = useState(false);
   const [pendingFormValues, setPendingFormValues] = useState<{ testData: string } | null>(null);
+  const [csvContent, setCsvContent] = useState<string>(''); // Store raw CSV content
+  const [fileName, setFileName] = useState<string>(''); // Store original filename
   const [form] = Form.useForm();
 
   const parseCSV = (csvText: string): Record<string, string | number>[] => {
@@ -45,6 +86,11 @@ const TestOpenAI: React.FC = () => {
         try {
           const csvText = e.target?.result as string;
           const jsonData = parseCSV(csvText);
+          
+          // Store both raw CSV content and filename for dual API approach
+          setCsvContent(csvText);
+          setFileName(file.name);
+          
           form.setFieldsValue({ testData: JSON.stringify(jsonData, null, 2) });
           message.success('CSV file processed successfully');
           resolve();
@@ -99,7 +145,12 @@ const TestOpenAI: React.FC = () => {
       // Construct the function URL
       const functionUrl = `${supabaseUrl}/functions/v1/test-openai`;
       
-      const requestBody = { testData };
+      // Include both parsed JSON data and raw CSV content for dual API approach
+      const requestBody = { 
+        testData,
+        csvContent: csvContent, // Raw CSV content for Assistants API
+        fileName: fileName || 'transactions.csv' // Original filename
+      };
       
 
       
@@ -115,39 +166,41 @@ const TestOpenAI: React.FC = () => {
       
       const data = await response.json();
       
-      // Extract debug information from response body (preferred) or fallback to headers
-      let debugInfo;
       if (data.debugInfo) {
-        debugInfo = {
-          originalRecords: data.debugInfo.originalRecords.toString(),
-          processedRecords: data.debugInfo.processedRecords.toString(),
-          originalTokens: data.debugInfo.originalTokens.toString(),
-          processedTokens: data.debugInfo.processedTokens.toString(),
-          samplingApplied: data.debugInfo.samplingApplied.toString()
-        };
+        console.log('=== DUAL API RESULTS ===');
+        
+        // Chat Completions API Debug Info
+        const chatDebugInfo = data.debugInfo.chatCompletion;
+        console.log('\n📊 CHAT COMPLETIONS API (Sampled Data):');
+        console.log(`   Original: ${chatDebugInfo.originalRecords} records (~${chatDebugInfo.originalTokens} tokens)`);
+        console.log(`   Processed: ${chatDebugInfo.processedRecords} records (~${chatDebugInfo.processedTokens} tokens)`);
+        console.log(`   Sampling: ${chatDebugInfo.samplingApplied ? 'Applied' : 'Not needed'}`);
+        console.log(`   Status: ${data.chatCompletionRules ? '✅ Success' : '❌ Failed'}`);
+        if (data.chatCompletionError) {
+          console.log(`   Error: ${data.chatCompletionError}`);
+        }
+        
+        if (chatDebugInfo.samplingApplied) {
+          const reductionPercent = Math.round((1 - parseInt(chatDebugInfo.processedRecords) / parseInt(chatDebugInfo.originalRecords)) * 100);
+          console.log(`   Reduction: ${reductionPercent}% (${chatDebugInfo.originalRecords} → ${chatDebugInfo.processedRecords})`);
+        }
+        
+        // Assistants API Debug Info
+        console.log('\n🤖 ASSISTANTS API (Full CSV File):');
+        console.log(`   Status: ${data.assistantsAPIRules ? '✅ Success' : '❌ Failed'}`);
+        if (data.assistantsAPIError) {
+          console.log(`   Error: ${data.assistantsAPIError}`);
+        }
+        if (Object.keys(data.debugInfo.assistantsAPI).length > 0) {
+          Object.entries(data.debugInfo.assistantsAPI).forEach(([key, value]) => {
+            console.log(`   ${key}: ${value}`);
+          });
+        }
       } else {
-        debugInfo = {
-          originalRecords: response.headers.get('X-Debug-Original-Records') || response.headers.get('x-debug-original-records') || '0',
-          processedRecords: response.headers.get('X-Debug-Processed-Records') || response.headers.get('x-debug-processed-records') || '0',
-          originalTokens: response.headers.get('X-Debug-Original-Tokens') || response.headers.get('x-debug-original-tokens') || '0',
-          processedTokens: response.headers.get('X-Debug-Processed-Tokens') || response.headers.get('x-debug-processed-tokens') || '0',
-          samplingApplied: response.headers.get('X-Debug-Sampling-Applied') || response.headers.get('x-debug-sampling-applied') || 'false'
-        };
+        // Fallback for old single API format
+        console.log('=== API RESPONSE ===');
+        console.log('Response:', data);
       }
-      
-      console.log('=== SAMPLING & TOKEN ANALYSIS ===');
-      console.log(`📊 Original Dataset: ${debugInfo.originalRecords} transactions (~${debugInfo.originalTokens} tokens)`);
-      console.log(`🎯 Processed Dataset: ${debugInfo.processedRecords} transactions (~${debugInfo.processedTokens} tokens)`);
-      console.log(`🔄 Random Sampling Applied: ${debugInfo.samplingApplied === 'true' ? 'YES' : 'NO'}`);
-      
-      if (debugInfo.samplingApplied === 'true') {
-        const reductionPercent = Math.round((1 - parseInt(debugInfo.processedRecords) / parseInt(debugInfo.originalRecords)) * 100);
-        console.log(`📉 Dataset Reduced by: ${reductionPercent}% (${debugInfo.originalRecords} → ${debugInfo.processedRecords} transactions)`);
-        console.log(`🪙 Token Reduction: ${debugInfo.originalTokens} → ${debugInfo.processedTokens} tokens`);
-      }
-      
-      // Store debug info for potential UI display
-      (window as typeof window & { lastDebugInfo?: typeof debugInfo }).lastDebugInfo = debugInfo;
       
       if (!response.ok) {
         console.error('API Error Response:', data);
@@ -305,29 +358,114 @@ const TestOpenAI: React.FC = () => {
 
         {result && (
           <div style={{ marginTop: '24px' }}>
-            <Divider orientation="left">Results</Divider>
-            <Title level={4}>Generated Rules</Title>
-            <pre style={{
-              backgroundColor: '#f5f5f5',
-              padding: '16px',
-              borderRadius: '4px',
-              maxHeight: '500px',
-              overflow: 'auto'
-            }}>
-              {JSON.stringify(result.data, null, 2)}
-            </pre>
+            <Divider orientation="left">Dual API Results</Divider>
             
-            <div style={{ marginTop: '16px' }}>
-              <Title level={5}>Raw Response</Title>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+              {/* Chat Completions API Results */}
+              <Card title="Chat Completions API (Sampled Data)" size="small">
+                {result.data.chatCompletion.success ? (
+                  <div>
+                    <Title level={5} style={{ color: '#52c41a', marginTop: 0 }}>✅ Success</Title>
+                    <div style={{ marginBottom: '16px' }}>
+                      <strong>Debug Info:</strong>
+                      <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
+                        <li>Original: {result.data.chatCompletion.debugInfo.originalRecords} records (~{result.data.chatCompletion.debugInfo.originalTokens} tokens)</li>
+                        <li>Processed: {result.data.chatCompletion.debugInfo.processedRecords} records (~{result.data.chatCompletion.debugInfo.processedTokens} tokens)</li>
+                        <li>Sampling: {result.data.chatCompletion.debugInfo.samplingApplied ? 'Applied' : 'Not needed'}</li>
+                      </ul>
+                    </div>
+                    <pre style={{
+                      backgroundColor: '#f6ffed',
+                      padding: '12px',
+                      borderRadius: '4px',
+                      maxHeight: '400px',
+                      overflow: 'auto',
+                      fontSize: '12px',
+                      border: '1px solid #b7eb8f'
+                    }}>
+                      {JSON.stringify(result.data.chatCompletion.data, null, 2)}
+                    </pre>
+                  </div>
+                ) : (
+                  <div>
+                    <Title level={5} style={{ color: '#ff4d4f', marginTop: 0 }}>❌ Failed</Title>
+                    <Alert 
+                      message={result.data.chatCompletion.error} 
+                      type="error" 
+                      style={{ marginBottom: '12px' }}
+                    />
+                    <pre style={{
+                      backgroundColor: '#fff2f0',
+                      padding: '12px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      border: '1px solid #ffccc7'
+                    }}>
+                      {JSON.stringify(result.data.chatCompletion.debugInfo, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </Card>
+              
+              {/* Assistants API Results */}
+              <Card title="Assistants API (Full CSV File)" size="small">
+                {result.data.assistantsAPI.success ? (
+                  <div>
+                    <Title level={5} style={{ color: '#52c41a', marginTop: 0 }}>✅ Success</Title>
+                    <div style={{ marginBottom: '16px' }}>
+                      <strong>Debug Info:</strong>
+                      <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
+                        {Object.entries(result.data.assistantsAPI.debugInfo).map(([key, value]) => (
+                          <li key={key}>{key}: {String(value)}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <pre style={{
+                      backgroundColor: '#f6ffed',
+                      padding: '12px',
+                      borderRadius: '4px',
+                      maxHeight: '400px',
+                      overflow: 'auto',
+                      fontSize: '12px',
+                      border: '1px solid #b7eb8f'
+                    }}>
+                      {JSON.stringify(result.data.assistantsAPI.data, null, 2)}
+                    </pre>
+                  </div>
+                ) : (
+                  <div>
+                    <Title level={5} style={{ color: '#ff4d4f', marginTop: 0 }}>❌ Failed</Title>
+                    <Alert 
+                      message={result.data.assistantsAPI.error} 
+                      type="error" 
+                      style={{ marginBottom: '12px' }}
+                    />
+                    <pre style={{
+                      backgroundColor: '#fff2f0',
+                      padding: '12px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      border: '1px solid #ffccc7'
+                    }}>
+                      {JSON.stringify(result.data.assistantsAPI.debugInfo, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </Card>
+            </div>
+            
+            <div style={{ marginTop: '24px' }}>
+              <Title level={5}>Full Response Debug</Title>
               <pre style={{
-                backgroundColor: '#f5f5f5',
-                padding: '16px',
+                backgroundColor: '#fafafa',
+                padding: '12px',
                 borderRadius: '4px',
-                maxHeight: '300px',
+                maxHeight: '200px',
                 overflow: 'auto',
-                fontSize: '12px'
+                fontSize: '11px',
+                border: '1px solid #d9d9d9'
               }}>
-                {JSON.stringify(result.rawResponse, null, 2)}
+                Version: {result.debugVersion} | Timestamp: {result.timestamp}
               </pre>
             </div>
           </div>
