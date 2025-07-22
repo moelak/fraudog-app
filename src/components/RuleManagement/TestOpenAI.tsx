@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { Button, Card, Form, Input, Alert, Typography, Divider, Upload, message } from 'antd';
-import { LoadingOutlined, UploadOutlined } from '@ant-design/icons';
+import { Button, Card, Form, Input, Alert, Typography, Divider, Upload, message, Modal } from 'antd';
+import { LoadingOutlined, UploadOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 
 const { Title } = Typography;
@@ -17,6 +17,8 @@ const TestOpenAI: React.FC = () => {
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [result, setResult] = useState<TestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showLargeDatasetModal, setShowLargeDatasetModal] = useState(false);
+  const [pendingFormValues, setPendingFormValues] = useState<{ testData: string } | null>(null);
   const [form] = Form.useForm();
 
   const parseCSV = (csvText: string): Record<string, string | number>[] => {
@@ -79,7 +81,7 @@ const TestOpenAI: React.FC = () => {
     maxCount: 1,
   };
 
-  const onFinish = async (values: { testData: string }) => {
+  const callOpenAIAPI = async (values: { testData: string }) => {
     setLoading(true);
     setError(null);
     setResult(null);
@@ -97,28 +99,100 @@ const TestOpenAI: React.FC = () => {
       // Construct the function URL
       const functionUrl = `${supabaseUrl}/functions/v1/test-openai`;
       
+      const requestBody = { testData };
+      
+
+      
       const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
         },
-        body: JSON.stringify({ testData }),
+        body: JSON.stringify(requestBody),
       });
-
+      
       const data = await response.json();
       
+      // Extract debug information from response body (preferred) or fallback to headers
+      let debugInfo;
+      if (data.debugInfo) {
+        debugInfo = {
+          originalRecords: data.debugInfo.originalRecords.toString(),
+          processedRecords: data.debugInfo.processedRecords.toString(),
+          originalTokens: data.debugInfo.originalTokens.toString(),
+          processedTokens: data.debugInfo.processedTokens.toString(),
+          samplingApplied: data.debugInfo.samplingApplied.toString()
+        };
+      } else {
+        debugInfo = {
+          originalRecords: response.headers.get('X-Debug-Original-Records') || response.headers.get('x-debug-original-records') || '0',
+          processedRecords: response.headers.get('X-Debug-Processed-Records') || response.headers.get('x-debug-processed-records') || '0',
+          originalTokens: response.headers.get('X-Debug-Original-Tokens') || response.headers.get('x-debug-original-tokens') || '0',
+          processedTokens: response.headers.get('X-Debug-Processed-Tokens') || response.headers.get('x-debug-processed-tokens') || '0',
+          samplingApplied: response.headers.get('X-Debug-Sampling-Applied') || response.headers.get('x-debug-sampling-applied') || 'false'
+        };
+      }
+      
+      console.log('=== SAMPLING & TOKEN ANALYSIS ===');
+      console.log(`📊 Original Dataset: ${debugInfo.originalRecords} transactions (~${debugInfo.originalTokens} tokens)`);
+      console.log(`🎯 Processed Dataset: ${debugInfo.processedRecords} transactions (~${debugInfo.processedTokens} tokens)`);
+      console.log(`🔄 Random Sampling Applied: ${debugInfo.samplingApplied === 'true' ? 'YES' : 'NO'}`);
+      
+      if (debugInfo.samplingApplied === 'true') {
+        const reductionPercent = Math.round((1 - parseInt(debugInfo.processedRecords) / parseInt(debugInfo.originalRecords)) * 100);
+        console.log(`📉 Dataset Reduced by: ${reductionPercent}% (${debugInfo.originalRecords} → ${debugInfo.processedRecords} transactions)`);
+        console.log(`🪙 Token Reduction: ${debugInfo.originalTokens} → ${debugInfo.processedTokens} tokens`);
+      }
+      
+      // Store debug info for potential UI display
+      (window as typeof window & { lastDebugInfo?: typeof debugInfo }).lastDebugInfo = debugInfo;
+      
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to process request');
+        console.error('API Error Response:', data);
+        throw new Error(`${data.error || 'Unknown error'} - ${data.details || ''}`);
       }
 
       setResult(data);
-    } catch (error) {
-      console.error('Test failed:', error);
-      setError(error instanceof Error ? error.message : 'An error occurred while processing your request');
+    } catch (err) {
+      console.error('Test failed:', err);
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setLoading(false);
     }
+  };
+
+  const onFinish = async (values: { testData: string }) => {
+    try {
+      // Parse the test data to check size
+      const testData = JSON.parse(values.testData);
+      
+      // Check if dataset is large (more than 50 records)
+      if (Array.isArray(testData) && testData.length > 50) {
+        setPendingFormValues(values);
+        setShowLargeDatasetModal(true);
+        return;
+      }
+      
+      // Proceed with API call for smaller datasets
+      await callOpenAIAPI(values);
+    } catch {
+      setError('Invalid JSON format');
+    }
+  };
+
+  const handleProceedWithSampling = async () => {
+    setShowLargeDatasetModal(false);
+    if (pendingFormValues) {
+      await callOpenAIAPI(pendingFormValues);
+      setPendingFormValues(null);
+    }
+  };
+
+  const handleCancelSampling = () => {
+    setShowLargeDatasetModal(false);
+    setPendingFormValues(null);
   };
 
   const sampleData = `[
@@ -260,6 +334,40 @@ const TestOpenAI: React.FC = () => {
         )}
         </Card>
       </div>
+      
+      {/* Large Dataset Warning Modal */}
+      <Modal
+        title={<><ExclamationCircleOutlined style={{ color: '#faad14', marginRight: 8 }} />Large Dataset Detected</>}
+        open={showLargeDatasetModal}
+        onOk={handleProceedWithSampling}
+        onCancel={handleCancelSampling}
+        okText="Proceed with Sampling"
+        cancelText="Cancel"
+        width={600}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Alert
+            message="Dataset Size Warning"
+            description={
+              <div>
+                <p>Your dataset contains more than 50 transactions, which may exceed the OpenAI model's context window of 128,000 tokens.</p>
+                <p><strong>What will happen:</strong></p>
+                <ul style={{ marginLeft: 20, marginTop: 8 }}>
+                  <li>The system will randomly sample 50 transactions from your dataset</li>
+                  <li>OpenAI will analyze these samples to generate fraud detection rules</li>
+                  <li>The rules will still be representative of your data patterns</li>
+                </ul>
+                <p style={{ marginTop: 12 }}>
+                  <strong>Note:</strong> A larger context window is available at higher cost but requires admin enablement.
+                </p>
+              </div>
+            }
+            type="warning"
+            showIcon
+          />
+        </div>
+        <p>Would you like to proceed with the sampling approach, or cancel to modify your dataset?</p>
+      </Modal>
     </div>
   );
 };
