@@ -3,7 +3,7 @@ import { Button, Card, Form, Input, Alert, Typography, Divider, Upload, message,
 import { LoadingOutlined, UploadOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 interface OpenAIRule {
@@ -23,30 +23,22 @@ interface OpenAIResponse {
   rules: OpenAIRule[];
 }
 
-interface DualAPIResult {
-  chatCompletion: {
-    success: boolean;
-    data?: OpenAIResponse;
-    error?: string;
-    debugInfo: {
+interface TestResult {
+  success: boolean;
+  chatCompletionRules?: OpenAIResponse;
+  assistantsAPIRules?: OpenAIResponse;
+  chatCompletionError?: string;
+  assistantsAPIError?: string;
+  debugInfo?: {
+    chatCompletion?: {
       originalRecords?: string;
       processedRecords?: string;
       originalTokens?: string;
       processedTokens?: string;
       samplingApplied?: boolean;
     };
+    assistantsAPI?: Record<string, unknown>;
   };
-  assistantsAPI: {
-    success: boolean;
-    data?: OpenAIResponse;
-    error?: string;
-    debugInfo: Record<string, unknown>;
-  };
-}
-
-interface TestResult {
-  success: boolean;
-  data: DualAPIResult;
   debugVersion: string;
   timestamp: string;
 }
@@ -363,61 +355,48 @@ const TestOpenAI: React.FC = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
               {/* Chat Completions API Results */}
               <Card title="Chat Completions API (Sampled Data)" size="small">
-                {result.data.chatCompletion.success ? (
+                {result.chatCompletionRules ? (
                   <div>
                     <Title level={5} style={{ color: '#52c41a', marginTop: 0 }}>✅ Success</Title>
                     <div style={{ marginBottom: '16px' }}>
                       <strong>Debug Info:</strong>
                       <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
-                        <li>Original: {result.data.chatCompletion.debugInfo.originalRecords} records (~{result.data.chatCompletion.debugInfo.originalTokens} tokens)</li>
-                        <li>Processed: {result.data.chatCompletion.debugInfo.processedRecords} records (~{result.data.chatCompletion.debugInfo.processedTokens} tokens)</li>
-                        <li>Sampling: {result.data.chatCompletion.debugInfo.samplingApplied ? 'Applied' : 'Not needed'}</li>
+                        <li>Original: {result.debugInfo?.chatCompletion?.originalRecords || 'N/A'} records (~{result.debugInfo?.chatCompletion?.originalTokens || 'N/A'} tokens)</li>
+                        <li>Processed: {result.debugInfo?.chatCompletion?.processedRecords || 'N/A'} records (~{result.debugInfo?.chatCompletion?.processedTokens || 'N/A'} tokens)</li>
+                        <li>Sampling: {result.debugInfo?.chatCompletion?.samplingApplied ? 'Applied' : 'Not needed'}</li>
                       </ul>
                     </div>
                     <pre style={{
                       backgroundColor: '#f6ffed',
                       padding: '12px',
                       borderRadius: '4px',
-                      maxHeight: '400px',
-                      overflow: 'auto',
+                      border: '1px solid #b7eb8f',
                       fontSize: '12px',
-                      border: '1px solid #b7eb8f'
+                      maxHeight: '300px',
+                      overflow: 'auto'
                     }}>
-                      {JSON.stringify(result.data.chatCompletion.data, null, 2)}
+                      {JSON.stringify(result.chatCompletionRules, null, 2)}
                     </pre>
                   </div>
                 ) : (
                   <div>
                     <Title level={5} style={{ color: '#ff4d4f', marginTop: 0 }}>❌ Failed</Title>
-                    <Alert 
-                      message={result.data.chatCompletion.error} 
-                      type="error" 
-                      style={{ marginBottom: '12px' }}
-                    />
-                    <pre style={{
-                      backgroundColor: '#fff2f0',
-                      padding: '12px',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      border: '1px solid #ffccc7'
-                    }}>
-                      {JSON.stringify(result.data.chatCompletion.debugInfo, null, 2)}
-                    </pre>
+                    <Text type="danger">{result.chatCompletionError || 'Unknown error'}</Text>
                   </div>
                 )}
               </Card>
               
               {/* Assistants API Results */}
               <Card title="Assistants API (Full CSV File)" size="small">
-                {result.data.assistantsAPI.success ? (
+                {result.assistantsAPIRules ? (
                   <div>
                     <Title level={5} style={{ color: '#52c41a', marginTop: 0 }}>✅ Success</Title>
                     <div style={{ marginBottom: '16px' }}>
                       <strong>Debug Info:</strong>
                       <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
-                        {Object.entries(result.data.assistantsAPI.debugInfo).map(([key, value]) => (
+                        {result.debugInfo?.assistantsAPI ? Object.entries(result.debugInfo.assistantsAPI).map(([key, value]) => (
                           <li key={key}>{key}: {String(value)}</li>
-                        ))}
+                        )) : <li>No debug info available</li>}
                       </ul>
                     </div>
                     <pre style={{
@@ -429,26 +408,13 @@ const TestOpenAI: React.FC = () => {
                       fontSize: '12px',
                       border: '1px solid #b7eb8f'
                     }}>
-                      {JSON.stringify(result.data.assistantsAPI.data, null, 2)}
+                      {JSON.stringify(result.assistantsAPIRules, null, 2)}
                     </pre>
                   </div>
                 ) : (
                   <div>
                     <Title level={5} style={{ color: '#ff4d4f', marginTop: 0 }}>❌ Failed</Title>
-                    <Alert 
-                      message={result.data.assistantsAPI.error} 
-                      type="error" 
-                      style={{ marginBottom: '12px' }}
-                    />
-                    <pre style={{
-                      backgroundColor: '#fff2f0',
-                      padding: '12px',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      border: '1px solid #ffccc7'
-                    }}>
-                      {JSON.stringify(result.data.assistantsAPI.debugInfo, null, 2)}
-                    </pre>
+                    <Text type="danger">{result.assistantsAPIError || 'Unknown error'}</Text>
                   </div>
                 )}
               </Card>
@@ -470,12 +436,12 @@ const TestOpenAI: React.FC = () => {
             </div>
           </div>
         )}
-        </Card>
+      </Card>
       </div>
       
       {/* Large Dataset Warning Modal */}
       <Modal
-        title={<><ExclamationCircleOutlined style={{ color: '#faad14', marginRight: 8 }} />Large Dataset Detected</>}
+        title={<span><ExclamationCircleOutlined style={{ color: '#faad14', marginRight: 8 }} />Dataset Size Warning</span>}
         open={showLargeDatasetModal}
         onOk={handleProceedWithSampling}
         onCancel={handleCancelSampling}
