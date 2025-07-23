@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import OpenAI from 'https://esm.sh/openai@4.20.1'
+import OpenAI from 'https://esm.sh/openai@5';
 
 // Types
 interface TransactionRecord {
@@ -38,6 +38,7 @@ interface APIResponse {
     };
     assistantsAPI: {
       fileId?: string;
+      vectorStoreId?: string;
       assistantId?: string;
       threadId?: string;
       runId?: string;
@@ -137,9 +138,12 @@ serve(async (req) => {
       );
     }
 
-    // Initialize OpenAI
+    // Initialize OpenAI with v2 Assistants API support
     const openai = new OpenAI({
       apiKey: openaiApiKey,
+      defaultHeaders: {
+        'OpenAI-Beta': 'assistants=v2'
+      }
     });
 
     // Helper function for Chat Completions API (existing approach)
@@ -240,7 +244,7 @@ serve(async (req) => {
       }
     };
 
-    // Helper function for Assistants API with Code Interpreter
+    // Helper function for Assistants API v2 with File Search
     const callAssistantsAPI = async () => {
       if (!csvContent || !fileName) {
         return {
@@ -253,13 +257,21 @@ serve(async (req) => {
       const startTime = Date.now();
       
       try {
-        // Step 1: Upload CSV file
+        console.log('Assistants API: Starting process...');
+        
+        // Step 1: Upload CSV file for code interpreter
+        console.log('Assistants API: Step 1 - Uploading CSV file for code interpreter...');
+        console.log('Assistants API: openai.files available:', typeof openai.files);
         const file = await openai.files.create({
           file: new File([csvContent], fileName, { type: 'text/csv' }),
           purpose: 'assistants'
         });
+        console.log('Assistants API: Step 1 - File uploaded successfully:', file.id);
 
-        // Step 2: Create Assistant with Code Interpreter (v2 format)
+        // Step 2: Create Assistant with Code Interpreter (v5.x API)
+        console.log('Assistants API: Step 2 - Creating assistant with code interpreter...');
+        console.log('Assistants API: openai.assistants available:', typeof openai.assistants);
+        console.log('Assistants API: openai.beta.assistants available:', typeof openai.beta?.assistants);
         const assistant = await openai.beta.assistants.create({
           name: "Fraud Detection Analyst",
           instructions: `You are a senior fraud data analyst. Analyze the uploaded CSV transaction data and generate exactly 3 fraud detection rules in JSON format:
@@ -276,31 +288,81 @@ serve(async (req) => {
                 "expected_false_positive_rate": number (0-1)
               }
             }]
-          }`,
+          }
+          
+          Focus on identifying patterns in the transaction data that indicate potential fraud. Use your code interpreter to thoroughly analyze the CSV data and provide data-driven insights.`,
           tools: [{ type: "code_interpreter" }],
           model: "gpt-4o"
         });
+        console.log('Assistants API: Step 2 - Assistant created successfully:', assistant.id);
 
-        // Step 3: Create Thread
-        const thread = await openai.beta.threads.create();
-
-        // Step 4: Create message with file attachment
-        await openai.beta.threads.messages.create(thread.id, {
-          role: "user",
-          content: "Please analyze the uploaded transaction data and generate 3 fraud detection rules. Use code interpreter to thoroughly analyze the data patterns.",
-          attachments: [{
-            file_id: file.id,
-            tools: [{ type: "code_interpreter" }]
-          }]
+        // Step 3-5: Create thread and run in one call (v5.x API)
+        console.log('Assistants API: Step 3-5 - Creating thread and run with message...');
+        console.log('Assistants API: openai.beta.threads.createAndRun available:', typeof openai.beta?.threads?.createAndRun);
+        console.log('Assistants API: Using assistant ID:', assistant.id);
+        console.log('Assistants API: Using file ID:', file.id);
+        
+        const run = await openai.beta.threads.createAndRun({
+          assistant_id: assistant.id,
+          thread: {
+            messages: [{
+              role: "user",
+              content: "Please analyze the uploaded CSV transaction data and generate exactly 3 fraud detection rules. Use your code interpreter to thoroughly examine the data patterns, identify anomalies, and create rules that would effectively detect fraudulent transactions while minimizing false positives.",
+              attachments: [{
+                file_id: file.id,
+                tools: [{ type: "code_interpreter" }]
+              }]
+            }]
+          }
         });
-
-        // Step 5: Create and run
-        const run = await openai.beta.threads.runs.create(thread.id, {
-          assistant_id: assistant.id
-        });
+        
+        console.log('Assistants API: Step 3-5 - Run object:', JSON.stringify(run, null, 2));
+        console.log('Assistants API: Step 3-5 - Run created successfully:', run.id);
+        console.log('Assistants API: Step 3-5 - Thread ID:', run.thread_id);
+        
+        if (!run || !run.id || !run.thread_id) {
+          throw new Error(`Create and run failed - missing IDs. Run object: ${JSON.stringify(run)}`);
+        }
 
         // Step 6: Poll for completion
-        let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+        console.log('Assistants API: Step 6 - Starting polling...');
+        console.log('Assistants API: openai.beta.threads.runs.retrieve available:', typeof openai.beta?.threads?.runs?.retrieve);
+        console.log('Assistants API: Polling with thread ID:', run.thread_id);
+        console.log('Assistants API: Polling with run ID:', run.id);
+        
+        // Validate parameters before retrieve call
+        console.log('Assistants API: Parameter validation:');
+        console.log('  - run.thread_id type:', typeof run.thread_id, 'value:', run.thread_id);
+        console.log('  - run.id type:', typeof run.id, 'value:', run.id);
+        console.log('  - run.thread_id length:', run.thread_id?.length);
+        console.log('  - run.id length:', run.id?.length);
+        
+        if (!run.thread_id || !run.id) {
+          throw new Error(`Invalid parameters for retrieve: thread.id=${run.thread_id}, run.id=${run.id}`);
+        }
+        
+        let runStatus;
+        try {
+          console.log('Assistants API: Attempting retrieve call...');
+          runStatus = await openai.beta.threads.runs.retrieve(
+            run.id, {thread_id: run.thread_id}
+          );
+          console.log('Assistants API: Initial run status:', runStatus.status);
+        } catch (retrieveError) {
+          console.error('Assistants API: Error during initial retrieve:', retrieveError);
+          console.error('Assistants API: Error details:', {
+            name: retrieveError.name,
+            message: retrieveError.message,
+            stack: retrieveError.stack
+          });
+          
+          // Try alternative approach - check if it's an API structure issue
+          console.log('Assistants API: Checking alternative API paths...');
+          console.log('Assistants API: openai.beta.threads?.runs?.retrieve available:', typeof openai.beta?.threads?.runs?.retrieve);
+          
+          throw new Error(`Failed to retrieve run status: ${retrieveError.message}`);
+        }
+        
         let attempts = 0;
         const maxAttempts = 30; // 30 seconds max wait
         
@@ -308,8 +370,18 @@ serve(async (req) => {
           if (attempts >= maxAttempts) {
             throw new Error('Assistant API timeout - run did not complete in time');
           }
+          console.log(`Assistants API: Polling attempt ${attempts + 1}/${maxAttempts}, status: ${runStatus.status}`);
           await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
-          runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+          
+          try {
+            runStatus = await openai.beta.threads.runs.retrieve(
+              run.id, {thread_id: run.thread_id}
+            );
+          } catch (pollError) {
+            console.error('Assistants API: Error during polling retrieve:', pollError);
+            throw new Error(`Failed to retrieve run status during polling: ${pollError.message}`);
+          }
+          
           attempts++;
         }
 
@@ -370,17 +442,39 @@ serve(async (req) => {
           debugInfo: {
             fileId: file.id,
             assistantId: assistant.id,
-            threadId: thread.id,
+            threadId: run.thread_id,
             runId: run.id,
             processingTime
           }
         };
       } catch (error) {
+        console.error('Assistants API: Error occurred:', error);
+        console.error('Assistants API: Error message:', error.message);
+        console.error('Assistants API: Error stack:', error.stack);
+        console.error('Assistants API: OpenAI client structure:', {
+          files: typeof openai.files,
+          beta: typeof openai.beta,
+          vectorStores: typeof openai.vectorStores, // Moved to stable in v5.x
+          betaAssistants: typeof openai.beta?.assistants,
+          betaThreads: typeof openai.beta?.threads
+        });
+        
         return {
           success: false,
-          error: error.message,
+          error: `Assistants API Error: ${error.message}`,
           debugInfo: {
-            processingTime: Date.now() - startTime
+            processingTime: Date.now() - startTime,
+            errorDetails: {
+              message: error.message,
+              stack: error.stack,
+              openaiStructure: {
+                files: typeof openai.files,
+                beta: typeof openai.beta,
+                vectorStores: typeof openai.vectorStores, // Moved to stable in v5.x
+                betaAssistants: typeof openai.beta?.assistants,
+                betaThreads: typeof openai.beta?.threads
+              }
+            }
           }
         };
       }
