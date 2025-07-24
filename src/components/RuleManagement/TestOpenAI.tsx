@@ -198,6 +198,21 @@ const TestOpenAI: React.FC = () => {
             debugVersion: data.debugVersion,
             timestamp: data.timestamp
           });
+        } else {
+          // Show individual Quick Analysis result immediately
+          setResult({
+            success: true,
+            chatCompletionRules: chatResponse.rules,
+            assistantsAPIRules: undefined,
+            chatCompletionError: undefined,
+            assistantsAPIError: undefined,
+            debugInfo: {
+              chatCompletion: chatResponse.debugInfo,
+              assistantsAPI: undefined
+            },
+            debugVersion: data.debugVersion,
+            timestamp: data.timestamp
+          });
         }
         
         // Log debug info
@@ -305,17 +320,17 @@ const TestOpenAI: React.FC = () => {
                     if (data.step) {
                       setStreamingStep(data.step);
                     }
-                    console.log(`Step ${data.step}: ${data.message}`);
+                    // Removed sensitive step logging
                     break;
                     
                   case 'run_created':
-                    console.log('Run created:', data.runId, 'Thread:', data.threadId);
+                    // Removed sensitive run_id and thread_id logging
                     break;
                     
                   case 'step_created':
                   case 'step_progress':
                   case 'step_completed':
-                    console.log('Step event:', eventType, data.type);
+                    // Removed sensitive step event logging
                     break;
                     
                   case 'text_delta':
@@ -325,13 +340,13 @@ const TestOpenAI: React.FC = () => {
                   case 'completed': {
                     console.log('=== DEEP ANALYSIS RESULTS ===');
                     console.log('✅ Response completed successfully!');
-                    console.log('📄 Full CSV file processed ny Deep Analysis');
+                    console.log('📄 Full CSV file analyzed by Deep Analysis');
                     
                     // Store the assistants API response client-side
                     const assistantsApiResponse: StoredAPIResponse = {
                       rules: data.data,
                       debugInfo: {
-                        method: 'Assistants API with Code Interpreter',
+                        method: 'Deep Analysis',
                         fileProcessed: 'Full CSV dataset',
                         streaming: true
                       },
@@ -352,6 +367,21 @@ const TestOpenAI: React.FC = () => {
                         assistantsAPIError: undefined,
                         debugInfo: {
                           chatCompletion: chatCompletionResponse.debugInfo,
+                          assistantsAPI: assistantsApiResponse.debugInfo
+                        },
+                        debugVersion: 'v1.3.0-streaming',
+                        timestamp: new Date().toISOString()
+                      });
+                    } else {
+                      // Show individual Deep Analysis result immediately
+                      setResult({
+                        success: true,
+                        chatCompletionRules: undefined,
+                        assistantsAPIRules: assistantsApiResponse.rules,
+                        chatCompletionError: undefined,
+                        assistantsAPIError: undefined,
+                        debugInfo: {
+                          chatCompletion: undefined,
                           assistantsAPI: assistantsApiResponse.debugInfo
                         },
                         debugVersion: 'v1.3.0-streaming',
@@ -591,20 +621,90 @@ const TestOpenAI: React.FC = () => {
           </div>
         )}
 
+        {/* Individual Results Display */}
+        {result && !showComparison && (
+          <div style={{ marginTop: '24px' }}>
+            {result.chatCompletionRules && (
+              <Card 
+                title={<span style={{ fontSize: '16px', fontWeight: 600 }}>🚀 Quick Analysis Results</span>}
+                style={{ marginBottom: '16px' }}
+              >
+                <div style={{ 
+                  backgroundColor: '#f6ffed', 
+                  padding: '12px', 
+                  borderRadius: '6px', 
+                  border: '1px solid #b7eb8f',
+                  marginBottom: '16px'
+                }}>
+                  <Title level={5} style={{ color: '#52c41a', margin: '0 0 8px 0' }}>✅ Analysis Complete</Title>
+                  <div style={{ fontSize: '12px', color: '#666' }}>
+                    <div>📊 Original: {result.debugInfo?.chatCompletion?.originalRecords || 'N/A'} records</div>
+                    <div>🎯 Processed: {result.debugInfo?.chatCompletion?.processedRecords || 'N/A'} records</div>
+                    <div>🎲 Sampling: {result.debugInfo?.chatCompletion?.samplingApplied ? 'Applied' : 'Not needed'}</div>
+                  </div>
+                </div>
+                <pre style={{
+                  backgroundColor: '#f9f9f9',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  border: '1px solid #d9d9d9',
+                  fontSize: '11px',
+                  maxHeight: '300px',
+                  overflow: 'auto'
+                }}>
+                  {JSON.stringify(result.chatCompletionRules, null, 2)}
+                </pre>
+              </Card>
+            )}
+            
+            {result.assistantsAPIRules && (
+              <Card 
+                title={<span style={{ fontSize: '16px', fontWeight: 600 }}>🔍 Deep Analysis Results</span>}
+                style={{ marginBottom: '16px' }}
+              >
+                <div style={{ 
+                  backgroundColor: '#f6ffed', 
+                  padding: '12px', 
+                  borderRadius: '6px', 
+                  border: '1px solid #b7eb8f',
+                  marginBottom: '16px'
+                }}>
+                  <Title level={5} style={{ color: '#52c41a', margin: '0 0 8px 0' }}>✅ Analysis Complete</Title>
+                  <div style={{ fontSize: '12px', color: '#666' }}>
+                    <div>📁 Full CSV dataset analyzed with code interpreter</div>
+                    <div>🔄 Streaming analysis completed</div>
+                  </div>
+                </div>
+                <pre style={{
+                  backgroundColor: '#f6ffed',
+                  padding: '12px',
+                  borderRadius: '4px',
+                  maxHeight: '300px',
+                  overflow: 'auto',
+                  fontSize: '12px',
+                  border: '1px solid #b7eb8f'
+                }}>
+                  {JSON.stringify(result.assistantsAPIRules, null, 2)}
+                </pre>
+              </Card>
+            )}
+          </div>
+        )}
+
         {showComparison && result && (
           <div style={{ marginTop: '24px' }}>
             <Divider orientation="left">Dual Analysis Results Comparison</Divider>
             
             <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: '1fr 1fr', 
-              gap: '20px'
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '24px'
             }}>
               {/* Quick Analysis Results */}
               <Card 
-                title={<span style={{ fontSize: '14px', fontWeight: 600 }}>🚀 Quick Analysis (Sampled Data)</span>} 
-                size="small"
-                style={{ height: 'fit-content' }}
+                title={<span style={{ fontSize: '16px', fontWeight: 600 }}>🚀 Quick Analysis (Sampled Data)</span>} 
+                size="default"
+                style={{ width: '100%' }}
               >
                 {result.chatCompletionRules ? (
                   <div>
@@ -643,18 +743,14 @@ const TestOpenAI: React.FC = () => {
               </Card>
               
               {/* OpenAI Assistants API Streaming Results */}
-              <Card title="Deep Analysis (Full CSV File)" size="small">
+              <Card 
+                title={<span style={{ fontSize: '16px', fontWeight: 600 }}>🔍 Deep Analysis (Full CSV File)</span>}
+                size="default"
+                style={{ width: '100%' }}
+              >
                 {result.assistantsAPIRules ? (
                   <div>
                     <Title level={5} style={{ color: '#52c41a', marginTop: 0 }}>✅ Success</Title>
-                    <div style={{ marginBottom: '16px' }}>
-                      <strong>Debug Info:</strong>
-                      <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
-                        {result.debugInfo?.assistantsAPI ? Object.entries(result.debugInfo.assistantsAPI).map(([key, value]) => (
-                          <li key={key}>{key}: {String(value)}</li>
-                        )) : <li>No debug info available</li>}
-                      </ul>
-                    </div>
                     <pre style={{
                       backgroundColor: '#f6ffed',
                       padding: '12px',
