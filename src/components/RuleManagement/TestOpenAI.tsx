@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Button, Card, Form, Input, Alert, Typography, Divider, Upload, message, Modal } from 'antd';
+import { Upload, Button, Form, Input, Card, Alert, Divider, Modal, Typography, message } from 'antd';
 import { LoadingOutlined, UploadOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 
@@ -30,17 +30,19 @@ interface TestResult {
   chatCompletionError?: string;
   assistantsAPIError?: string;
   debugInfo?: {
-    chatCompletion?: {
-      originalRecords?: string;
-      processedRecords?: string;
-      originalTokens?: string;
-      processedTokens?: string;
-      samplingApplied?: boolean;
-    };
-    assistantsAPI?: Record<string, unknown>;
+    chatCompletion?: Record<string, any>;
+    assistantsAPI?: Record<string, any>;
   };
+  debugVersion?: string;
+  timestamp?: string;
+}
+
+interface StoredAPIResponse {
+  rules: OpenAIResponse;
+  debugInfo: Record<string, unknown>;
   debugVersion: string;
   timestamp: string;
+  error?: string;
 }
 
 const TestOpenAI: React.FC = () => {
@@ -52,6 +54,19 @@ const TestOpenAI: React.FC = () => {
   const [pendingFormValues, setPendingFormValues] = useState<{ testData: string } | null>(null);
   const [csvContent, setCsvContent] = useState<string>(''); // Store raw CSV content
   const [fileName, setFileName] = useState<string>(''); // Store original filename
+  
+  // API state
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingStatus, setStreamingStatus] = useState<string>('');
+  const [streamingStep, setStreamingStep] = useState<number>(0);
+  const [streamingText, setStreamingText] = useState<string>('');
+  const [currentAPI, setCurrentAPI] = useState<'chatcompletion' | 'assistants' | null>(null);
+  
+  // Client-side storage for individual API responses
+  const [chatCompletionResponse, setChatCompletionResponse] = useState<StoredAPIResponse | null>(null);
+  const [assistantsResponse, setAssistantsResponse] = useState<StoredAPIResponse | null>(null);
+  const [showComparison, setShowComparison] = useState(false);
+  
   const [form] = Form.useForm();
 
   const parseCSV = (csvText: string): Record<string, string | number>[] => {
@@ -119,15 +134,13 @@ const TestOpenAI: React.FC = () => {
     maxCount: 1,
   };
 
-  const callOpenAIAPI = async (values: { testData: string }) => {
+  const callChatCompletionAPI = async (_values: { testData: string }) => {
     setLoading(true);
+    setCurrentAPI('chatcompletion');
     setError(null);
     setResult(null);
 
     try {
-      // Parse the test data JSON
-      const testData = JSON.parse(values.testData);
-      
       // Get the Supabase URL from environment variables
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       if (!supabaseUrl) {
@@ -135,16 +148,12 @@ const TestOpenAI: React.FC = () => {
       }
       
       // Construct the function URL
-      const functionUrl = `${supabaseUrl}/functions/v1/test-openai`;
+      const functionUrl = `${supabaseUrl}/functions/v1/openai-chatcompletion`;
       
-      // Include both parsed JSON data and raw CSV content for dual API approach
       const requestBody = { 
-        testData,
-        csvContent: csvContent, // Raw CSV content for Assistants API
-        fileName: fileName || 'transactions.csv' // Original filename
+        csvContent: csvContent,
+        fileName: fileName || 'transactions.csv'
       };
-      
-
       
       const response = await fetch(functionUrl, {
         method: 'POST',
@@ -156,55 +165,220 @@ const TestOpenAI: React.FC = () => {
         body: JSON.stringify(requestBody),
       });
       
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       
-      if (data.debugInfo) {
-        console.log('=== DUAL API RESULTS ===');
+      if (data.success) {
+        // Store the chat completion response client-side
+        const chatResponse: StoredAPIResponse = {
+          rules: data.data,
+          debugInfo: data.debugInfo,
+          debugVersion: data.debugVersion,
+          timestamp: data.timestamp,
+          error: undefined
+        };
+        setChatCompletionResponse(chatResponse);
         
-        // Chat Completions API Debug Info
-        const chatDebugInfo = data.debugInfo.chatCompletion;
-        console.log('\n📊 CHAT COMPLETIONS API (Sampled Data):');
-        console.log(`   Original: ${chatDebugInfo.originalRecords} records (~${chatDebugInfo.originalTokens} tokens)`);
-        console.log(`   Processed: ${chatDebugInfo.processedRecords} records (~${chatDebugInfo.processedTokens} tokens)`);
-        console.log(`   Sampling: ${chatDebugInfo.samplingApplied ? 'Applied' : 'Not needed'}`);
-        console.log(`   Status: ${data.chatCompletionRules ? '✅ Success' : '❌ Failed'}`);
-        if (data.chatCompletionError) {
-          console.log(`   Error: ${data.chatCompletionError}`);
-        }
-        
-        if (chatDebugInfo.samplingApplied) {
-          const reductionPercent = Math.round((1 - parseInt(chatDebugInfo.processedRecords) / parseInt(chatDebugInfo.originalRecords)) * 100);
-          console.log(`   Reduction: ${reductionPercent}% (${chatDebugInfo.originalRecords} → ${chatDebugInfo.processedRecords})`);
-        }
-        
-        // Assistants API Debug Info
-        console.log('\n🤖 ASSISTANTS API (Full CSV File):');
-        console.log(`   Status: ${data.assistantsAPIRules ? '✅ Success' : '❌ Failed'}`);
-        if (data.assistantsAPIError) {
-          console.log(`   Error: ${data.assistantsAPIError}`);
-        }
-        if (Object.keys(data.debugInfo.assistantsAPI).length > 0) {
-          Object.entries(data.debugInfo.assistantsAPI).forEach(([key, value]) => {
-            console.log(`   ${key}: ${value}`);
+        // Check if both APIs have completed and trigger comparison
+        if (assistantsResponse) {
+          setShowComparison(true);
+          setResult({
+            success: true,
+            chatCompletionRules: chatResponse.rules,
+            assistantsAPIRules: assistantsResponse.rules,
+            chatCompletionError: undefined,
+            assistantsAPIError: assistantsResponse.error,
+            debugInfo: {
+              chatCompletion: chatResponse.debugInfo,
+              assistantsAPI: assistantsResponse.debugInfo
+            },
+            debugVersion: data.debugVersion,
+            timestamp: data.timestamp
           });
         }
+        
+        // Log debug info
+        console.log('=== QUICK ANALYSIS RESULTS ===');
+        console.log(`📊 Original Dataset: ${data.debugInfo.originalRecords} records (~${data.debugInfo.originalTokens} tokens)`);
+        console.log(`🎯 Processed Dataset: ${data.debugInfo.processedRecords} records (~${data.debugInfo.processedTokens} tokens)`);
+        console.log(`🎲 Sampling Applied: ${data.debugInfo.samplingApplied ? 'YES' : 'NO'}`);
+        console.log(`⏱️ Processing Time: ${data.debugInfo.processingTime}ms`);
       } else {
-        // Fallback for old single API format
-        console.log('=== API RESPONSE ===');
-        console.log('Response:', data);
+        throw new Error(data.error || 'Unknown error occurred');
       }
       
-      if (!response.ok) {
-        console.error('API Error Response:', data);
-        throw new Error(`${data.error || 'Unknown error'} - ${data.details || ''}`);
-      }
-
-      setResult(data);
-    } catch (err) {
-      console.error('Test failed:', err);
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+    } catch (error) {
+      console.error('Chat Completion API error:', error);
+      setError(error instanceof Error ? error.message : 'Unknown error occurred');
     } finally {
       setLoading(false);
+      setCurrentAPI(null);
+    }
+  };
+
+  const callAssistantsStreamingAPI = async (_values: { testData: string }) => {
+    setLoading(true);
+    setIsStreaming(true);
+    setCurrentAPI('assistants');
+    setError(null);
+    setResult(null);
+    setStreamingStatus('Initializing...');
+    setStreamingStep(0);
+    setStreamingText('');
+
+    try {
+      // Get the Supabase URL from environment variables
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL is not configured');
+      }
+      
+      // Construct the function URL
+      const functionUrl = `${supabaseUrl}/functions/v1/openai-assistants-interpreter`;
+      
+      const requestBody = { 
+        csvContent: csvContent,
+        fileName: fileName || 'transactions.csv'
+      };
+      
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Handle Server-Sent Events
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+      
+      let buffer = '';
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          break;
+        }
+        
+        buffer += decoder.decode(value, { stream: true });
+        
+        // Process complete SSE messages
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || ''; // Keep incomplete message in buffer
+        
+        for (const message of lines) {
+          if (message.trim()) {
+            const eventLines = message.split('\n');
+            let eventType = '';
+            let eventData = '';
+            
+            for (const line of eventLines) {
+              if (line.startsWith('event: ')) {
+                eventType = line.substring(7);
+              } else if (line.startsWith('data: ')) {
+                eventData = line.substring(6);
+              }
+            }
+            
+            if (eventType && eventData) {
+              try {
+                const data = JSON.parse(eventData);
+                
+                switch (eventType) {
+                  case 'status':
+                    setStreamingStatus(data.message);
+                    if (data.step) {
+                      setStreamingStep(data.step);
+                    }
+                    console.log(`Step ${data.step}: ${data.message}`);
+                    break;
+                    
+                  case 'run_created':
+                    console.log('Run created:', data.runId, 'Thread:', data.threadId);
+                    break;
+                    
+                  case 'step_created':
+                  case 'step_progress':
+                  case 'step_completed':
+                    console.log('Step event:', eventType, data.type);
+                    break;
+                    
+                  case 'text_delta':
+                    setStreamingText(data.fullText);
+                    break;
+                    
+                  case 'completed': {
+                    console.log('=== DEEP ANALYSIS RESULTS ===');
+                    console.log('✅ Response completed successfully!');
+                    console.log('📄 Full CSV file processed ny Deep Analysis');
+                    
+                    // Store the assistants API response client-side
+                    const assistantsApiResponse: StoredAPIResponse = {
+                      rules: data.data,
+                      debugInfo: {
+                        method: 'Assistants API with Code Interpreter',
+                        fileProcessed: 'Full CSV dataset',
+                        streaming: true
+                      },
+                      debugVersion: 'v1.3.0-streaming',
+                      timestamp: new Date().toISOString(),
+                      error: undefined
+                    };
+                    setAssistantsResponse(assistantsApiResponse);
+                    
+                    // Check if both APIs have completed and trigger comparison
+                    if (chatCompletionResponse) {
+                      setShowComparison(true);
+                      setResult({
+                        success: true,
+                        chatCompletionRules: chatCompletionResponse.rules,
+                        assistantsAPIRules: assistantsApiResponse.rules,
+                        chatCompletionError: chatCompletionResponse.error,
+                        assistantsAPIError: undefined,
+                        debugInfo: {
+                          chatCompletion: chatCompletionResponse.debugInfo,
+                          assistantsAPI: assistantsApiResponse.debugInfo
+                        },
+                        debugVersion: 'v1.3.0-streaming',
+                        timestamp: new Date().toISOString()
+                      });
+                    }
+                    setStreamingStatus('Completed!');
+                    break;
+                  }
+                    
+                  case 'error':
+                    throw new Error(data.message);
+                }
+              } catch (parseError) {
+                console.error('Error parsing SSE data:', parseError, eventData);
+              }
+            }
+          }
+        }
+      }
+      
+    } catch (error) {
+      console.error('Streaming API error:', error);
+      setError(error instanceof Error ? error.message : 'Unknown error occurred');
+    } finally {
+      setLoading(false);
+      setIsStreaming(false);
     }
   };
 
@@ -220,8 +394,8 @@ const TestOpenAI: React.FC = () => {
         return;
       }
       
-      // Proceed with API call for smaller datasets
-      await callOpenAIAPI(values);
+      // This will be handled by the individual button clicks
+      // No automatic API call here
     } catch {
       setError('Invalid JSON format');
     }
@@ -230,7 +404,8 @@ const TestOpenAI: React.FC = () => {
   const handleProceedWithSampling = async () => {
     setShowLargeDatasetModal(false);
     if (pendingFormValues) {
-      await callOpenAIAPI(pendingFormValues);
+      // Use assistants streaming API for modal flow
+      await callAssistantsStreamingAPI(pendingFormValues);
       setPendingFormValues(null);
     }
   };
@@ -293,6 +468,7 @@ const TestOpenAI: React.FC = () => {
           onFinish={onFinish}
           initialValues={{ testData: '' }}
         >
+
           <Form.Item
             label="Test Data (JSON array of transactions)"
             name="testData"
@@ -320,22 +496,56 @@ const TestOpenAI: React.FC = () => {
             />
           </Form.Item>
 
-          <div style={{ marginBottom: '16px' }}>
-            <Button type="link" onClick={loadSampleData}>
-              Load Sample Data
-            </Button>
-          </div>
-
           <Form.Item>
-            <Button
-              type="primary"
-              htmlType="submit"
-              disabled={loading}
-              icon={loading ? <LoadingOutlined /> : null}
-            >
-              {loading ? 'Processing...' : 'Test OpenAI'}
-            </Button>
-          </Form.Item>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <Button 
+                type="primary" 
+                onClick={() => {
+                  const formValues = form.getFieldsValue();
+                  if (formValues.testData || csvContent) {
+                    callChatCompletionAPI(formValues);
+                  } else {
+                    setError('Please provide test data or upload a CSV file');
+                  }
+                }}
+                loading={loading && currentAPI === 'chatcompletion'}
+                disabled={loading}
+                icon={loading && currentAPI === 'chatcompletion' ? <LoadingOutlined /> : undefined}
+                style={{ minWidth: '180px' }}
+              >
+                {loading && currentAPI === 'chatcompletion' ? 'Processing...' : 'Quick Analysis'}
+              </Button>
+              
+              <Button 
+                type="primary" 
+                onClick={() => {
+                  const formValues = form.getFieldsValue();
+                  if (formValues.testData || csvContent) {
+                    callAssistantsStreamingAPI(formValues);
+                  } else {
+                    setError('Please provide test data or upload a CSV file');
+                  }
+                }}
+                loading={loading && currentAPI === 'assistants'}
+                disabled={loading}
+                icon={loading && currentAPI === 'assistants' ? <LoadingOutlined /> : undefined}
+                style={{ minWidth: '180px', backgroundColor: '#722ed1', borderColor: '#722ed1' }}
+              >
+                {loading && currentAPI === 'assistants' ? 'Analyzing...' : 'Deep Analysis'}
+              </Button>
+              
+              <Button onClick={loadSampleData} disabled={loading}>
+                Load Sample Data
+              </Button>
+            </div>
+            
+            <div style={{ fontSize: '12px', color: '#666', lineHeight: '1.4' }}>
+              <div><strong>Quick Analysis:</strong> Fast results that samples large datasets down to 50 records</div>
+              <div><strong>Deep Analysis:</strong> Comprehensive analysis that uploads the file and streams response back</div>
+            </div>
+          </div>
+        </Form.Item>
         </Form>
 
         {error && (
@@ -348,31 +558,77 @@ const TestOpenAI: React.FC = () => {
           />
         )}
 
-        {result && (
+        {/* Streaming Status Display */}
+        {isStreaming && (
           <div style={{ marginTop: '24px' }}>
-            <Divider orientation="left">Dual API Results</Divider>
+            <Card title="🔄 Real-time Streaming Status" size="small">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div>
+                  <strong>Current Step:</strong> {streamingStep}/7
+                </div>
+                <div>
+                  <strong>Status:</strong> {streamingStatus}
+                </div>
+                {streamingText && (
+                  <div>
+                    <strong>Assistant Response:</strong>
+                    <div style={{
+                      backgroundColor: '#f0f8ff',
+                      padding: '8px',
+                      borderRadius: '4px',
+                      border: '1px solid #d1e7dd',
+                      fontSize: '12px',
+                      maxHeight: '200px',
+                      overflow: 'auto',
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      {streamingText}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {showComparison && result && (
+          <div style={{ marginTop: '24px' }}>
+            <Divider orientation="left">Dual Analysis Results Comparison</Divider>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-              {/* Chat Completions API Results */}
-              <Card title="Chat Completions API (Sampled Data)" size="small">
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '1fr 1fr', 
+              gap: '20px'
+            }}>
+              {/* Quick Analysis Results */}
+              <Card 
+                title={<span style={{ fontSize: '14px', fontWeight: 600 }}>🚀 Quick Analysis (Sampled Data)</span>} 
+                size="small"
+                style={{ height: 'fit-content' }}
+              >
                 {result.chatCompletionRules ? (
                   <div>
-                    <Title level={5} style={{ color: '#52c41a', marginTop: 0 }}>✅ Success</Title>
-                    <div style={{ marginBottom: '16px' }}>
-                      <strong>Debug Info:</strong>
-                      <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
-                        <li>Original: {result.debugInfo?.chatCompletion?.originalRecords || 'N/A'} records (~{result.debugInfo?.chatCompletion?.originalTokens || 'N/A'} tokens)</li>
-                        <li>Processed: {result.debugInfo?.chatCompletion?.processedRecords || 'N/A'} records (~{result.debugInfo?.chatCompletion?.processedTokens || 'N/A'} tokens)</li>
-                        <li>Sampling: {result.debugInfo?.chatCompletion?.samplingApplied ? 'Applied' : 'Not needed'}</li>
-                      </ul>
+                    <div style={{ 
+                      backgroundColor: '#f6ffed', 
+                      padding: '8px 12px', 
+                      borderRadius: '6px', 
+                      border: '1px solid #b7eb8f',
+                      marginBottom: '12px'
+                    }}>
+                      <Title level={5} style={{ color: '#52c41a', margin: '0 0 8px 0', fontSize: '13px' }}>✅ Success</Title>
+                      <div style={{ fontSize: '11px', color: '#666' }}>
+                        <div>📊 Original: {result.debugInfo?.chatCompletion?.originalRecords || 'N/A'} records</div>
+                        <div>🎯 Processed: {result.debugInfo?.chatCompletion?.processedRecords || 'N/A'} records</div>
+                        <div>🎲 Sampling: {result.debugInfo?.chatCompletion?.samplingApplied ? 'Applied' : 'Not needed'}</div>
+                      </div>
                     </div>
                     <pre style={{
-                      backgroundColor: '#f6ffed',
+                      backgroundColor: '#f9f9f9',
                       padding: '12px',
-                      borderRadius: '4px',
-                      border: '1px solid #b7eb8f',
-                      fontSize: '12px',
-                      maxHeight: '300px',
+                      borderRadius: '6px',
+                      border: '1px solid #d9d9d9',
+                      fontSize: '11px',
+                      maxHeight: '250px',
                       overflow: 'auto'
                     }}>
                       {JSON.stringify(result.chatCompletionRules, null, 2)}
@@ -386,8 +642,8 @@ const TestOpenAI: React.FC = () => {
                 )}
               </Card>
               
-              {/* Assistants API Results */}
-              <Card title="Assistants API (Full CSV File)" size="small">
+              {/* OpenAI Assistants API Streaming Results */}
+              <Card title="Deep Analysis (Full CSV File)" size="small">
                 {result.assistantsAPIRules ? (
                   <div>
                     <Title level={5} style={{ color: '#52c41a', marginTop: 0 }}>✅ Success</Title>
