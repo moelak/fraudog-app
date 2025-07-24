@@ -26,7 +26,7 @@ const Dashboard = observer(() => {
 	const navigation = [
 		{ name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
 		{ name: 'Rule Management', href: '/dashboard/rules', icon: ShieldCheckIcon },
-		{ name: 'API Tester', href: '/dashboard/test-openai', icon: ShieldCheckIcon },
+		{ name: 'Rule Generation Tester', href: '/dashboard/test-rulegeneration', icon: ShieldCheckIcon },
 		{ name: 'Visualization', href: '/dashboard/visualization', icon: ChartBarIcon },
 		{ name: 'Monitoring', href: '/dashboard/monitoring', icon: EyeIcon },
 		{ name: 'Chargebacks', href: '/dashboard/chargebacks', icon: CreditCardIcon },
@@ -180,7 +180,7 @@ const Dashboard = observer(() => {
 							<Routes>
 								<Route path='/' element={<Overview />} />
 								<Route path='/rules' element={<RuleManagement />} />
-								<Route path='/test-openai' element={<TestOpenAI />} />
+								<Route path='/test-rulegeneration' element={<TestOpenAI />} />
 								<Route path='/visualization' element={<Visualization />} />
 								<Route path='/monitoring' element={<Monitoring />} />
 								<Route path='/chargebacks' element={<Chargebacks />} />
