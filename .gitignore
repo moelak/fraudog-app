@@ -18,8 +18,11 @@ dist-ssr
 .env.*
 !.env.example
 
-# Backend server functions
-supabase
+# Ignore backend server functions and database backups and metadata that shouldn't be commited
+supabase/functions/
+supabase/.temp/
+supabase/migrations/
+supabase/scripts/
 
 # Editor directories and files
 .vscode/*
