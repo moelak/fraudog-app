@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ruleManagementStore } from './RuleManagementStore';
 import CreateRuleModal from './CreateRuleModal';
-import { message } from 'antd';
 
 interface OpenAIRule {
   rule_name: string;
@@ -21,14 +20,12 @@ interface AddRuleFromAIModalProps {
   isOpen: boolean;
   onClose: () => void;
   aiRule: OpenAIRule | null;
-  onSave?: (ruleData: any) => Promise<void>;
 }
 
 const AddRuleFromAIModal: React.FC<AddRuleFromAIModalProps> = observer(({
   isOpen,
   onClose,
   aiRule,
-  onSave,
 }) => {
   
   // Map AI rule data to database schema

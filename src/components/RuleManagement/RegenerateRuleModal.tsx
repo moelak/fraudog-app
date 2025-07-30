@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Button, Typography, Card, Alert, message } from 'antd';
-import { XMarkIcon } from '@heroicons/react/24/outline';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -23,7 +22,6 @@ interface RegenerateRuleModalProps {
   onClose: () => void;
   onRegenerate: (instructions: string, ruleContext: OpenAIRule) => Promise<void>;
   currentRule: OpenAIRule | null;
-  loading?: boolean;
 }
 
 const RegenerateRuleModal: React.FC<RegenerateRuleModalProps> = ({
@@ -31,7 +29,6 @@ const RegenerateRuleModal: React.FC<RegenerateRuleModalProps> = ({
   onClose,
   onRegenerate,
   currentRule,
-  loading = false,
 }) => {
   const [form] = Form.useForm();
   const [customInstructions, setCustomInstructions] = useState('');

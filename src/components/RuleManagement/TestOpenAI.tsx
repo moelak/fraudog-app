@@ -518,26 +518,6 @@ const TestOpenAI: React.FC = () => {
     }
   };
 
-  const handleAddRuleFromAI = async (instructions: string, ruleContext: OpenAIRule) => {
-    try {
-      console.log('Adding rule from AI with instructions:', instructions);
-      console.log('Rule context:', ruleContext);
-      
-      // TODO: Implement actual API call to add rule from AI
-      // This will be similar to the existing OpenAI API calls but with enhanced prompts
-      
-      // For now, show a success message
-      message.success('Rule addition from AI will be implemented in the next phase');
-      
-      // Close modal
-      setShowAddRuleModal(false);
-      setSelectedRuleForAddition(null);
-    } catch (error) {
-      console.error('Error adding rule from AI:', error);
-      throw error; // Let the modal handle the error display
-    }
-  };
-
   const getActionMenu = (rule: OpenAIRule) => (
     <Menu>
       <Menu.Item key="regenerate" onClick={() => handleRegenerate(rule)}>
