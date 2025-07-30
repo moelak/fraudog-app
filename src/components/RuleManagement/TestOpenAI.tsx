@@ -3,6 +3,8 @@ import { Upload, Button, Form, Input, Card, Alert, Divider, Modal, Typography, m
 import { LoadingOutlined, UploadOutlined, ExclamationCircleOutlined, MoreOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 import type { MenuProps } from 'antd';
+import RegenerateRuleModal from './RegenerateRuleModal';
+import AddRuleFromAIModal from './AddRuleFromAIModal';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -66,6 +68,14 @@ const TestOpenAI: React.FC = () => {
   const [chatCompletionResponse, setChatCompletionResponse] = useState<StoredAPIResponse | null>(null);
   const [assistantsResponse, setAssistantsResponse] = useState<StoredAPIResponse | null>(null);
   const [showComparison, setShowComparison] = useState(false);
+  
+  // Regenerate Rule Modal state
+  const [showRegenerateModal, setShowRegenerateModal] = useState(false);
+  const [selectedRuleForRegeneration, setSelectedRuleForRegeneration] = useState<OpenAIRule | null>(null);
+  
+  // Add Rule From AI Modal state
+  const [showAddRuleModal, setShowAddRuleModal] = useState(false);
+  const [selectedRuleForAddition, setSelectedRuleForAddition] = useState<OpenAIRule | null>(null);
   
   const [form] = Form.useForm();
 
@@ -478,12 +488,54 @@ const TestOpenAI: React.FC = () => {
 
   const handleRegenerate = (rule: OpenAIRule) => {
     console.log('Regenerate rule:', rule);
-    message.info('Regenerate modal will open here');
+    setSelectedRuleForRegeneration(rule);
+    setShowRegenerateModal(true);
   };
 
   const handleAddRule = (rule: OpenAIRule) => {
     console.log('Add rule:', rule);
-    message.info('Add Rule modal will open here');
+    setSelectedRuleForAddition(rule);
+    setShowAddRuleModal(true);
+  };
+
+  const handleRuleRegeneration = async (instructions: string, ruleContext: OpenAIRule) => {
+    try {
+      console.log('Regenerating rule with instructions:', instructions);
+      console.log('Rule context:', ruleContext);
+      
+      // TODO: Implement actual API call to regenerate rule
+      // This will be similar to the existing OpenAI API calls but with enhanced prompts
+      
+      // For now, show a success message
+      message.success('Rule regeneration will be implemented in the next phase');
+      
+      // Close modal
+      setShowRegenerateModal(false);
+      setSelectedRuleForRegeneration(null);
+    } catch (error) {
+      console.error('Error regenerating rule:', error);
+      throw error; // Let the modal handle the error display
+    }
+  };
+
+  const handleAddRuleFromAI = async (instructions: string, ruleContext: OpenAIRule) => {
+    try {
+      console.log('Adding rule from AI with instructions:', instructions);
+      console.log('Rule context:', ruleContext);
+      
+      // TODO: Implement actual API call to add rule from AI
+      // This will be similar to the existing OpenAI API calls but with enhanced prompts
+      
+      // For now, show a success message
+      message.success('Rule addition from AI will be implemented in the next phase');
+      
+      // Close modal
+      setShowAddRuleModal(false);
+      setSelectedRuleForAddition(null);
+    } catch (error) {
+      console.error('Error adding rule from AI:', error);
+      throw error; // Let the modal handle the error display
+    }
   };
 
   const getActionMenu = (rule: OpenAIRule) => (
@@ -528,25 +580,11 @@ const TestOpenAI: React.FC = () => {
         ),
       },
       {
-        title: 'STATUS',
-        key: 'status',
-        width: '10%',
-        render: () => (
-          <span style={{ 
-            color: '#d48806', 
-            fontWeight: 500,
-            fontSize: '12px'
-          }}>
-            under review
-          </span>
-        ),
-      },
-      {
         title: 'DECISION',
-        dataIndex: 'decision',  // Change this from 'outcome'
+        dataIndex: 'decision',
         key: 'decision',
         width: '12%',
-        render: (decision: string) => {  // Parameter is already correctly named 'decision'
+        render: (decision: string) => {  
           const decisionLower = decision?.toLowerCase();
           let icon = '🔍'; // default review icon
           let color = '#d48806'; // default review color
@@ -841,7 +879,7 @@ const TestOpenAI: React.FC = () => {
                   border: '1px solid #b7eb8f',
                   marginBottom: '12px'
                 }}>
-                  <Title level={5} style={{ color: '#52c41a', margin: '0 0 8px 0', fontSize: '13px' }}>✅ Success</Title>
+                  <Title level={5} style={{ color: '#52c41a', marginTop: 0 }}>✅ Success</Title>
                   <div style={{ fontSize: '11px', color: '#666' }}>
                     <div>📁 Full CSV dataset analyzed with code interpreter</div>
                     <div>🔄 Streaming analysis completed</div>
@@ -966,6 +1004,27 @@ const TestOpenAI: React.FC = () => {
         </div>
         <p>Would you like to proceed with the sampling approach, or cancel to modify your dataset?</p>
       </Modal>
+      
+      {/* Regenerate Rule Modal */}
+      <RegenerateRuleModal
+        isOpen={showRegenerateModal}
+        currentRule={selectedRuleForRegeneration}
+        onClose={() => {
+          setShowRegenerateModal(false);
+          setSelectedRuleForRegeneration(null);
+        }}
+        onRegenerate={handleRuleRegeneration}
+      />
+      
+      {/* Add Rule From AI Modal */}
+      <AddRuleFromAIModal
+        isOpen={showAddRuleModal}
+        aiRule={selectedRuleForAddition}
+        onClose={() => {
+          setShowAddRuleModal(false);
+          setSelectedRuleForAddition(null);
+        }}
+      />
     </div>
   );
 };
