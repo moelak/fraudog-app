@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Upload, Button, Form, Input, Card, Alert, Divider, Modal, Typography, message } from 'antd';
+import { Upload, Button, Form, Input, Card, Alert, Divider, Modal, Typography, message, Table } from 'antd';
 import { LoadingOutlined, UploadOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 
@@ -11,14 +11,13 @@ interface OpenAIRule {
   description: string;
   risk_score: number;
   conditions: string;
-  outcome: string;
+  decision: string; 
   metadata: {
     pattern_type: string;
     confidence_level: number;
     expected_false_positive_rate: number;
   };
 }
-
 interface OpenAIResponse {
   rules: OpenAIRule[];
 }
@@ -476,6 +475,157 @@ const TestOpenAI: React.FC = () => {
     form.setFieldsValue({ testData: sampleData });
   };
 
+  // Component to render rules in table format
+  const RuleResultsTable: React.FC<{ rules: OpenAIRule[]; title: string }> = ({ rules, title }) => {
+    const columns = [
+      {
+        title: 'RULE',
+        dataIndex: 'rule_name',
+        key: 'rule_name',
+        width: '25%',
+        render: (text: string) => (
+          <span style={{ fontWeight: 500 }}>{text}</span>
+        ),
+      },
+      {
+        title: 'CATEGORY',
+        dataIndex: 'metadata',
+        key: 'category',
+        width: '15%',
+        render: (metadata: any) => (
+          <span style={{ 
+            backgroundColor: '#e6f7ff', 
+            color: '#1890ff', 
+            padding: '2px 8px', 
+            borderRadius: '12px',
+            fontSize: '12px',
+            fontWeight: 500
+          }}>
+            {metadata?.pattern_type || 'General'}
+          </span>
+        ),
+      },
+      {
+        title: 'STATUS',
+        key: 'status',
+        width: '10%',
+        render: () => (
+          <span style={{ 
+            color: '#d48806', 
+            fontWeight: 500,
+            fontSize: '12px'
+          }}>
+            under review
+          </span>
+        ),
+      },
+      {
+        title: 'DECISION',
+        dataIndex: 'decision',  // Change this from 'outcome'
+        key: 'decision',
+        width: '12%',
+        render: (decision: string) => {  // Parameter is already correctly named 'decision'
+          const decisionLower = decision?.toLowerCase();
+          let icon = '🔍'; // default review icon
+          let color = '#d48806'; // default review color
+          
+          if (decisionLower === 'allow') {
+            icon = '✅';
+            color = '#52c41a';
+          } else if (decisionLower === 'deny') {
+            icon = '❌';
+            color = '#ff4d4f';
+          }
+          
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '14px' }}>{icon}</span>
+              <span style={{ 
+                color: color, 
+                fontWeight: 500,
+                fontSize: '12px'
+              }}>
+                {decision || 'review'}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        title: 'RISK SCORE',
+        dataIndex: 'risk_score',
+        key: 'risk_score',
+        width: '12%',
+        render: (score: number) => (
+          <span style={{ fontWeight: 500 }}>{score || 'N/A'}</span>
+        ),
+      },
+      {
+        title: 'CONFIDENCE',
+        dataIndex: 'metadata',
+        key: 'confidence',
+        width: '12%',
+        render: (metadata: any) => (
+          <span style={{ fontWeight: 500 }}>
+            {metadata?.confidence_level ? `${metadata.confidence_level}%` : 'N/A'}
+          </span>
+        ),
+      },
+      {
+        title: 'FALSE POSITIVES',
+        dataIndex: 'metadata',
+        key: 'false_positives',
+        width: '15%',
+        render: (metadata: any) => (
+          <span style={{ fontWeight: 500 }}>
+            {metadata?.expected_false_positive_rate ? `${Math.round(metadata.expected_false_positive_rate * 100)}%` : 'N/A'}
+          </span>
+        ),
+      },
+    ];
+
+    const expandedRowRender = (record: OpenAIRule) => (
+      <div style={{ padding: '16px', backgroundColor: '#fafafa' }}>
+        <div style={{ marginBottom: '12px' }}>
+          <Text strong>Description</Text>
+          <div style={{ marginTop: '4px' }}>{record.description}</div>
+        </div>
+        <div>
+          <Text strong>Rule Condition</Text>
+          <div style={{ 
+            marginTop: '4px', 
+            fontFamily: 'monospace', 
+            backgroundColor: '#f0f0f0', 
+            padding: '8px', 
+            borderRadius: '4px',
+            fontSize: '12px'
+          }}>
+            {record.conditions}
+          </div>
+        </div>
+      </div>
+    );
+
+    return (
+      <Table
+        columns={columns}
+        dataSource={rules.map((rule, index) => ({ ...rule, key: index }))}
+        pagination={false}
+        size="small"
+        expandable={{
+          expandedRowRender,
+          defaultExpandAllRows: false,
+          expandRowByClick: true,
+        }}
+        style={{ 
+          backgroundColor: 'white',
+          border: '1px solid #f0f0f0',
+          borderRadius: '6px'
+        }}
+      />
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white shadow rounded-lg p-6">
@@ -626,34 +776,24 @@ const TestOpenAI: React.FC = () => {
           <div style={{ marginTop: '24px' }}>
             {result.chatCompletionRules && (
               <Card 
-                title={<span style={{ fontSize: '16px', fontWeight: 600 }}>🚀 Quick Analysis Results</span>}
+                title={<span style={{ fontSize: '16px', fontWeight: 600 }}>🚀 Quick Analysis Results</span>} 
                 style={{ marginBottom: '16px' }}
               >
                 <div style={{ 
                   backgroundColor: '#f6ffed', 
-                  padding: '12px', 
+                  padding: '8px 12px', 
                   borderRadius: '6px', 
                   border: '1px solid #b7eb8f',
-                  marginBottom: '16px'
+                  marginBottom: '12px'
                 }}>
-                  <Title level={5} style={{ color: '#52c41a', margin: '0 0 8px 0' }}>✅ Analysis Complete</Title>
-                  <div style={{ fontSize: '12px', color: '#666' }}>
+                  <Title level={5} style={{ color: '#52c41a', margin: '0 0 8px 0', fontSize: '13px' }}>✅ Success</Title>
+                  <div style={{ fontSize: '11px', color: '#666' }}>
                     <div>📊 Original: {result.debugInfo?.chatCompletion?.originalRecords || 'N/A'} records</div>
                     <div>🎯 Processed: {result.debugInfo?.chatCompletion?.processedRecords || 'N/A'} records</div>
                     <div>🎲 Sampling: {result.debugInfo?.chatCompletion?.samplingApplied ? 'Applied' : 'Not needed'}</div>
                   </div>
                 </div>
-                <pre style={{
-                  backgroundColor: '#f9f9f9',
-                  padding: '12px',
-                  borderRadius: '6px',
-                  border: '1px solid #d9d9d9',
-                  fontSize: '11px',
-                  maxHeight: '300px',
-                  overflow: 'auto'
-                }}>
-                  {JSON.stringify(result.chatCompletionRules, null, 2)}
-                </pre>
+                <RuleResultsTable rules={result.chatCompletionRules.rules} title="Quick Analysis Results" />
               </Card>
             )}
             
@@ -664,28 +804,18 @@ const TestOpenAI: React.FC = () => {
               >
                 <div style={{ 
                   backgroundColor: '#f6ffed', 
-                  padding: '12px', 
+                  padding: '8px 12px', 
                   borderRadius: '6px', 
                   border: '1px solid #b7eb8f',
-                  marginBottom: '16px'
+                  marginBottom: '12px'
                 }}>
-                  <Title level={5} style={{ color: '#52c41a', margin: '0 0 8px 0' }}>✅ Analysis Complete</Title>
-                  <div style={{ fontSize: '12px', color: '#666' }}>
+                  <Title level={5} style={{ color: '#52c41a', margin: '0 0 8px 0', fontSize: '13px' }}>✅ Success</Title>
+                  <div style={{ fontSize: '11px', color: '#666' }}>
                     <div>📁 Full CSV dataset analyzed with code interpreter</div>
                     <div>🔄 Streaming analysis completed</div>
                   </div>
                 </div>
-                <pre style={{
-                  backgroundColor: '#f6ffed',
-                  padding: '12px',
-                  borderRadius: '4px',
-                  maxHeight: '300px',
-                  overflow: 'auto',
-                  fontSize: '12px',
-                  border: '1px solid #b7eb8f'
-                }}>
-                  {JSON.stringify(result.assistantsAPIRules, null, 2)}
-                </pre>
+                <RuleResultsTable rules={result.assistantsAPIRules.rules} title="Deep Analysis Results" />
               </Card>
             )}
           </div>
@@ -722,17 +852,7 @@ const TestOpenAI: React.FC = () => {
                         <div>🎲 Sampling: {result.debugInfo?.chatCompletion?.samplingApplied ? 'Applied' : 'Not needed'}</div>
                       </div>
                     </div>
-                    <pre style={{
-                      backgroundColor: '#f9f9f9',
-                      padding: '12px',
-                      borderRadius: '6px',
-                      border: '1px solid #d9d9d9',
-                      fontSize: '11px',
-                      maxHeight: '250px',
-                      overflow: 'auto'
-                    }}>
-                      {JSON.stringify(result.chatCompletionRules, null, 2)}
-                    </pre>
+                    <RuleResultsTable rules={result.chatCompletionRules.rules} title="Quick Analysis Results" />
                   </div>
                 ) : (
                   <div>
@@ -751,17 +871,7 @@ const TestOpenAI: React.FC = () => {
                 {result.assistantsAPIRules ? (
                   <div>
                     <Title level={5} style={{ color: '#52c41a', marginTop: 0 }}>✅ Success</Title>
-                    <pre style={{
-                      backgroundColor: '#f6ffed',
-                      padding: '12px',
-                      borderRadius: '4px',
-                      maxHeight: '400px',
-                      overflow: 'auto',
-                      fontSize: '12px',
-                      border: '1px solid #b7eb8f'
-                    }}>
-                      {JSON.stringify(result.assistantsAPIRules, null, 2)}
-                    </pre>
+                    <RuleResultsTable rules={result.assistantsAPIRules.rules} title="Deep Analysis Results" />
                   </div>
                 ) : (
                   <div>
