@@ -529,7 +529,7 @@ const TestOpenAI: React.FC = () => {
   );
 
   // Component to render rules in table format
-  const RuleResultsTable: React.FC<{ rules: OpenAIRule[]; title: string }> = ({ rules, title }) => {
+  const RuleResultsTable: React.FC<{ rules: OpenAIRule[] }> = ({ rules }) => {
     const columns = [
       {
         title: 'RULE',
@@ -842,7 +842,7 @@ const TestOpenAI: React.FC = () => {
                     <div>🎲 Sampling: {result.debugInfo?.chatCompletion?.samplingApplied ? 'Applied' : 'Not needed'}</div>
                   </div>
                 </div>
-                <RuleResultsTable rules={result.chatCompletionRules.rules} title="Quick Analysis Results" />
+                <RuleResultsTable rules={result.chatCompletionRules.rules} />
               </Card>
             )}
             
@@ -864,7 +864,7 @@ const TestOpenAI: React.FC = () => {
                     <div>🔄 Streaming analysis completed</div>
                   </div>
                 </div>
-                <RuleResultsTable rules={result.assistantsAPIRules.rules} title="Deep Analysis Results" />
+                <RuleResultsTable rules={result.assistantsAPIRules.rules} />
               </Card>
             )}
           </div>
@@ -901,7 +901,7 @@ const TestOpenAI: React.FC = () => {
                         <div>🎲 Sampling: {result.debugInfo?.chatCompletion?.samplingApplied ? 'Applied' : 'Not needed'}</div>
                       </div>
                     </div>
-                    <RuleResultsTable rules={result.chatCompletionRules.rules} title="Quick Analysis Results" />
+                    <RuleResultsTable rules={result.chatCompletionRules.rules} />
                   </div>
                 ) : (
                   <div>
@@ -920,7 +920,7 @@ const TestOpenAI: React.FC = () => {
                 {result.assistantsAPIRules ? (
                   <div>
                     <Text strong style={{ color: '#52c41a', marginTop: 0 }}>✅ Success</Text>
-                    <RuleResultsTable rules={result.assistantsAPIRules.rules} title="Deep Analysis Results" />
+                    <RuleResultsTable rules={result.assistantsAPIRules.rules} />
                   </div>
                 ) : (
                   <div>
