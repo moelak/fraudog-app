@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { Upload, Button, Form, Input, Card, Alert, Divider, Modal, Typography, message, Table } from 'antd';
-import { LoadingOutlined, UploadOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { Upload, Button, Form, Input, Card, Alert, Divider, Modal, Typography, message, Table, Dropdown, Menu } from 'antd';
+import { LoadingOutlined, UploadOutlined, ExclamationCircleOutlined, MoreOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
+import type { MenuProps } from 'antd';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -475,6 +476,27 @@ const TestOpenAI: React.FC = () => {
     form.setFieldsValue({ testData: sampleData });
   };
 
+  const handleRegenerate = (rule: OpenAIRule) => {
+    console.log('Regenerate rule:', rule);
+    message.info('Regenerate modal will open here');
+  };
+
+  const handleAddRule = (rule: OpenAIRule) => {
+    console.log('Add rule:', rule);
+    message.info('Add Rule modal will open here');
+  };
+
+  const getActionMenu = (rule: OpenAIRule) => (
+    <Menu>
+      <Menu.Item key="regenerate" onClick={() => handleRegenerate(rule)}>
+        🔄 Regenerate
+      </Menu.Item>
+      <Menu.Item key="add-rule" onClick={() => handleAddRule(rule)}>
+        ➕ Add Rule
+      </Menu.Item>
+    </Menu>
+  );
+
   // Component to render rules in table format
   const RuleResultsTable: React.FC<{ rules: OpenAIRule[]; title: string }> = ({ rules, title }) => {
     const columns = [
@@ -582,6 +604,16 @@ const TestOpenAI: React.FC = () => {
           </span>
         ),
       },
+      {
+        title: 'ACTIONS',
+        key: 'actions',
+        width: '10%',
+        render: (rule: OpenAIRule) => (
+          <Dropdown overlay={getActionMenu(rule)} trigger={['click']}>
+            <Button type="link" icon={<MoreOutlined />} />
+          </Dropdown>
+        ),
+      },
     ];
 
     const expandedRowRender = (record: OpenAIRule) => (
@@ -615,7 +647,7 @@ const TestOpenAI: React.FC = () => {
         expandable={{
           expandedRowRender,
           defaultExpandAllRows: false,
-          expandRowByClick: true,
+          expandRowByClick: false,
         }}
         style={{ 
           backgroundColor: 'white',
