@@ -2,11 +2,10 @@ import React, { useState, useCallback } from 'react';
 import { Upload, Button, Form, Input, Card, Alert, Divider, Modal, Typography, message, Table, Dropdown, Menu } from 'antd';
 import { LoadingOutlined, UploadOutlined, ExclamationCircleOutlined, MoreOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
-import type { MenuProps } from 'antd';
 import RegenerateRuleModal from './RegenerateRuleModal';
 import AddRuleFromAIModal from './AddRuleFromAIModal';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { TextArea } = Input;
 
 interface OpenAIRule {
@@ -836,7 +835,7 @@ const TestOpenAI: React.FC = () => {
                   border: '1px solid #b7eb8f',
                   marginBottom: '12px'
                 }}>
-                  <Title level={5} style={{ color: '#52c41a', margin: '0 0 8px 0', fontSize: '13px' }}>✅ Success</Title>
+                  <Text strong style={{ color: '#52c41a', margin: '0 0 8px 0', fontSize: '13px' }}>✅ Success</Text>
                   <div style={{ fontSize: '11px', color: '#666' }}>
                     <div>📊 Original: {result.debugInfo?.chatCompletion?.originalRecords || 'N/A'} records</div>
                     <div>🎯 Processed: {result.debugInfo?.chatCompletion?.processedRecords || 'N/A'} records</div>
@@ -859,7 +858,7 @@ const TestOpenAI: React.FC = () => {
                   border: '1px solid #b7eb8f',
                   marginBottom: '12px'
                 }}>
-                  <Title level={5} style={{ color: '#52c41a', marginTop: 0 }}>✅ Success</Title>
+                  <Text strong style={{ color: '#52c41a', marginTop: 0 }}>✅ Success</Text>
                   <div style={{ fontSize: '11px', color: '#666' }}>
                     <div>📁 Full CSV dataset analyzed with code interpreter</div>
                     <div>🔄 Streaming analysis completed</div>
@@ -895,7 +894,7 @@ const TestOpenAI: React.FC = () => {
                       border: '1px solid #b7eb8f',
                       marginBottom: '12px'
                     }}>
-                      <Title level={5} style={{ color: '#52c41a', margin: '0 0 8px 0', fontSize: '13px' }}>✅ Success</Title>
+                      <Text strong style={{ color: '#52c41a', margin: '0 0 8px 0', fontSize: '13px' }}>✅ Success</Text>
                       <div style={{ fontSize: '11px', color: '#666' }}>
                         <div>📊 Original: {result.debugInfo?.chatCompletion?.originalRecords || 'N/A'} records</div>
                         <div>🎯 Processed: {result.debugInfo?.chatCompletion?.processedRecords || 'N/A'} records</div>
@@ -906,7 +905,7 @@ const TestOpenAI: React.FC = () => {
                   </div>
                 ) : (
                   <div>
-                    <Title level={5} style={{ color: '#ff4d4f', marginTop: 0 }}>❌ Failed</Title>
+                    <Text strong style={{ color: '#ff4d4f', marginTop: 0 }}>❌ Failed</Text>
                     <Text type="danger">{result.chatCompletionError || 'Unknown error'}</Text>
                   </div>
                 )}
@@ -920,12 +919,12 @@ const TestOpenAI: React.FC = () => {
               >
                 {result.assistantsAPIRules ? (
                   <div>
-                    <Title level={5} style={{ color: '#52c41a', marginTop: 0 }}>✅ Success</Title>
+                    <Text strong style={{ color: '#52c41a', marginTop: 0 }}>✅ Success</Text>
                     <RuleResultsTable rules={result.assistantsAPIRules.rules} title="Deep Analysis Results" />
                   </div>
                 ) : (
                   <div>
-                    <Title level={5} style={{ color: '#ff4d4f', marginTop: 0 }}>❌ Failed</Title>
+                    <Text strong style={{ color: '#ff4d4f', marginTop: 0 }}>❌ Failed</Text>
                     <Text type="danger">{result.assistantsAPIError || 'Unknown error'}</Text>
                   </div>
                 )}
@@ -933,7 +932,7 @@ const TestOpenAI: React.FC = () => {
             </div>
             
             <div style={{ marginTop: '24px' }}>
-              <Title level={5}>Full Response Debug</Title>
+              <Text strong>Full Response Debug</Text>
               <pre style={{
                 backgroundColor: '#fafafa',
                 padding: '12px',
