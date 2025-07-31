@@ -1,4 +1,5 @@
 import { observer } from 'mobx-react-lite';
+import { runInAction } from 'mobx';
 import { useState, useEffect } from 'react';
 import { ruleManagementStore } from './RuleManagementStore';
 import { useRules } from '../../hooks/useRules';
@@ -168,7 +169,9 @@ const CreateRuleModal = observer(() => {
 					updated_at: new Date().toISOString(),
 				};
 
-				ruleManagementStore.updateRuleInStore(updatedRule);
+				runInAction(() => {
+					ruleManagementStore.updateRuleInStore(updatedRule);
+				});
 				showSuccessToast('Rule updated successfully.');
 			} else {
 				// Create new rule
@@ -210,11 +213,18 @@ const CreateRuleModal = observer(() => {
 		});
 		setErrors({});
 
-		if (isEditing) {
-			ruleManagementStore.closeEditModal();
-		} else {
-			ruleManagementStore.closeCreateModal();
-		}
+		runInAction(() => {
+			if (isEditing) {
+				ruleManagementStore.isEditModalOpen = false;
+				ruleManagementStore.editingRule = null;
+			} else {
+				ruleManagementStore.isCreateModalOpen = false;
+			}
+			// Clear the editing from generated flag if it was set
+			if (ruleManagementStore.isEditingFromGenerated) {
+				ruleManagementStore.isEditingFromGenerated = false;
+			}
+		});
 	};
 
 	const handleInputChange = (field: keyof FormData, value: string | boolean) => {

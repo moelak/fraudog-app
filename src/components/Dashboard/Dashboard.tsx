@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { ChartBarIcon, DocumentTextIcon, Cog6ToothIcon, HomeIcon, ShieldCheckIcon, EyeIcon, BellIcon, CreditCardIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
+import { ChartBarIcon, DocumentTextIcon, Cog6ToothIcon, HomeIcon, ShieldCheckIcon, EyeIcon, BellIcon, CreditCardIcon, ChatBubbleLeftRightIcon, UsersIcon } from '@heroicons/react/24/outline';
 import Overview from '../Overview/Overview';
 import Reports from '../Reports/Reports';
 import Settings from '../Settings/Settings';
@@ -11,6 +11,7 @@ import Monitoring from '../Monitoring/Monitoring';
 import Chargebacks from '../Chargebacks/Chargebacks';
 import ChatAssistant from '../ChatAssistant/ChatAssistant';
 import UserManagement from '../UserManagement/UserManagement';
+import TestOpenAI from '../RuleManagement/TestOpenAI';
 import AIChat from '../AIChat/AIChat';
 import AIChatButton from '../AIChat/AIChatButton';
 import AccountMenu from '../Auth/AccountMenu';
@@ -25,21 +26,22 @@ const Dashboard = observer(() => {
 	const navigation = [
 		{ name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
 		{ name: 'Rule Management', href: '/dashboard/rules', icon: ShieldCheckIcon },
+		{ name: 'Rule Generation Tester', href: '/dashboard/test-rulegeneration', icon: ShieldCheckIcon },
 		{ name: 'Visualization', href: '/dashboard/visualization', icon: ChartBarIcon },
 		{ name: 'Monitoring', href: '/dashboard/monitoring', icon: EyeIcon },
 		{ name: 'Chargebacks', href: '/dashboard/chargebacks', icon: CreditCardIcon },
 		{ name: 'Reports', href: '/dashboard/reports', icon: DocumentTextIcon },
 		{ name: 'Chat Assistant', href: '/dashboard/assistant', icon: ChatBubbleLeftRightIcon },
-		// { name: 'User Management', href: '/dashboard/users', icon: UsersIcon },
+		{ name: 'User Management', href: '/dashboard/users', icon: UsersIcon },
 		{ name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
 	];
 
-	const handleCloseSidebar = () => {
-		dashboardStore.closeSidebar();
-	};
-
 	const handleOpenSidebar = () => {
 		dashboardStore.openSidebar();
+	};
+
+	const handleCloseSidebar = () => {
+		dashboardStore.closeSidebar();
 	};
 
 	const handleOverlayClick = () => {
@@ -178,6 +180,7 @@ const Dashboard = observer(() => {
 							<Routes>
 								<Route path='/' element={<Overview />} />
 								<Route path='/rules' element={<RuleManagement />} />
+								<Route path='/test-rulegeneration' element={<TestOpenAI />} />
 								<Route path='/visualization' element={<Visualization />} />
 								<Route path='/monitoring' element={<Monitoring />} />
 								<Route path='/chargebacks' element={<Chargebacks />} />
