@@ -19,6 +19,8 @@ export interface Rule {
   updated_at: string;
   isCalculating?: boolean; // Track if this rule is still calculating
   hasCalculated?: boolean; // Track if this rule has already been calculated
+  displayName?: string;
+   decision?:string
 }
 
 export type SearchColumn = 'all' | 'name' | 'category' | 'description' | 'condition';

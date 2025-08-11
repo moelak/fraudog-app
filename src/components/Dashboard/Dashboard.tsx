@@ -1,12 +1,23 @@
 import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { ChartBarIcon, DocumentTextIcon, Cog6ToothIcon, HomeIcon, ShieldCheckIcon, EyeIcon, BellIcon, CreditCardIcon, ChatBubbleLeftRightIcon, UsersIcon } from '@heroicons/react/24/outline';
+import {
+	// ChartBarIcon,
+	DocumentTextIcon,
+	Cog6ToothIcon,
+	HomeIcon,
+	ShieldCheckIcon,
+	EyeIcon,
+	BellIcon,
+	CreditCardIcon,
+	ChatBubbleLeftRightIcon,
+	UsersIcon,
+} from '@heroicons/react/24/outline';
 import Overview from '../Overview/Overview';
 import Reports from '../Reports/Reports';
 import Settings from '../Settings/Settings';
 import RuleManagement from '../RuleManagement/RuleManagement';
-import Visualization from '../Visualization/Visualization';
+// import Visualization from '../Visualization/Visualization';
 import Monitoring from '../Monitoring/Monitoring';
 import Chargebacks from '../Chargebacks/Chargebacks';
 import ChatAssistant from '../ChatAssistant/ChatAssistant';
@@ -16,8 +27,8 @@ import AIChat from '../AIChat/AIChat';
 import AIChatButton from '../AIChat/AIChatButton';
 import AccountMenu from '../Auth/AccountMenu';
 import AccountManagementModal from '../Auth/AccountManagementModal';
-import BoltBadge from '../BoltBadge/BoltBadge';
 import { dashboardStore } from './DashboardStore';
+import { settingsStore } from '../Settings/SettingsStore';
 
 const Dashboard = observer(() => {
 	const location = useLocation();
@@ -27,7 +38,7 @@ const Dashboard = observer(() => {
 		{ name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
 		{ name: 'Rule Management', href: '/dashboard/rules', icon: ShieldCheckIcon },
 		{ name: 'Rule Generation Tester', href: '/dashboard/test-rulegeneration', icon: ShieldCheckIcon },
-		{ name: 'Visualization', href: '/dashboard/visualization', icon: ChartBarIcon },
+		// { name: 'Visualization', href: '/dashboard/visualization', icon: ChartBarIcon },
 		{ name: 'Monitoring', href: '/dashboard/monitoring', icon: EyeIcon },
 		{ name: 'Chargebacks', href: '/dashboard/chargebacks', icon: CreditCardIcon },
 		{ name: 'Reports', href: '/dashboard/reports', icon: DocumentTextIcon },
@@ -59,11 +70,11 @@ const Dashboard = observer(() => {
 				<div className='flex h-full flex-col'>
 					<div className='flex h-16 items-center justify-between px-4 bg-gradient-to-r from-blue-600 to-blue-700'>
 						<span className='text-2xl font-bold text-white'>Fraud-dog</span>
-						<button 
-							className='lg:hidden text-white hover:text-gray-200 transition-colors p-1 rounded-md hover:bg-white/10' 
+						<button
+							className='lg:hidden text-white hover:text-gray-200 transition-colors p-1 rounded-md hover:bg-white/10'
 							onClick={handleCloseSidebar}
-							type="button"
-							aria-label="Close sidebar"
+							type='button'
+							aria-label='Close sidebar'
 						>
 							<svg className='h-6 w-6' fill='none' viewBox='0 0 24 24' strokeWidth='1.5' stroke='currentColor'>
 								<path strokeLinecap='round' strokeLinejoin='round' d='M6 18L18 6M6 6l12 12' />
@@ -88,11 +99,6 @@ const Dashboard = observer(() => {
 							);
 						})}
 					</nav>
-					
-					{/* Bolt Badge in Sidebar Footer */}
-					<div className='p-4 border-t border-gray-200'>
-						<BoltBadge variant="minimal" size="sm" className="w-full justify-center" />
-					</div>
 				</div>
 			</div>
 
@@ -101,11 +107,11 @@ const Dashboard = observer(() => {
 				<div className='sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm'>
 					<div className='flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8'>
 						{/* Left side - Mobile menu button */}
-						<button 
-							className='text-gray-500 hover:text-gray-700 lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors' 
+						<button
+							className='text-gray-500 hover:text-gray-700 lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors'
 							onClick={handleOpenSidebar}
-							type="button"
-							aria-label="Open sidebar"
+							type='button'
+							aria-label='Open sidebar'
 						>
 							<svg className='h-6 w-6' fill='none' viewBox='0 0 24 24' strokeWidth='1.5' stroke='currentColor'>
 								<path strokeLinecap='round' strokeLinejoin='round' d='M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5' />
@@ -181,7 +187,7 @@ const Dashboard = observer(() => {
 								<Route path='/' element={<Overview />} />
 								<Route path='/rules' element={<RuleManagement />} />
 								<Route path='/test-rulegeneration' element={<TestOpenAI />} />
-								<Route path='/visualization' element={<Visualization />} />
+								{/* <Route path='/visualization' element={<Visualization />} /> */}
 								<Route path='/monitoring' element={<Monitoring />} />
 								<Route path='/chargebacks' element={<Chargebacks />} />
 								<Route path='/reports' element={<Reports />} />
@@ -195,17 +201,15 @@ const Dashboard = observer(() => {
 			</div>
 
 			{/* Overlay for mobile sidebar */}
-			{dashboardStore.isSidebarOpen && (
-				<div 
-					className='fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden' 
-					onClick={handleOverlayClick}
-					aria-hidden="true"
-				/>
-			)}
+			{dashboardStore.isSidebarOpen && <div className='fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden' onClick={handleOverlayClick} aria-hidden='true' />}
 
 			{/* AI Chat Components */}
-			<AIChatButton />
-			<AIChat />
+			{settingsStore.settings.enableChatAssistant && (
+				<>
+					<AIChatButton />
+					<AIChat />
+				</>
+			)}
 
 			{/* Account Management Modal */}
 			<AccountManagementModal isOpen={isAccountModalOpen} onClose={() => setIsAccountModalOpen(false)} />

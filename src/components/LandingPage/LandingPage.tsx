@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import AuthModal from '../Auth/AuthModal';
-import BoltBadge from '../BoltBadge/BoltBadge';
 import { observer } from 'mobx-react-lite';
 
 const LandingPage = observer(() => {
@@ -18,7 +17,7 @@ const LandingPage = observer(() => {
 		return null;
 	}
 
-	const handleSignIn = () => { 
+	const handleSignIn = () => {
 		setAuthMode('signin');
 		setIsAuthModalOpen(true);
 	};
@@ -409,7 +408,7 @@ const LandingPage = observer(() => {
 									</div>
 								</div>
 
-								{/* Implementation Time */} 
+								{/* Implementation Time */}
 								<div>
 									<div className='flex justify-between text-sm font-medium mb-1'>
 										<span>Implementation Time</span>
@@ -501,10 +500,7 @@ const LandingPage = observer(() => {
 						<div className='flex flex-col items-center text-center space-y-6'>
 							<div className='text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent'>Fraud-dog</div>
 							<p className='text-gray-400'>Protecting your business with intelligent fraud detection</p>
-							
-							{/* Built with Bolt Badge */}
-							<BoltBadge variant="minimal" size="sm" />
-							
+
 							<div className='flex justify-center space-x-6 text-sm text-gray-400'>
 								<a href='#' className='hover:text-purple-400 transition-colors'>
 									Privacy Policy
