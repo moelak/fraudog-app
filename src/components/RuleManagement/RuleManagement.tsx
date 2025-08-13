@@ -330,7 +330,7 @@ const RuleManagement = observer(() => {
 											<div className='flex items-center space-x-3'>
 												<div
 													className={`p-2 rounded-lg ${
-														rule.severity === 'high' ? 'bg-red-100' : rule.severity === 'medium' ? 'bg-yellow-100' : 'bg-green-100'
+														rule?.decision === 'deny' ? 'bg-red-100' : rule?.decision === 'review' ? 'bg-yellow-100' : 'bg-green-100'
 													}`}
 												>
 													{rule.severity === 'high' ? (
