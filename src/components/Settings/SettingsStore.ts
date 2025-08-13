@@ -5,6 +5,7 @@ interface SettingsConfig {
   smsNotifications: boolean;
   twoFactorAuth: boolean;
   alertThreshold: number;
+  enableChatAssistant: boolean
 }
 
 export class SettingsStore {
@@ -12,7 +13,8 @@ export class SettingsStore {
     emailAlerts: true,
     smsNotifications: false,
     twoFactorAuth: false,
-    alertThreshold: 75
+    alertThreshold: 75,
+    enableChatAssistant:false
   };
 
   isSaving = false;
@@ -29,6 +31,7 @@ export class SettingsStore {
   updateAlertThreshold(value: number) {
     this.settings.alertThreshold = value;
   }
+
 
   saveSettings() {
     this.isSaving = true;
@@ -56,7 +59,8 @@ export class SettingsStore {
       emailAlerts: true,
       smsNotifications: false,
       twoFactorAuth: false,
-      alertThreshold: 75
+      alertThreshold: 75,
+      enableChatAssistant: false
     };
   }
 }

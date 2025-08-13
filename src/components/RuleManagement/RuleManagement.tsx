@@ -51,7 +51,7 @@ const RuleManagement = observer(() => {
 	const searchColumns = ruleManagementStore.getSearchColumns();
 
 	// Get current tab info for mobile dropdown
-	const currentTab = tabs.find(tab => tab.id === ruleManagementStore.activeTab) || tabs[0];
+	const currentTab = tabs.find((tab) => tab.id === ruleManagementStore.activeTab) || tabs[0];
 
 	// Helper function to format numbers with commas - with null safety
 	const formatNumber = (num: number | undefined | null): string => {
@@ -71,18 +71,18 @@ const RuleManagement = observer(() => {
 
 	// Loading shimmer component
 	const LoadingShimmer = () => (
-		<div className="animate-pulse">
-			<div className="h-4 bg-gray-200 rounded w-12 mb-1"></div>
-			<div className="h-3 bg-gray-200 rounded w-16"></div>
+		<div className='animate-pulse'>
+			<div className='h-4 bg-gray-200 rounded w-12 mb-1'></div>
+			<div className='h-3 bg-gray-200 rounded w-16'></div>
 		</div>
 	);
 
 	// Spinner component for effectiveness
 	const EffectivenessSpinner = () => (
-		<div className="flex items-center">
-			<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-			<div className="animate-pulse">
-				<div className="h-4 bg-gray-200 rounded w-8"></div>
+		<div className='flex items-center'>
+			<div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2'></div>
+			<div className='animate-pulse'>
+				<div className='h-4 bg-gray-200 rounded w-8'></div>
 			</div>
 		</div>
 	);
@@ -149,8 +149,8 @@ const RuleManagement = observer(() => {
 					<div>
 						<h4 className='text-sm font-medium text-blue-800'>Demo Notice</h4>
 						<p className='text-sm text-blue-700 mt-1'>
-							The Catches, False Positives, and Effectiveness values shown in this demo are randomly generated mock data. 
-							In a production environment, these would be calculated from actual fraud detection results.
+							The Catches, False Positives, and Effectiveness values shown in this demo are randomly generated mock data. In a production environment, these would be
+							calculated from actual fraud detection results.
 						</p>
 					</div>
 				</div>
@@ -214,16 +214,16 @@ const RuleManagement = observer(() => {
 													{({ active }: { active: boolean }) => (
 														<button
 															onClick={() => ruleManagementStore.setActiveTab(tab.id)}
-															className={`${
-																active ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-															} ${
+															className={`${active ? 'bg-blue-50 text-blue-700' : 'text-gray-700'} ${
 																ruleManagementStore.activeTab === tab.id ? 'bg-blue-100 text-blue-800 font-medium' : ''
 															} flex items-center justify-between w-full px-4 py-2 text-sm transition-colors`}
 														>
 															<span>{tab.name}</span>
-															<span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-																ruleManagementStore.activeTab === tab.id ? 'bg-blue-200 text-blue-900' : 'bg-gray-100 text-gray-800'
-															}`}>
+															<span
+																className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+																	ruleManagementStore.activeTab === tab.id ? 'bg-blue-200 text-blue-900' : 'bg-gray-100 text-gray-800'
+																}`}
+															>
 																{tab.count}
 															</span>
 														</button>
@@ -261,9 +261,7 @@ const RuleManagement = observer(() => {
 														{({ active }: { active: boolean }) => (
 															<button
 																onClick={() => ruleManagementStore.setSearchColumn(column.value)}
-																className={`${
-																	active ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-																} ${
+																className={`${active ? 'bg-blue-50 text-blue-700' : 'text-gray-700'} ${
 																	ruleManagementStore.searchColumn === column.value ? 'bg-blue-100 text-blue-800 font-medium' : ''
 																} block w-full text-left px-4 py-2 text-sm transition-colors`}
 															>
@@ -296,14 +294,15 @@ const RuleManagement = observer(() => {
 				</div>
 
 				{/* Rules Table */}
-				<div className='overflow-x-auto h-[600px]'>
+				<div className='overflow-x-auto h-[430px]'>
 					<table className='min-w-full divide-y divide-gray-200'>
-						<thead className='bg-gray-50'>
+						<thead className='bg-gray-50 sticky top-0 z-10'>
 							<tr>
 								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12'>{/* Expand/Collapse column */}</th>
-								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Source</th>
 								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Rule</th>
 								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Category</th>
+								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Source</th>
+								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Decision</th>
 								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Status</th>
 								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Catches</th>
 								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>False Positives</th>
@@ -326,24 +325,12 @@ const RuleManagement = observer(() => {
 											</button>
 										</td>
 
-										{/* Source */}
-										<td className='px-6 py-4 whitespace-nowrap'>
-											<div className='flex items-center'>
-												<div className={`p-2 rounded-lg ${rule.source === 'AI' ? 'bg-purple-100' : 'bg-blue-100'}`}>
-													{rule.source === 'AI' ? <CpuChipIcon className='h-5 w-5 text-purple-600' /> : <UserIcon className='h-5 w-5 text-blue-600' />}
-												</div>
-												<span className={`ml-2 text-sm font-medium ${rule.source === 'AI' ? 'text-purple-700' : 'text-blue-700'}`}>
-													{rule.source === 'AI' ? 'AI' : displayName}
-												</span>
-											</div>
-										</td>
-
 										{/* Rule */}
 										<td className='px-6 py-4'>
 											<div className='flex items-center space-x-3'>
 												<div
 													className={`p-2 rounded-lg ${
-														rule.severity === 'high' ? 'bg-red-100' : rule.severity === 'medium' ? 'bg-yellow-100' : 'bg-green-100'
+														rule?.decision === 'deny' ? 'bg-red-100' : rule?.decision === 'review' ? 'bg-yellow-100' : 'bg-green-100'
 													}`}
 												>
 													{rule.severity === 'high' ? (
@@ -368,6 +355,25 @@ const RuleManagement = observer(() => {
 											<span className='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800'>
 												{rule.category}
 											</span>
+										</td>
+
+										{/* Source */}
+										<td className='px-6 py-4 whitespace-nowrap'>
+											<div className='flex items-center'>
+												<div className={`p-2 rounded-lg ${rule.source === 'AI' ? 'bg-purple-100' : 'bg-blue-100'}`}>
+													{rule.source === 'AI' ? <CpuChipIcon className='h-5 w-5 text-purple-600' /> : <UserIcon className='h-5 w-5 text-blue-600' />}
+												</div>
+												<span className={`ml-2 text-sm font-medium ${rule.source === 'AI' ? 'text-purple-700' : 'text-blue-700'}`}>
+													{rule.source === 'AI' ? 'AI' : rule.displayName || displayName}
+												</span>
+											</div>
+										</td>
+
+										{/* Decision */}
+										<td className='px-6 py-4 whitespace-nowrap'>
+											<div className='flex items-center'>
+												<span className={`ml-2 text-sm font-medium text-blue-700`}>{rule?.decision === null ? 'review' : rule.decision}</span>
+											</div>
 										</td>
 
 										{/* Status */}
@@ -428,9 +434,7 @@ const RuleManagement = observer(() => {
 													)}
 												</div>
 											)}
-											{!rule.isCalculating && (
-												<div className='text-xs text-gray-500 mt-1'>effective</div>
-											)}
+											{!rule.isCalculating && <div className='text-xs text-gray-500 mt-1'>effective</div>}
 										</td>
 
 										{/* Actions */}

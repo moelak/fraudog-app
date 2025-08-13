@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
 import { ruleManagementStore } from '../components/RuleManagement/RuleManagementStore';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 export interface Rule {
   id: string;
@@ -22,6 +23,10 @@ export interface Rule {
   updated_at: string;
   isCalculating?: boolean;
   hasCalculated?: boolean;
+  organization_id?:string;
+  displayName?: string; 
+  decision?:string
+
 }
 
 export interface CreateRuleData {
@@ -51,14 +56,18 @@ export interface UpdateRuleData {
 
 export function useRules() {
   const { user } = useAuth();
-  const subscriptionRef = useRef<any>(null);
+const subscriptionRef = useRef<RealtimeChannel | null>(null);
   const isSubscribedRef = useRef(false);
   const hasInitializedRef = useRef(false);
   const [rules, setRules] = useState<Rule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
 
-  const fetchRules = async () => {
+  const orgNameMapRef = useRef<Map<string, string>>(new Map());
+
+
+const fetchRules = async () => {
     if (!user) {
       setRules([]);
       setLoading(false);
@@ -69,52 +78,89 @@ export function useRules() {
       setLoading(true);
       setError(null);
 
+      // 1. Get the user's organization_id
+      const { data: orgRow, error: orgError } = await supabase
+        .from('organizations')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (orgError || !orgRow) {
+        throw orgError || new Error('Organization not found for user.');
+      }
+
+      const orgId = orgRow.organization_id;
+      setOrganizationId(orgId);
+
+
+      // 2) Get all users for this organization (user_id, full_name)
+const { data: orgUsers, error: orgUsersErr } = await supabase
+  .from('organizations')
+  .select('user_id, full_name')
+  .eq('organization_id', orgId);
+
+if (orgUsersErr) throw orgUsersErr;
+
+orgNameMapRef.current = new Map(
+  (orgUsers || []).map(u => [u.user_id, u.full_name || ''])
+);
+
+// Build a lookup: user_id -> full_name
+const nameMap = new Map<string, string>(
+  (orgUsers || []).map((u: { user_id: string; full_name: string | null }) => [
+    u.user_id,
+    u.full_name || '',
+  ])
+);
+
+console.log("=>>", orgNameMapRef.current , nameMap)
+      // 2. Fetch rules for that organization
       const { data, error: fetchError } = await supabase
         .from('rules')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('organization_id', orgId)
+        .eq('is_deleted', false)
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
 
-      setRules(data || []);
-      
-      // Only call setRules if this is the first initialization
+      // 4) Attach displayName to each rule
+      const rulesWithNames = (data || []).map((r) => ({
+        ...r,
+        displayName: nameMap.get(r.user_id) || r.user_id, // fallback to user_id
+      }));
+
+      setRules(rulesWithNames || []);
+
       if (!hasInitializedRef.current) {
         hasInitializedRef.current = true;
-        await ruleManagementStore.setRules(data || []);
+        await ruleManagementStore.setRules(rulesWithNames || []);
       } else {
-        // For subsequent updates, check if there are actually new rules
         const currentRuleIds = new Set(ruleManagementStore.rules.map(r => r.id));
         const currentInProgressIds = new Set(ruleManagementStore.inProgressRules.map(r => r.id));
-        
-        // Check if there are any new rules
-        const hasNewRules = (data || []).some(rule => 
+
+        const hasNewRules = (rulesWithNames || []).some(rule =>
           !currentRuleIds.has(rule.id) && !currentInProgressIds.has(rule.id)
         );
-        
+
         if (hasNewRules) {
-          // Only update if there are genuinely new rules
-          await ruleManagementStore.setRules(data || []);
+          await ruleManagementStore.setRules(rulesWithNames || []);
         } else {
-          // Just update the rules without recalculating
-          const mainRules = (data || []).filter(rule => ['active', 'inactive', 'warning'].includes(rule.status));
-          const inProgressRules = (data || []).filter(rule => rule.status === 'in progress');
-          
-          // Update main rules while preserving calculated values
+          const mainRules = (rulesWithNames || []).filter(rule => ['active', 'inactive', 'warning'].includes(rule.status));
+          const inProgressRules = (rulesWithNames || []).filter(rule => rule.status === 'in progress');
+
           ruleManagementStore.rules = mainRules.map(rule => {
             const existingRule = ruleManagementStore.rules.find(r => r.id === rule.id);
-            if (existingRule && existingRule.hasCalculated) {
+            if (existingRule?.hasCalculated) {
               return { ...rule, ...existingRule };
             }
             return rule;
           });
-          
-          // Update in progress rules while preserving calculated values
+
           ruleManagementStore.inProgressRules = ruleManagementStore.deduplicateRules(
             inProgressRules.map(rule => {
               const existingRule = ruleManagementStore.inProgressRules.find(r => r.id === rule.id);
-              if (existingRule && existingRule.hasCalculated) {
+              if (existingRule?.hasCalculated) {
                 return { ...rule, ...existingRule };
               }
               return rule;
@@ -130,7 +176,9 @@ export function useRules() {
     }
   };
 
+
   useEffect(() => {
+      if (!organizationId || !user) return;
     let mounted = true;
 
     const setupRealtime = async () => {
@@ -158,7 +206,7 @@ export function useRules() {
         console.log('Setting up Realtime subscription for user:', user.id);
 
         // Create new channel with unique name
-        const channelName = `rules_changes_${user.id}_${Date.now()}`;
+        const channelName = `rules_changes_${organizationId}_${Date.now()}`;
         const channel = supabase.channel(channelName);
 
         // Set up event listener
@@ -177,7 +225,7 @@ export function useRules() {
             const rule = payload.new as Rule;
             
             // Filter by user_id manually since RLS might not work with Realtime
-            if (rule && rule.user_id !== user.id) {
+            if (rule && rule?.organization_id !== organizationId) {
               return;
             }
 
@@ -253,7 +301,7 @@ export function useRules() {
         isSubscribedRef.current = false;
       }
     };
-  }, [user?.id]);
+  }, [organizationId, user?.id]);
 
   useEffect(() => {
     fetchRules();
@@ -262,9 +310,24 @@ export function useRules() {
   const createRule = async (ruleData: CreateRuleData): Promise<Rule | null> => {
     if (!user) throw new Error('User not authenticated');
 
+      // Get the user's organization_id
+  const { data: orgRow, error: orgError } = await supabase
+    .from('organizations')
+    .select('organization_id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (orgError || !orgRow) {
+    throw orgError || new Error('Organization not found for user.');
+  }
+
+  const orgId = orgRow.organization_id;
+
+
+
     const { data, error } = await supabase
       .from('rules')
-      .insert({ ...ruleData, user_id: user.id, source: ruleData.source || 'User' })
+      .insert({ ...ruleData, user_id: user.id,   organization_id: orgId, source: ruleData.source || 'User' })
       .select()
       .single();
 
@@ -281,7 +344,6 @@ export function useRules() {
       .from('rules')
       .update(updates)
       .eq('id', id)
-      .eq('user_id', user.id)
       .select()
       .single();
 
