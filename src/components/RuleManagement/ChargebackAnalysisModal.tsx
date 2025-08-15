@@ -18,7 +18,7 @@ const ChargebackAnalysisModal = observer(() => {
 	const [animationData, setAnimationData] = useState(null);
 	const [initialRuleCount, setInitialRuleCount] = useState(0);
 	const [showFailureAlert, setShowFailureAlert] = useState(false);
-	
+
 	// Refs to track timers and data generation state
 	const failSafeTimerRef = useRef<NodeJS.Timeout | null>(null);
 	const checkRulesTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -52,23 +52,23 @@ const ChargebackAnalysisModal = observer(() => {
 				console.log('Fail-safe timer triggered - no rules generated in 40 seconds');
 				setShowSuccessModal(false);
 				setShowFailureAlert(true);
-				
+
 				// Auto-dismiss failure alert after 3 seconds
 				setTimeout(() => {
 					setShowFailureAlert(false);
 				}, 5000);
-			}, 40000); // 40 seconds fail-safe 
+			}, 40000); // 40 seconds fail-safe
 
 			// Check for rule changes more frequently
 			checkRulesTimerRef.current = setInterval(() => {
 				const currentRuleCount = ruleManagementStore.inProgressRules.length;
-				
+
 				console.log(`Rule count check: ${currentRuleCount} (was ${lastRuleCountRef.current})`);
-				
+
 				// If we have new rules added
 				if (currentRuleCount > initialRuleCount) {
 					console.log('New rules detected!');
-					
+
 					// Check if rule count has stopped increasing (data generation complete)
 					if (currentRuleCount === lastRuleCountRef.current) {
 						// No new rules in the last check - start completion timer
@@ -77,7 +77,7 @@ const ChargebackAnalysisModal = observer(() => {
 							noNewDataTimeoutRef.current = setTimeout(() => {
 								console.log('Data generation appears complete, closing modal');
 								dataGenerationCompleteRef.current = true;
-								
+
 								// Clear all timers
 								if (failSafeTimerRef.current) {
 									clearTimeout(failSafeTimerRef.current);
@@ -87,7 +87,7 @@ const ChargebackAnalysisModal = observer(() => {
 									clearInterval(checkRulesTimerRef.current);
 									checkRulesTimerRef.current = null;
 								}
-								
+
 								// Close modal and switch to rules tab
 								setShowSuccessModal(false);
 								setActiveTab('rules');
@@ -246,9 +246,9 @@ const ChargebackAnalysisModal = observer(() => {
 
 	// Loading shimmer component for Generated Rules
 	const LoadingShimmer = () => (
-		<div className="animate-pulse">
-			<div className="h-6 bg-gray-200 rounded w-16 mb-1"></div>
-			<div className="h-4 bg-gray-200 rounded w-20"></div>
+		<div className='animate-pulse'>
+			<div className='h-6 bg-gray-200 rounded w-16 mb-1'></div>
+			<div className='h-4 bg-gray-200 rounded w-20'></div>
 		</div>
 	);
 
@@ -365,7 +365,7 @@ const ChargebackAnalysisModal = observer(() => {
 						) : (
 							<div className='space-y-6'>
 								{/* Demo Notice for Generated Rules */}
-								<div className='bg-blue-50 border border-blue-200 rounded-lg p-4'>
+								{/* <div className='bg-blue-50 border border-blue-200 rounded-lg p-4'>
 									<div className='flex items-start'>
 										<InformationCircleIcon className='h-5 w-5 text-blue-400 mt-0.5 mr-3 flex-shrink-0' />
 										<div>
@@ -375,7 +375,7 @@ const ChargebackAnalysisModal = observer(() => {
 											</p>
 										</div>
 									</div>
-								</div>
+								</div> */}
 
 								{/* Generated Rules */}
 								{ruleManagementStore.inProgressRules.length > 0 ? (
@@ -432,7 +432,9 @@ const ChargebackAnalysisModal = observer(() => {
 																<LoadingShimmer />
 															) : (
 																<>
-																	<div className={`text-2xl font-bold ${ruleManagementStore.getEffectivenessColorClass(rule.effectiveness || 0)}`}>
+																	<div
+																		className={`text-2xl font-bold ${ruleManagementStore.getEffectivenessColorClass(rule.effectiveness || 0)}`}
+																	>
 																		{formatEffectiveness(rule.effectiveness)}
 																	</div>
 																	<div className='text-xs text-gray-500'>Effectiveness</div>
@@ -442,7 +444,7 @@ const ChargebackAnalysisModal = observer(() => {
 													</div>
 
 													<div className='flex justify-end space-x-3'>
-														<button 
+														<button
 															onClick={() => handleEditRule(rule)}
 															disabled={rule.isCalculating}
 															className='inline-flex items-center px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
@@ -482,14 +484,10 @@ const ChargebackAnalysisModal = observer(() => {
 					{/* Lottie Animation - Increased Size */}
 					{animationData && (
 						<div className='mb-8'>
-							<Lottie 
-								animationData={animationData} 
-								style={{ width: 500, height: 500 }}
-								loop={true}
-							/>
+							<Lottie animationData={animationData} style={{ width: 500, height: 500 }} loop={true} />
 						</div>
 					)}
-					
+
 					{/* Success Message - Updated Text */}
 					<div className='max-w-md text-center'>
 						<p className='text-gray-700 text-lg'>
@@ -504,9 +502,7 @@ const ChargebackAnalysisModal = observer(() => {
 				<div className='fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50'>
 					<div className='bg-white rounded-xl shadow-xl p-6 max-w-md text-center'>
 						<h2 className='text-xl font-semibold text-red-600 mb-3'>Processing Failed</h2>
-						<p className='text-gray-700'>
-							Something went wrong. Please try again.
-						</p>
+						<p className='text-gray-700'>Something went wrong. Please try again.</p>
 					</div>
 				</div>
 			)}

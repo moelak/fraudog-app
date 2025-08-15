@@ -103,7 +103,7 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
 			</button>
 
 			{isOpen && (
-				<div className='absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10'>
+				<div className='absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-60'>
 					<div className='py-1'>
 						{rule.is_deleted ? (
 							// Actions for deleted rules
