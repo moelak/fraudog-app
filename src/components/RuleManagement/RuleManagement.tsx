@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite';
-import { ruleManagementStore } from './RuleManagementStore';
+import { ruleManagementStore, type Rule } from './RuleManagementStore';
 
 import CreateRuleModal from './CreateRuleModal';
 import ChargebackAnalysisModal from './ChargebackAnalysisModal';
@@ -170,20 +170,6 @@ const RuleManagement = observer(({ onSearchByDateRange }: Props) => {
 					</Menu>
 				</div>
 			</div>
-
-			{/* Demo Notice */}
-			{/* <div className='bg-blue-50 border border-blue-200 rounded-lg p-4'>
-				<div className='flex items-start'>
-					<InformationCircleIcon className='h-5 w-5 text-blue-400 mt-0.5 mr-3 flex-shrink-0' />
-					<div>
-						<h4 className='text-sm font-medium text-blue-800'>Demo Notice</h4>
-						<p className='text-sm text-blue-700 mt-1'>
-							The Catches, False Positives, and Effectiveness values shown in this demo are randomly generated mock data. In a production environment, these would be
-							calculated from actual fraud detection results.
-						</p>
-					</div>
-				</div>
-			</div> */}
 
 			{/* Tabs and Search */}
 			<div className='bg-white rounded-xl shadow-sm border border-gray-100'>
@@ -363,9 +349,8 @@ const RuleManagement = observer(({ onSearchByDateRange }: Props) => {
 								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Decision</th>
 								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Status</th>
 								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Catches</th>
-								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>False Positives</th>
+								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>(False Positives) + (Chargebacks)</th>
 								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Effectiveness</th>
-								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>chargebacks</th>
 								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Actions</th>
 							</tr>
 						</thead>
@@ -388,7 +373,6 @@ const RuleManagement = observer(({ onSearchByDateRange }: Props) => {
 												{ruleManagementStore.isRowExpanded(rule.id) ? <ChevronDownIcon className='h-4 w-4' /> : <ChevronRightIcon className='h-4 w-4' />}
 											</button>
 										</td>
-
 										{/* Rule */}
 										<td className='px-6 py-4'>
 											<div className='flex items-center space-x-3'>
@@ -415,14 +399,12 @@ const RuleManagement = observer(({ onSearchByDateRange }: Props) => {
 												</div>
 											</div>
 										</td>
-
 										{/* Category */}
 										<td className='px-6 py-4 whitespace-nowrap'>
 											<span className='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800'>
 												{rule.category}
 											</span>
 										</td>
-
 										{/* Source */}
 										<td className='px-6 py-4 whitespace-nowrap'>
 											<div className='flex items-center'>
@@ -434,14 +416,12 @@ const RuleManagement = observer(({ onSearchByDateRange }: Props) => {
 												</span>
 											</div>
 										</td>
-
 										{/* Decision */}
 										<td className='px-6 py-4 whitespace-nowrap'>
 											<div className='flex items-center'>
 												<span className={`ml-2 text-sm font-medium text-blue-700`}>{rule?.decision === null ? 'review' : rule.decision}</span>
 											</div>
 										</td>
-
 										{/* Status */}
 										<td className='px-6 py-4 whitespace-nowrap'>
 											<span
@@ -456,7 +436,6 @@ const RuleManagement = observer(({ onSearchByDateRange }: Props) => {
 												{rule.status}
 											</span>
 										</td>
-
 										{/* Catches */}
 										<td className='px-6 py-4 whitespace-nowrap'>
 											{rule.isCalculating ? (
@@ -467,18 +446,16 @@ const RuleManagement = observer(({ onSearchByDateRange }: Props) => {
 												</>
 											)}
 										</td>
-
 										{/* False Positives */}
 										<td className='px-6 py-4 whitespace-nowrap'>
 											{rule.isCalculating ? (
 												<LoadingShimmer />
 											) : (
 												<>
-													<div className='text-sm font-medium text-gray-900'>{formatNumber(rule.false_positives)}</div>
+													<div className='text-sm font-medium text-gray-900'>{formatNumber(rule.false_positives + rule.chargebacks)}</div>
 												</>
 											)}
 										</td>
-
 										{/* Effectiveness */}
 										<td className='px-6 py-4 whitespace-nowrap'>
 											{rule.isCalculating ? (
@@ -499,19 +476,10 @@ const RuleManagement = observer(({ onSearchByDateRange }: Props) => {
 												</div>
 											)}
 										</td>
+										{/* Actions */}
 
 										<td className='px-6 py-4 whitespace-nowrap'>
-											{rule.isCalculating ? (
-												<LoadingShimmer />
-											) : (
-												<>
-													<div className='text-sm font-medium text-gray-900'>{formatNumber(rule.chargebacks)}</div>
-												</>
-											)}
-										</td>
-										{/* Actions */}
-										<td className='px-6 py-4 whitespace-nowrap'>
-											<RuleActionsMenu rule={rule} />
+											<RuleActionsMenu rule={rule as Rule} />
 										</td>
 									</tr>
 
@@ -535,7 +503,16 @@ const RuleManagement = observer(({ onSearchByDateRange }: Props) => {
 													</div>
 
 													{/* Additional Metadata */}
-													<div className='grid grid-cols-2 md:grid-cols-4 gap-4 text-sm'>
+													<div className='grid grid-cols-2 md:grid-cols-8 gap-4 text-sm'>
+														<div>
+															<span className='font-medium text-gray-900'>False Positives:</span>
+															<span className='ml-1 text-gray-600'>{rule.false_positives}</span>
+														</div>
+
+														<div>
+															<span className='font-medium text-gray-900'>Chargebacks</span>
+															<span className='ml-1 text-gray-600'>{rule.chargebacks}</span>
+														</div>
 														<div>
 															<span className='font-medium text-gray-900'>Severity:</span>
 															<span

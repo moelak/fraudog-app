@@ -24,7 +24,7 @@ export interface Rule {
   hasCalculated?: boolean;
 
   displayName?: string;
-  decision?: string;           // 'allow' | 'review' | 'deny' (string in DB)
+  decision:  'allow' | 'review' | 'deny';
 }
 
 export type SearchColumn = 'all' | 'name' | 'category' | 'description' | 'condition';
@@ -40,7 +40,7 @@ export class RuleManagementStore {
   isDeleteConfirmModalOpen = false;
   editingRule: Rule | null = null;
   deletingRule: Rule | null = null;
-
+  isEditingFromGenerated = false; 
   expandedRows = new Set<string>();
 
   rules: Rule[] = [];
@@ -119,16 +119,36 @@ export class RuleManagementStore {
   setSearchQuery = (query: string) => { this.searchQuery = query; };
   setSearchColumn = (column: SearchColumn) => { this.searchColumn = column; };
 
-  openCreateModal = () => { this.isCreateModalOpen = true; this.editingRule = null; };
-  closeCreateModal = () => { this.isCreateModalOpen = false; this.editingRule = null; };
-  openEditModal = (rule: Rule) => { this.editingRule = rule; this.isEditModalOpen = true; };
-  closeEditModal = () => { this.isEditModalOpen = false; this.editingRule = null; };
+openCreateModal = () => {
+    this.isCreateModalOpen = true;
+    this.editingRule = null;
+    this.isEditingFromGenerated = false;
+  }
+
+  closeCreateModal = () => {
+    this.isCreateModalOpen = false;
+    this.editingRule = null;
+    this.isEditingFromGenerated = false;
+  }
+
+  openEditModal = (rule: Rule, fromGenerated = false) => {
+    this.editingRule = rule;
+    this.isEditModalOpen = true;
+    this.isEditingFromGenerated = fromGenerated;
+  }
+
+  closeEditModal = () => {
+    this.isEditModalOpen = false;
+    this.editingRule = null;
+    this.isEditingFromGenerated = false;
+  }
+
   openChargebackAnalysis = () => { this.isChargebackAnalysisOpen = true; };
   closeChargebackAnalysis = () => { this.isChargebackAnalysisOpen = false; };
   openDeleteConfirmModal = (rule: Rule) => { this.deletingRule = rule; this.isDeleteConfirmModalOpen = true; };
   closeDeleteConfirmModal = () => { this.isDeleteConfirmModalOpen = false; this.deletingRule = null; };
 
-  editRule = (rule: Rule, _fromGenerated = false) => { this.openEditModal(rule); };
+  editRule = (rule: Rule) => { this.openEditModal(rule); };
   viewRuleHistory = (id: string) => { console.log('Viewing history for rule:', id); };
 
   toggleRowExpansion = (ruleId: string) => {

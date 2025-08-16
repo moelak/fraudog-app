@@ -5,7 +5,6 @@ import utc from 'dayjs/plugin/utc';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
 import { ruleManagementStore } from '../components/RuleManagement/RuleManagementStore';
-import type { RealtimeChannel } from '@supabase/supabase-js';
 
 dayjs.extend(utc);
 
@@ -34,7 +33,7 @@ export interface Rule {
   hasCalculated?: boolean;
   organization_id?: string;
   displayName?: string;
-  decision?: string; // 'allow' | 'review' | 'deny'
+   decision: 'allow' | 'review' | 'deny';
 }
 
 export interface CreateRuleData {
@@ -46,7 +45,7 @@ export interface CreateRuleData {
   severity: 'low' | 'medium' | 'high';
   log_only: boolean;
   source?: 'AI' | 'User';
-  decision: 'allow' | 'review' | 'deny';
+ decision: 'allow' | 'review' | 'deny';
 }
 
 export interface UpdateRuleData {
@@ -99,8 +98,8 @@ export function useRules() {
   const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   // Realtime (kept around for future use)
-  const subscriptionRef = useRef<RealtimeChannel | null>(null);
-  const isSubscribedRef = useRef(false);
+  // const subscriptionRef = useRef<RealtimeChannel | null>(null);
+  // const isSubscribedRef = useRef(false);
 
   // Persist the last-selected UTC date window
   const currentRangeRef = useRef<TimeWindow | null>(null);
@@ -147,7 +146,7 @@ export function useRules() {
   /* =========================
      Helpers
      ========================= */
-  const attachDisplayNames = (rows: any[]) =>
+  const attachDisplayNames = (rows:Rule[]) =>
     (rows || []).map((r) => ({
       ...r,
       displayName: orgNameMapRef.current.get(r.user_id) || r.user_id,
@@ -170,6 +169,7 @@ export function useRules() {
       .gte('timestamp', window.fromISO)       // inclusive
       .lt('timestamp', window.toExclusiveISO); // exclusive
 
+      console.log("=>>", metrics?.filter((item)=> item.rule_id === "0b940e70-e328-4af5-b4a4-1b99fd8dc6f6" ))
     if (metricsErr) throw metricsErr;
 
     const sums = new Map<string, { c: number; fp: number; cb: number }>();
@@ -184,15 +184,14 @@ export function useRules() {
     return baseRules.map((rule) => {
       const s = sums.get(rule.id) ?? { c: 0, fp: 0, cb: 0 };
       const catches = s.c;
-      const decision = (rule.decision ?? 'review').toLowerCase();
 
       // Decision-specific display
-      const displayFalsePositives = decision === 'allow' ? 0 : s.fp;
-      const displayChargebacks = decision === 'allow' ? s.cb : 0;
+      const displayFalsePositives =  s.fp ;
+      const displayChargebacks =   s.cb
 
       let effectiveness: number | null = null;
       if (catches > 0) {
-        const ratio = decision === 'allow' ? s.cb / catches : s.fp / catches;
+        const ratio = displayFalsePositives/ catches 
         effectiveness = Math.round((1 - ratio) * 1000) / 10; // 1 decimal
       }
 
@@ -200,7 +199,7 @@ export function useRules() {
         ...rule,
         catches,
         false_positives: displayFalsePositives,
-        chargebacks: displayChargebacks,
+         chargebacks: displayChargebacks,
         effectiveness,
         isCalculating: false,
         hasCalculated: true,
@@ -300,7 +299,7 @@ export function useRules() {
         .order('created_at', { ascending: false });
       if (rulesErr) throw rulesErr;
 
-      const baseRules = attachDisplayNames(rulesRows).map((r) => ({
+      const baseRules:Rule[] = attachDisplayNames(rulesRows).map((r) => ({
         ...r,
         catches: 0,
         false_positives: 0,
@@ -353,7 +352,7 @@ export function useRules() {
     if (error) throw error;
 
     void fetchRules();
-    return data as any;
+    return data as Rule;
   };
 
   const updateRule = async (id: string, updates: UpdateRuleData): Promise<Rule | null> => {
@@ -371,7 +370,7 @@ export function useRules() {
     if (error) throw error;
 
     void fetchRules();
-    return data as any;
+    return data as Rule;
   };
 
   const implementRule = async (id: string) => await updateRule(id, { status: 'active' });

@@ -1,10 +1,10 @@
 import { observer } from 'mobx-react-lite';
 import { useState, useEffect, useRef } from 'react';
 import { ruleManagementStore } from './RuleManagementStore';
-import { useRules } from '../../hooks/useRules';
+import { useRules, type Rule } from '../../hooks/useRules';
 import { uploadFile } from '../../utils/fileUpload';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
-import { XMarkIcon, CloudArrowUpIcon, DocumentTextIcon, SparklesIcon, PencilIcon, CheckIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CloudArrowUpIcon, DocumentTextIcon, SparklesIcon, PencilIcon, CheckIcon } from '@heroicons/react/24/outline';
 import Lottie from 'lottie-react';
 
 const ChargebackAnalysisModal = observer(() => {
@@ -199,8 +199,8 @@ const ChargebackAnalysisModal = observer(() => {
 		}
 	};
 
-	const handleEditRule = (rule: any) => {
-		ruleManagementStore.editRule(rule, true); // true indicates editing from Generated Rules
+	const handleEditRule = (rule: Rule) => {
+		ruleManagementStore.editRule(rule); // true indicates editing from Generated Rules
 	};
 
 	const handleClose = () => {
