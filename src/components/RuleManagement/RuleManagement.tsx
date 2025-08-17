@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite';
-import { ruleManagementStore } from './RuleManagementStore';
+import { ruleManagementStore, type Rule } from './RuleManagementStore';
 
 import CreateRuleModal from './CreateRuleModal';
 import ChargebackAnalysisModal from './ChargebackAnalysisModal';
@@ -7,6 +7,7 @@ import DeleteConfirmModal from './DeleteConfirmModal';
 import RuleActionsMenu from './RuleActionsMenu';
 import { Menu, Transition } from '@headlessui/react';
 import { useAuth } from '../../hooks/useAuth';
+import dayjs, { Dayjs } from 'dayjs';
 
 import {
 	PlusIcon,
@@ -18,16 +19,30 @@ import {
 	ChevronDownIcon,
 	ChevronRightIcon,
 	ChevronUpDownIcon,
-	InformationCircleIcon,
+	XMarkIcon,
 } from '@heroicons/react/24/outline';
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
+import DateRangeFields from '../DateRangeFields/DateRangeFields';
 
-const RuleManagement = observer(() => {
+type Props = {
+	onSearchByDateRange: (range: { from: Dayjs | null; to: Dayjs | null }) => void | Promise<void>;
+};
+
+const RuleManagement = observer(({ onSearchByDateRange }: Props) => {
 	//const { rules } = useRules();
 	const rules = ruleManagementStore.rules;
 	const { user } = useAuth();
 	const filteredRules = ruleManagementStore.filterRules(rules);
 	const tabCounts = ruleManagementStore.getTabCounts(rules);
+	const [range, setRange] = useState<{ from: Dayjs | null; to: Dayjs | null }>({
+		from: dayjs().subtract(6, 'day').startOf('day'),
+		to: dayjs().endOf('day'),
+	});
+	const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+
+	const [searchDirty, setSearchDirty] = useState(false);
+	const [loading, setLoading] = useState(false); // NEW
+
 	if (!user) return null;
 
 	const displayName =
@@ -42,10 +57,7 @@ const RuleManagement = observer(() => {
 
 	// Debug function to check modal state
 	const handleOpenChargebackAnalysis = () => {
-		console.log('Opening Chargeback Analysis Modal...');
-		console.log('Current modal state:', ruleManagementStore.isChargebackAnalysisOpen);
 		ruleManagementStore.openChargebackAnalysis();
-		console.log('New modal state:', ruleManagementStore.isChargebackAnalysisOpen);
 	};
 
 	const searchColumns = ruleManagementStore.getSearchColumns();
@@ -64,9 +76,26 @@ const RuleManagement = observer(() => {
 	// Helper function to safely get effectiveness percentage
 	const formatEffectiveness = (effectiveness: number | undefined | null): string => {
 		if (effectiveness === undefined || effectiveness === null || isNaN(effectiveness)) {
-			return '—';
+			return 'N/A';
 		}
 		return `${effectiveness}%`;
+	};
+
+	// When dates change, update state and start pulsing the Search button
+	const handleRangeChange = (r: { from: Dayjs | null; to: Dayjs | null }) => {
+		setRange(r);
+		setSearchDirty(true);
+	};
+
+	// When Search is clicked, run the query and stop pulsing
+	const handleSearch = async () => {
+		setLoading(true);
+		try {
+			await onSearchByDateRange(range);
+			setSearchDirty(false);
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	// Loading shimmer component
@@ -142,26 +171,12 @@ const RuleManagement = observer(() => {
 				</div>
 			</div>
 
-			{/* Demo Notice */}
-			<div className='bg-blue-50 border border-blue-200 rounded-lg p-4'>
-				<div className='flex items-start'>
-					<InformationCircleIcon className='h-5 w-5 text-blue-400 mt-0.5 mr-3 flex-shrink-0' />
-					<div>
-						<h4 className='text-sm font-medium text-blue-800'>Demo Notice</h4>
-						<p className='text-sm text-blue-700 mt-1'>
-							The Catches, False Positives, and Effectiveness values shown in this demo are randomly generated mock data. In a production environment, these would be
-							calculated from actual fraud detection results.
-						</p>
-					</div>
-				</div>
-			</div>
-
 			{/* Tabs and Search */}
 			<div className='bg-white rounded-xl shadow-sm border border-gray-100'>
-				<div className='border-b border-gray-200'>
+				<div className=' border-b border-gray-200'>
 					<div className='p-6 space-y-4'>
 						{/* Desktop Tabs - Hidden on mobile */}
-						<div className='hidden md:block'>
+						<div className=' hidden md:block'>
 							<nav className='flex space-x-8'>
 								{tabs.map((tab) => (
 									<button
@@ -237,7 +252,8 @@ const RuleManagement = observer(() => {
 						</div>
 
 						{/* Search Section - Side by side on desktop, stacked on mobile */}
-						<div className='flex flex-col md:flex-row md:items-center gap-3'>
+						{/* <div className='flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between'> */}
+						<div className='flex pt-4  flex-col md:flex-row md:items-center gap-3'>
 							{/* Search Column Dropdown */}
 							<div className='w-full md:w-48'>
 								<Menu as='div' className='relative inline-block text-left w-full'>
@@ -290,6 +306,34 @@ const RuleManagement = observer(() => {
 								/>
 							</div>
 						</div>
+						{/* Row 2 - Date picker + search button */}
+						<div className='flex pt-4 flex-col sm:flex-row items-stretch sm:items-center gap-2  w-full sm:w-auto max-w-[600px]'>
+							<div className='flex-1 min-w-[250px]'>
+								<DateRangeFields value={range} onChange={handleRangeChange} disableFuture />
+							</div>
+							<button
+								onClick={handleSearch}
+								disabled={!searchDirty || loading}
+								className={
+									'px-4 py-2 rounded text-white flex items-center justify-center gap-2 transition-colors min-w-[160px] ' +
+									(searchDirty && !loading ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed')
+								}
+								title={loading ? 'Searching...' : searchDirty ? 'Dates changed — click to apply' : 'Search'}
+							>
+								{loading ? (
+									<>
+										<svg className='animate-spin h-4 w-4 text-white' xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'>
+											<circle className='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' strokeWidth='4' />
+											<path className='opacity-75' fill='currentColor' d='M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z' />
+										</svg>
+										Searching...
+									</>
+								) : (
+									'Search'
+								)}
+							</button>
+						</div>
+						{/* </div> */}
 					</div>
 				</div>
 
@@ -305,7 +349,7 @@ const RuleManagement = observer(() => {
 								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Decision</th>
 								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Status</th>
 								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Catches</th>
-								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>False Positives</th>
+								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>(False Positives) + (Chargebacks)</th>
 								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Effectiveness</th>
 								<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Actions</th>
 							</tr>
@@ -314,7 +358,12 @@ const RuleManagement = observer(() => {
 							{filteredRules.map((rule) => (
 								<>
 									{/* Main Row */}
-									<tr key={rule.id} className='hover:bg-gray-50 transition-colors'>
+									<tr
+										key={rule.id}
+										onClick={() => setSelectedRowId(rule.id)}
+										className={`transition-colors cursor-pointer 
+    ${selectedRowId === rule.id ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+									>
 										{/* Expand/Collapse Button */}
 										<td className='px-6 py-4 whitespace-nowrap'>
 											<button
@@ -324,7 +373,6 @@ const RuleManagement = observer(() => {
 												{ruleManagementStore.isRowExpanded(rule.id) ? <ChevronDownIcon className='h-4 w-4' /> : <ChevronRightIcon className='h-4 w-4' />}
 											</button>
 										</td>
-
 										{/* Rule */}
 										<td className='px-6 py-4'>
 											<div className='flex items-center space-x-3'>
@@ -333,8 +381,10 @@ const RuleManagement = observer(() => {
 														rule?.decision === 'deny' ? 'bg-red-100' : rule?.decision === 'review' ? 'bg-yellow-100' : 'bg-green-100'
 													}`}
 												>
-													{rule.severity === 'high' ? (
-														<ExclamationTriangleIcon className='h-5 w-5 text-red-600' />
+													{rule?.decision === 'review' ? (
+														<ExclamationTriangleIcon className='h-5 w-5 text-yellow-600' />
+													) : rule?.decision === 'deny' ? (
+														<XMarkIcon className='h-5 w-5 text-red-600' />
 													) : (
 														<ShieldCheckIcon className='h-5 w-5 text-blue-600' />
 													)}
@@ -349,14 +399,12 @@ const RuleManagement = observer(() => {
 												</div>
 											</div>
 										</td>
-
 										{/* Category */}
 										<td className='px-6 py-4 whitespace-nowrap'>
 											<span className='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800'>
 												{rule.category}
 											</span>
 										</td>
-
 										{/* Source */}
 										<td className='px-6 py-4 whitespace-nowrap'>
 											<div className='flex items-center'>
@@ -368,14 +416,12 @@ const RuleManagement = observer(() => {
 												</span>
 											</div>
 										</td>
-
 										{/* Decision */}
 										<td className='px-6 py-4 whitespace-nowrap'>
 											<div className='flex items-center'>
 												<span className={`ml-2 text-sm font-medium text-blue-700`}>{rule?.decision === null ? 'review' : rule.decision}</span>
 											</div>
 										</td>
-
 										{/* Status */}
 										<td className='px-6 py-4 whitespace-nowrap'>
 											<span
@@ -390,7 +436,6 @@ const RuleManagement = observer(() => {
 												{rule.status}
 											</span>
 										</td>
-
 										{/* Catches */}
 										<td className='px-6 py-4 whitespace-nowrap'>
 											{rule.isCalculating ? (
@@ -398,23 +443,19 @@ const RuleManagement = observer(() => {
 											) : (
 												<>
 													<div className='text-sm font-medium text-gray-900'>{formatNumber(rule.catches)}</div>
-													<div className='text-xs text-gray-500'>catches</div>
 												</>
 											)}
 										</td>
-
 										{/* False Positives */}
 										<td className='px-6 py-4 whitespace-nowrap'>
 											{rule.isCalculating ? (
 												<LoadingShimmer />
 											) : (
 												<>
-													<div className='text-sm font-medium text-gray-900'>{formatNumber(rule.false_positives)}</div>
-													<div className='text-xs text-gray-500'>false positives</div>
+													<div className='text-sm font-medium text-gray-900'>{formatNumber(rule.false_positives + rule.chargebacks)}</div>
 												</>
 											)}
 										</td>
-
 										{/* Effectiveness */}
 										<td className='px-6 py-4 whitespace-nowrap'>
 											{rule.isCalculating ? (
@@ -434,12 +475,11 @@ const RuleManagement = observer(() => {
 													)}
 												</div>
 											)}
-											{!rule.isCalculating && <div className='text-xs text-gray-500 mt-1'>effective</div>}
 										</td>
-
 										{/* Actions */}
+
 										<td className='px-6 py-4 whitespace-nowrap'>
-											<RuleActionsMenu rule={rule} />
+											<RuleActionsMenu rule={rule as Rule} />
 										</td>
 									</tr>
 
@@ -463,7 +503,16 @@ const RuleManagement = observer(() => {
 													</div>
 
 													{/* Additional Metadata */}
-													<div className='grid grid-cols-2 md:grid-cols-4 gap-4 text-sm'>
+													<div className='grid grid-cols-2 md:grid-cols-8 gap-4 text-sm'>
+														<div>
+															<span className='font-medium text-gray-900'>False Positives:</span>
+															<span className='ml-1 text-gray-600'>{rule.false_positives}</span>
+														</div>
+
+														<div>
+															<span className='font-medium text-gray-900'>Chargebacks</span>
+															<span className='ml-1 text-gray-600'>{rule.chargebacks}</span>
+														</div>
 														<div>
 															<span className='font-medium text-gray-900'>Severity:</span>
 															<span

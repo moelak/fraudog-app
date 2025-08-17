@@ -13,6 +13,7 @@ interface CreateRuleData {
 	condition: string;
 	status: 'active' | 'inactive' | 'warning';
 	severity: 'low' | 'medium' | 'high';
+	decision: 'allow' | 'review' | 'deny';
 	log_only: boolean;
 	source?: 'AI' | 'User';
 }
@@ -22,6 +23,7 @@ interface FormData {
 	category: string;
 	status: 'active' | 'inactive' | 'warning' | 'in_progress';
 	severity: 'low' | 'medium' | 'high';
+	decision: 'allow' | 'review' | 'deny';
 	condition: string;
 	description: string;
 	log_only: boolean;
@@ -34,11 +36,22 @@ interface UpdateRuleData {
 	condition?: string;
 	status?: 'active' | 'inactive' | 'warning' | 'in progress';
 	severity?: 'low' | 'medium' | 'high';
+	decision?: 'allow' | 'review' | 'deny';
 	log_only?: boolean;
 	source?: 'AI' | 'User';
 	catches?: number;
 	false_positives?: number;
 	effectiveness?: number;
+}
+
+interface FormErrors {
+	name?: string;
+	category?: string;
+	status?: string;
+	severity?: string;
+	decision?: string;
+	condition?: string;
+	description?: string;
 }
 
 const CreateRuleModal = observer(() => {
@@ -51,17 +64,19 @@ const CreateRuleModal = observer(() => {
 		name: '',
 		category: 'Behavioral',
 		status: 'active',
+		decision: 'allow',
 		severity: 'medium',
 		condition: '',
 		description: '',
 		log_only: false,
 	});
 
-	const [errors, setErrors] = useState<Partial<FormData>>({});
+	const [errors, setErrors] = useState<Partial<FormErrors>>({});
 	const [isTestingRule, setIsTestingRule] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 
 	const categories = ['Behavioral', 'Payment Method', 'Technical', 'Identity'];
+	const decisionOptions: Array<'allow' | 'review' | 'deny'> = ['allow', 'review', 'deny'];
 	const statusOptions: Array<'active' | 'inactive' | 'warning'> = ['active', 'inactive', 'warning'];
 	const severityOptions: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
 
@@ -77,6 +92,7 @@ const CreateRuleModal = observer(() => {
 				condition: rule.condition,
 				description: rule.description,
 				log_only: rule.log_only,
+				decision: rule.decision,
 			});
 		} else {
 			// Reset form for new rule
@@ -85,6 +101,7 @@ const CreateRuleModal = observer(() => {
 				category: 'Behavioral',
 				status: 'active',
 				severity: 'medium',
+				decision: 'allow',
 				condition: '',
 				description: '',
 				log_only: false,
@@ -94,7 +111,7 @@ const CreateRuleModal = observer(() => {
 	}, [isEditing, ruleManagementStore.editingRule]);
 
 	const validateForm = (): boolean => {
-		const newErrors: Partial<FormData> = {};
+		const newErrors: FormErrors = {};
 
 		if (!formData.name.trim()) {
 			newErrors.name = 'Rule name is required';
@@ -102,6 +119,9 @@ const CreateRuleModal = observer(() => {
 
 		if (!formData.category) {
 			newErrors.category = 'Category is required';
+		}
+		if (!formData.decision) {
+			newErrors.decision = 'Decision is required';
 		}
 
 		if (!formData.condition.trim()) {
@@ -147,6 +167,7 @@ const CreateRuleModal = observer(() => {
 					name: formData.name,
 					description: formData.description,
 					category: formData.category,
+					decision: formData.decision.toLowerCase() as 'allow' | 'review' | 'deny',
 					condition: formData.condition,
 					severity: formData.severity,
 					log_only: formData.log_only,
@@ -179,6 +200,7 @@ const CreateRuleModal = observer(() => {
 					name: formData.name,
 					description: formData.description,
 					category: formData.category,
+					decision: formData.decision.toLowerCase() as 'allow' | 'review' | 'deny',
 					condition: formData.condition,
 					status: formData.status as 'active' | 'inactive' | 'warning',
 					severity: formData.severity,
@@ -205,6 +227,7 @@ const CreateRuleModal = observer(() => {
 		setFormData({
 			name: '',
 			category: 'Behavioral',
+			decision: 'allow',
 			status: 'active',
 			severity: 'medium',
 			condition: '',
@@ -230,7 +253,7 @@ const CreateRuleModal = observer(() => {
 	const handleInputChange = (field: keyof FormData, value: string | boolean) => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
 		// Clear error when user starts typing
-		if (errors[field as keyof Partial<FormData>]) {
+		if (errors[field as keyof Partial<FormErrors>]) {
 			setErrors((prev) => ({ ...prev, [field]: undefined }));
 		}
 	};
@@ -302,6 +325,27 @@ const CreateRuleModal = observer(() => {
 										</select>
 										{errors.category && <p className='mt-1 text-sm text-red-600'>{errors.category}</p>}
 									</div>
+
+									{/* Decision */}
+									{!isEditingFromGenerated && (
+										<div>
+											<label htmlFor='status' className='block text-sm font-medium text-gray-700 mb-2'>
+												Decision *
+											</label>
+											<select
+												id='decision'
+												value={formData.decision}
+												onChange={(e) => handleInputChange('decision', e.target.value)}
+												className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+											>
+												{decisionOptions.map((decision) => (
+													<option key={decision} value={decision.toLowerCase()}>
+														{decision}
+													</option>
+												))}
+											</select>
+										</div>
+									)}
 
 									{/* Status - Hide when editing from Generated Rules */}
 									{!isEditingFromGenerated && (

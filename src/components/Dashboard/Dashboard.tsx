@@ -16,7 +16,6 @@ import {
 import Overview from '../Overview/Overview';
 import Reports from '../Reports/Reports';
 import Settings from '../Settings/Settings';
-import RuleManagement from '../RuleManagement/RuleManagement';
 // import Visualization from '../Visualization/Visualization';
 import Monitoring from '../Monitoring/Monitoring';
 import Chargebacks from '../Chargebacks/Chargebacks';
@@ -29,6 +28,7 @@ import AccountMenu from '../Auth/AccountMenu';
 import AccountManagementModal from '../Auth/AccountManagementModal';
 import { dashboardStore } from './DashboardStore';
 import { settingsStore } from '../Settings/SettingsStore';
+import RuleManagementContainer from '../RuleManagement/RuleManagementContainer';
 
 const Dashboard = observer(() => {
 	const location = useLocation();
@@ -65,13 +65,13 @@ const Dashboard = observer(() => {
 			<div
 				className={`fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform ${
 					dashboardStore.isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-				} transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0`}
+				} transition-transform duration-300 ease-in-out xl:relative xl:translate-x-0`}
 			>
 				<div className='flex h-full flex-col'>
 					<div className='flex h-16 items-center justify-between px-4 bg-gradient-to-r from-blue-600 to-blue-700'>
 						<span className='text-2xl font-bold text-white'>Fraud-dog</span>
 						<button
-							className='lg:hidden text-white hover:text-gray-200 transition-colors p-1 rounded-md hover:bg-white/10'
+							className='xl:hidden text-white hover:text-gray-200 transition-colors p-1 rounded-md hover:bg-white/10'
 							onClick={handleCloseSidebar}
 							type='button'
 							aria-label='Close sidebar'
@@ -105,10 +105,10 @@ const Dashboard = observer(() => {
 			{/* Main content */}
 			<div className='flex-1 flex flex-col overflow-hidden'>
 				<div className='sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm'>
-					<div className='flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8'>
+					<div className='flex h-16 items-center justify-between px-4 sm:px-6 xl:px-8'>
 						{/* Left side - Mobile menu button */}
 						<button
-							className='text-gray-500 hover:text-gray-700 lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors'
+							className='text-gray-500 hover:text-gray-700 xl:hidden p-2 rounded-md hover:bg-gray-100 transition-colors'
 							onClick={handleOpenSidebar}
 							type='button'
 							aria-label='Open sidebar'
@@ -182,10 +182,10 @@ const Dashboard = observer(() => {
 
 				<main className='flex-1 overflow-y-auto bg-transparent'>
 					<div className='py-6'>
-						<div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
+						<div className='mx-auto max-w-7xl px-4 sm:px-6 xl:px-8'>
 							<Routes>
 								<Route path='/' element={<Overview />} />
-								<Route path='/rules' element={<RuleManagement />} />
+								<Route path='/rules' element={<RuleManagementContainer />} />
 								<Route path='/test-rulegeneration' element={<TestOpenAI />} />
 								{/* <Route path='/visualization' element={<Visualization />} /> */}
 								<Route path='/monitoring' element={<Monitoring />} />
@@ -201,7 +201,7 @@ const Dashboard = observer(() => {
 			</div>
 
 			{/* Overlay for mobile sidebar */}
-			{dashboardStore.isSidebarOpen && <div className='fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden' onClick={handleOverlayClick} aria-hidden='true' />}
+			{dashboardStore.isSidebarOpen && <div className='fixed inset-0 z-30 bg-black bg-opacity-50 xl:hidden' onClick={handleOverlayClick} aria-hidden='true' />}
 
 			{/* AI Chat Components */}
 			{settingsStore.settings.enableChatAssistant && (

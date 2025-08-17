@@ -1,9 +1,10 @@
 import { observer } from 'mobx-react-lite';
 import { useState, useRef, useEffect } from 'react';
-import { ruleManagementStore } from './RuleManagementStore';
 import { useRules } from '../../hooks/useRules';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 import { EllipsisVerticalIcon, PencilIcon, ClockIcon, TrashIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
+import { ruleManagementStore } from './RuleManagementStore';
+type Decision = 'allow' | 'review' | 'deny';
 
 interface RuleActionsMenuProps {
 	rule: {
@@ -17,12 +18,14 @@ interface RuleActionsMenuProps {
 		log_only: boolean;
 		catches: number;
 		false_positives: number;
-		effectiveness: number;
+		effectiveness: number | null;
 		source: 'AI' | 'User';
 		is_deleted: boolean;
 		user_id: string;
 		created_at: string;
 		updated_at: string;
+		decision: Decision;
+		chargebacks: number;
 	};
 }
 
