@@ -3,21 +3,20 @@ name: Sync to Personal Fork
 on:
   push:
     branches:
-      - main   # or whatever your default branch is
+      - main
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source repo
+      - name: Checkout org repo
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: Push changes to fork
-        uses: ad-m/github-push-action@v0.6.0
-        with:
-          github_token: ${{ secrets.PERSONAL_FORK_TOKEN }}
-          repository: moelak/fraudog-app
-          branch: main
-          force: true
+      - name: Push to personal fork
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add fork https://x-access-token:${{ secrets.PERSONAL_FORK_TOKEN }}@github.com/moelak/fraudog-app.git
+          git push fork main --force
