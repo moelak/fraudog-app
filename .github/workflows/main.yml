@@ -18,6 +18,6 @@ jobs:
         uses: ad-m/github-push-action@v0.6.0
         with:
           github_token: ${{ secrets.PERSONAL_FORK_TOKEN }}
-          repository: Moe/fraud-detector-app
+          repository: moelak/fraudog-app
           branch: main
           force: true
