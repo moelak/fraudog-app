@@ -1,0 +1,23 @@
+name: Sync to Personal Fork
+
+on:
+  push:
+    branches:
+      - main   # or whatever your default branch is
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Push changes to fork
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.PERSONAL_FORK_TOKEN }}
+          repository: Moe/fraud-detector-app
+          branch: main
+          force: true
