@@ -17,6 +17,6 @@ jobs:
       - name: Push to personal fork
         run: |
           git config user.name "moelak"
-          git config user.email "your_email@example.com"
+          git config user.email "moe.lak20@gmail.com"
           git remote add fork https://x-access-token:${{ secrets.PERSONAL_FORK_TOKEN }}@github.com/moelak/fraudog-app.git
           git push fork main --force
