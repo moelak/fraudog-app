@@ -3,7 +3,7 @@ name: Sync to Personal Fork
 on:
   push:
     branches:
-      - main
+      - main   # trigger only when org main is updated
 
 jobs:
   sync:
@@ -11,10 +11,12 @@ jobs:
     steps:
       - name: Checkout org repo
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Push to personal fork
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "moelak"
+          git config user.email "your_email@example.com"
           git remote add fork https://x-access-token:${{ secrets.PERSONAL_FORK_TOKEN }}@github.com/moelak/fraudog-app.git
           git push fork main --force
