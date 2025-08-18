@@ -156,7 +156,7 @@ const LandingPage = observer(() => {
 								24/7 Gen-AI co-pilot that stops fraud, not customers
 							</h1>
 							<p className='text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed'>
-								Fraudsters iterate in minutes; ChargeGuard AI responds in seconds. Our lightning-fast, explainable platform turns new attacks into instant
+								Fraudsters iterate in minutes; Fraud Dog responds in seconds. Our lightning-fast, explainable platform turns new attacks into instant
 								countermeasures, slashing chargebacks while shielding growth of valuable customers.
 							</p>
 
