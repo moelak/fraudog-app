@@ -3,16 +3,17 @@ name: Sync to Personal Fork
 on:
   push:
     branches:
-      - main   # trigger only when org main is updated
+      - main
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout org repo
+      - name: Checkout org repo with PAT
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          token: ${{ secrets.PERSONAL_FORK_TOKEN }}
 
       - name: Push to personal fork
         run: |
