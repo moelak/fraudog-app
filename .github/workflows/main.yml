@@ -1,4 +1,4 @@
-name: Sync to Personal Fork for Fraud-dog
+name: Sync to Personal Fork
 
 on:
   push:
