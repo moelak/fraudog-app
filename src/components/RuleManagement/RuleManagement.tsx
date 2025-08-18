@@ -446,7 +446,7 @@ const RuleManagement = observer(({ onSearchByDateRange }: Props) => {
 												</>
 											)}
 										</td>
-										{/* False Positives */}
+										{/* False Positives + rule.chargebacks*/}
 										<td className='px-6 py-4 whitespace-nowrap'>
 											{rule.isCalculating ? (
 												<LoadingShimmer />
