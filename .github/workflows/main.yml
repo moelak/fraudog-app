@@ -3,35 +3,21 @@ name: Sync to Personal Fork
 on:
   push:
     branches:
-      - main   # trigger only when org main is updated
+      - main
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      # Checkout org repo (source)
-      - name: Checkout org repo
+      - name: Checkout org repo with PAT
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
-      # (Optional) Checkout personal fork as a second remote
-      - name: Checkout personal fork
-        uses: actions/checkout@v3
-        with:
-          repository: moelak/fraudog-app
           token: ${{ secrets.PERSONAL_FORK_TOKEN }}
-          fetch-depth: 0
-          path: fork  # keep it in a separate folder so it won’t clash
 
-      # Push org changes to personal fork
       - name: Push to personal fork
         run: |
           git config user.name "moelak"
           git config user.email "moe.lak20@gmail.com"
-
-          # add fork as remote
           git remote add fork https://x-access-token:${{ secrets.PERSONAL_FORK_TOKEN }}@github.com/moelak/fraudog-app.git
-          
-          # push main to fork main
           git push fork main --force
