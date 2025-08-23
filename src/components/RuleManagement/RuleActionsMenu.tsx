@@ -50,11 +50,10 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
 	}, []);
 
 	const handleAction = async (action: string) => {
-		setIsOpen(false);
-
 		switch (action) {
 			case 'edit':
 				ruleManagementStore.editRule(rule);
+				ruleManagementStore.setDisplayManualRuleStepper(true);
 				break;
 			case 'history':
 				ruleManagementStore.viewRuleHistory(rule.id);

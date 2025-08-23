@@ -5,13 +5,14 @@ import {
   CheckCircleIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline';
+import type { ComponentType, SVGProps } from "react";
 
 interface Stat {
   name: string;
   value: string;
   change: string;
   changeType: 'increase' | 'decrease';
-  icon: any;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;  // ✅ correct type
   color: string;
 }
 

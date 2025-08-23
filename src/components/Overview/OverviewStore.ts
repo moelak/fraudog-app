@@ -11,7 +11,7 @@ interface Stat {
   value: string;
   change: string;
   changeType: 'increase' | 'decrease';
-  icon: any;
+  icon: unknown;
   color: string;
 }
 

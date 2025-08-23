@@ -42,6 +42,8 @@ export class RuleManagementStore {
   deletingRule: Rule | null = null;
   isEditingFromGenerated = false; 
   expandedRows = new Set<string>();
+  displayManualRuleStepper:boolean = false;
+  displayAIRuleStepper: boolean = false
 
   rules: Rule[] = [];
   inProgressRules: Rule[] = [];
@@ -61,6 +63,20 @@ export class RuleManagementStore {
       this.loadingPromise = null;
     }
   };
+
+  setDisplayManualRuleStepper = (value:boolean)=>{
+    if(this.displayAIRuleStepper === true) {
+        this.displayAIRuleStepper = false
+    }
+    this.displayManualRuleStepper = value
+  }
+
+  setDisplayAIRuleStepper = (value:boolean)=>{
+       if(this.displayManualRuleStepper === true) {
+        this.displayManualRuleStepper = false
+    }
+    this.displayAIRuleStepper = value
+  }
 
   private performSetRules = async (newRules: Rule[]) => {
 
@@ -173,6 +189,10 @@ openCreateModal = () => {
     } else if (this.activeTab === 'deleted') {
       filtered = filtered.filter(r => r.is_deleted && ['active', 'inactive', 'warning'].includes(r.status));
     }
+
+    if (this.activeTab === 'deleted') {
+  filtered = filtered.filter(r => r.is_deleted);
+}
 
     if (this.searchQuery) {
       const q = this.searchQuery.toLowerCase();
