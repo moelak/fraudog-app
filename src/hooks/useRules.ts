@@ -247,7 +247,6 @@ export function useRules() {
         .from('rules')
         .select('*')
         .eq('organization_id', orgId)
-        .eq('is_deleted', false)
         .order('created_at', { ascending: false });
       if (rulesErr) throw rulesErr;
 
@@ -295,7 +294,6 @@ export function useRules() {
         .from('rules')
         .select('*')
         .eq('organization_id', organizationId)
-        .eq('is_deleted', false)
         .order('created_at', { ascending: false });
       if (rulesErr) throw rulesErr;
 
