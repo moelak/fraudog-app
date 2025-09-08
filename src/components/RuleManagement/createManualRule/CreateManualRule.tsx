@@ -17,13 +17,21 @@ import {
 	DialogContent,
 	DialogContentText,
 	DialogTitle,
+	Popper,
+	Paper,
+	List,
+	ListItem,
 } from '@mui/material';
+
 import { ruleManagementStore } from '.././RuleManagementStore';
 import CircleStepIcon from '../cricleStepIcon/CircleStepIconRoot';
 import { useRules } from '../../../hooks/useRules';
 import { showErrorToast, showSuccessToast } from '../../../utils/toast';
 import { runInAction } from 'mobx';
 import { validateRuleCondition } from '../../../utils/sqlValidator';
+import { CircularProgress } from '@mui/material';
+import { useColumns } from '../../../hooks/useColumns';
+
 import { Rule as RuleIcon, Description as DescriptionIcon, DoneAll as DoneAllIcon } from '@mui/icons-material';
 const steps = ['Rule Info', 'Condition & Description', 'Review'];
 
@@ -96,8 +104,13 @@ export default function CreateManualRule() {
 	const isEditing = !!ruleManagementStore.editingRule;
 	// check if form has any filled values
 	// const isFormDirty = Object.values(formData).some((v) => v && v !== 'active' && v !== false);
-
+	const [generating, setGenerating] = useState(false);
 	const [initialData, setInitialData] = useState(formData);
+	const { columns, loading: columnsLoading } = useColumns();
+	const [suggestions, setSuggestions] = useState<string[]>([]);
+	const [showSuggestions, setShowSuggestions] = useState(false);
+	const [invalidColumns, setInvalidColumns] = useState<string[]>([]);
+
 	const icons: { [index: string]: React.ReactElement } = {
 		1: <RuleIcon />,
 		2: <DescriptionIcon />,
@@ -346,6 +359,121 @@ export default function CreateManualRule() {
 		}
 	};
 
+	const handleGenerateCondition = async () => {
+		if (!formData.description) {
+			setErrors({ description: 'Please enter a description first.' });
+			return;
+		}
+
+		try {
+			setGenerating(true);
+
+			const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-condition`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+					Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+				},
+				body: JSON.stringify({
+					description: formData.description,
+					columns, // 👈 pass columns to Edge Function
+				}),
+			});
+
+			const data = await res.json();
+
+			if (data.condition) {
+				setFormData((prev) => ({ ...prev, condition: data.condition }));
+				showSuccessToast('Condition generated successfully.');
+			} else {
+				showErrorToast('AI did not return a condition.');
+			}
+		} catch (err) {
+			console.error(err);
+			showErrorToast('Failed to generate condition.');
+		} finally {
+			setGenerating(false);
+		}
+	};
+
+	useEffect(() => {
+		if (!formData.description) {
+			setInvalidColumns([]);
+			return;
+		}
+
+		const regex = /@([a-zA-Z0-9_]+)/g;
+		const matches = [...formData.description.matchAll(regex)].map((m) => m[1]);
+		const invalid = matches.filter((col) => !columns.some((c) => c.toLowerCase() === col.toLowerCase()));
+		setInvalidColumns(invalid);
+	}, [formData.description, columns]);
+
+	const handleSuggestionSelect = (selected: string) => {
+		const input = document.activeElement as HTMLInputElement;
+		const cursorPos = input?.selectionStart || formData.description.length;
+
+		// text before and after cursor
+		const beforeCursor = formData.description.slice(0, cursorPos);
+		const afterCursor = formData.description.slice(cursorPos);
+
+		// replace the @word immediately before the cursor
+		const newBeforeCursor = beforeCursor.replace(/@([a-zA-Z0-9_]*)$/, `@${selected} `);
+
+		const newValue = newBeforeCursor + afterCursor;
+
+		setFormData((prev) => ({ ...prev, description: newValue }));
+		setShowSuggestions(false);
+
+		// move cursor right after inserted word
+		setTimeout(() => {
+			input.setSelectionRange(newBeforeCursor.length, newBeforeCursor.length);
+		}, 0);
+	};
+
+	// --- state
+	const [highlightedIndex, setHighlightedIndex] = useState(0);
+
+	// --- keyboard nav
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+		if (!showSuggestions || suggestions.length === 0) return;
+
+		if (e.key === 'ArrowDown') {
+			e.preventDefault();
+			setHighlightedIndex((prev) => (prev + 1) % suggestions.length);
+		} else if (e.key === 'ArrowUp') {
+			e.preventDefault();
+			setHighlightedIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
+		} else if (e.key === 'Enter' || e.key === 'Tab') {
+			e.preventDefault();
+			handleSuggestionSelect(suggestions[highlightedIndex]);
+		}
+	};
+
+	const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+
+	const handleDescriptionChange = (value: string, e?: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+		setFormData((prev) => ({ ...prev, description: value }));
+
+		// look at text before cursor
+		const cursorPos = e?.target.selectionStart || value.length;
+		const beforeCursor = value.slice(0, cursorPos);
+
+		const match = beforeCursor.match(/@([a-zA-Z0-9_]*)$/);
+		if (match) {
+			const prefix = match[1].toLowerCase();
+			const filtered = prefix.length === 0 ? columns : columns.filter((col) => col.toLowerCase().startsWith(prefix));
+
+			setSuggestions(filtered);
+			setShowSuggestions(filtered.length > 0);
+
+			if (e?.target) setAnchorEl(e.target as HTMLElement);
+		} else {
+			setShowSuggestions(false);
+			setAnchorEl(null);
+		}
+	};
+
 	return (
 		<Box
 			sx={{
@@ -463,6 +591,91 @@ export default function CreateManualRule() {
 
 					{activeStep === 1 && (
 						<>
+							<Box sx={{ position: 'relative', mt: 2 }}>
+								<TextField
+									fullWidth
+									multiline
+									rows={3}
+									required
+									label='Description'
+									value={formData.description}
+									onChange={(e) => handleDescriptionChange(e.target.value, e)}
+									onKeyDown={handleKeyDown}
+									placeholder='Describe what this rule does and when it triggers'
+									error={!!errors.description}
+									helperText={errors.description}
+									InputLabelProps={{ shrink: true }}
+								/>
+
+								{/* Suggestions dropdown */}
+								<Popper
+									open={showSuggestions}
+									anchorEl={anchorEl}
+									placement='top-start'
+									modifiers={[{ name: 'offset', options: { offset: [0, 12] } }]}
+									sx={{ zIndex: 2000 }}
+								>
+									<Paper
+										sx={{
+											position: 'relative',
+											bgcolor: 'grey.700',
+											color: 'white',
+											borderRadius: 1,
+											boxShadow: 4,
+											minWidth: 200,
+											maxHeight: 180,
+											overflowY: 'auto',
+											'&::-webkit-scrollbar': {
+												width: '6px',
+											},
+											'&::-webkit-scrollbar-thumb': {
+												backgroundColor: 'rgba(255,255,255,0.4)',
+												borderRadius: '3px',
+											},
+											'&::-webkit-scrollbar-track': {
+												background: 'transparent',
+											},
+											'&::before': {
+												content: '""',
+												display: 'block',
+												position: 'absolute',
+												bottom: -6,
+												left: 20,
+												width: 0,
+												height: 0,
+												borderLeft: '6px solid transparent',
+												borderRight: '6px solid transparent',
+												borderTop: '6px solid #212121', // 👈 arrow matches dark background
+											},
+										}}
+									>
+										<List dense>
+											{suggestions.map((s, idx) => (
+												<ListItem
+													key={s}
+													onClick={() => handleSuggestionSelect(s)}
+													sx={{
+														py: 1,
+														px: 2,
+														cursor: 'pointer',
+														bgcolor: idx === highlightedIndex ? 'grey.800' : 'transparent',
+														color: idx === highlightedIndex ? 'white' : 'inherit',
+														'&:hover': {
+															bgcolor: 'grey.700',
+														},
+													}}
+												>
+													{s}
+												</ListItem>
+											))}
+										</List>
+									</Paper>
+								</Popper>
+
+								<Button variant='outlined' onClick={handleGenerateCondition} disabled={generating || columnsLoading} sx={{ mt: 2 }}>
+									{generating ? <CircularProgress size={20} /> : 'Generate Condition →'}
+								</Button>
+							</Box>
 							<TextField
 								fullWidth
 								multiline
@@ -475,22 +688,7 @@ export default function CreateManualRule() {
 								error={!!errors.condition}
 								helperText={errors.condition}
 								InputLabelProps={{ shrink: true }}
-								sx={{ mb: 2 }}
-							/>
-
-							<TextField
-								fullWidth
-								multiline
-								rows={3}
-								required
-								label='Description'
-								value={formData.description}
-								onChange={(e) => handleChange('description', e.target.value)}
-								placeholder='Describe what this rule does and when it triggers'
-								error={!!errors.description}
-								helperText={errors.description}
-								InputLabelProps={{ shrink: true }}
-								sx={{ mt: 2 }}
+								sx={{ mt: 4 }}
 							/>
 						</>
 					)}
@@ -578,7 +776,26 @@ export default function CreateManualRule() {
 									<Typography variant='subtitle1' fontWeight='bold'>
 										Description
 									</Typography>
-									<Typography variant='body2'>{formData.description || '-'}</Typography>
+									<Typography variant='body2'>
+										{formData.description
+											? formData.description.split(/(@[a-zA-Z0-9_]+)/).map((part, i) =>
+													part.startsWith('@') ? (
+														<span
+															key={i}
+															style={{
+																color: invalidColumns.includes(part.substring(1)) ? 'red' : 'blue',
+																borderBottom: invalidColumns.includes(part.substring(1)) ? '1px dotted red' : 'none',
+															}}
+															title={invalidColumns.includes(part.substring(1)) ? 'Column does not exist' : 'Valid column'}
+														>
+															{part}
+														</span>
+													) : (
+														part
+													)
+											  )
+											: '-'}
+									</Typography>
 								</Box>
 
 								{/* Status - default inactive */}
