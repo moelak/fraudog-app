@@ -1,332 +1,366 @@
-import { useEffect, useState } from 'react';
-import { Stepper, Step, StepLabel, Button, Typography, TextField, Box, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
-import { ruleManagementStore } from '.././RuleManagementStore';
-import CircleStepIcon from '../cricleStepIcon/CircleStepIconRoot';
+import React, { useState, useCallback } from 'react';
+import {
+  Box,
+  Stepper,
+  Step,
+  StepLabel,
+  Button,
+  Typography,
+  Paper,
+  Alert,
+  CircularProgress,
+  Backdrop
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { useRuleManagementStore } from '../../../hooks/useRuleManagementStore';
+import { 
+  callQuickAnalysis, 
+  callDeepAnalysis, 
+  estimateTokenCount,
+  validateCSVData,
+  parseCSVData,
+  type TokenEstimation,
+  type StreamingStatus
+} from '../../../services/openaiService';
+import {
+  convertOpenAIRuleToDatabase,
+  calculateRuleImpact,
+  type OpenAIRule,
+  type UserContext,
+  type DatabaseRule
+} from '../../../utils/ruleConverter';
 
-import { Storage as StorageIcon, Search as SearchIcon, AutoFixHigh as AutoFixHighIcon, FactCheck as FactCheckIcon } from '@mui/icons-material';
+// Step Components
+import DataUploadStep from './steps/DataUploadStep';
+import AnalysisSelectionStep from './steps/AnalysisSelectionStep';
+import RuleSelectionStep from './steps/RuleSelectionStep';
+import ReviewStep from './steps/ReviewStep';
 
-import { runInAction } from 'mobx';
-import { validateRuleCondition } from '../../../utils/sqlValidator';
+const steps = [
+  'Select Data',
+  'Token Analysis',
+  'Output Rules',
+  'Review'
+];
 
-const steps = ['Select data', 'Token analysis', 'Output rules generated for selection', 'Review'];
-
-interface FormData {
-	name: string;
-	condition: string;
+export interface StepperData {
+  // Step 1: Data Upload
+  csvFile: File | null;
+  csvContent: string;
+  csvData: any[];
+  userInstructions: string;
+  
+  // Step 2: Analysis Selection
+  analysisType: 'quick' | 'deep';
+  tokenEstimation: TokenEstimation | null;
+  
+  // Step 3: Rule Selection
+  generatedRules: OpenAIRule[];
+  selectedRuleIndex: number;
+  ruleImpactAnalysis: {
+    wouldCatch: number;
+    falsePositives: number;
+    potentialFraudPrevented: number;
+  } | null;
+  
+  // Step 4: Review
+  finalRule: DatabaseRule | null;
+  logOnly: boolean;
+  
+  // Processing state
+  isProcessing: boolean;
+  processingError: string | null;
+  streamingStatus: StreamingStatus | null;
+  
+  // OpenAI metadata
+  threadId?: string;
+  assistantId?: string;
 }
 
-interface FormErrors {
-	name?: string;
-	condition?: string;
-}
+const CreateRuleByAI: React.FC = () => {
+  const navigate = useNavigate();
+  const { addRule } = useRuleManagementStore();
+  
+  const [activeStep, setActiveStep] = useState(0);
+  const [data, setData] = useState<StepperData>({
+    csvFile: null,
+    csvContent: '',
+    csvData: [],
+    userInstructions: '',
+    analysisType: 'quick',
+    tokenEstimation: null,
+    generatedRules: [],
+    selectedRuleIndex: -1,
+    ruleImpactAnalysis: null,
+    finalRule: null,
+    logOnly: false,
+    isProcessing: false,
+    processingError: null,
+    streamingStatus: null
+  });
 
-export default function CreateRuleByAI() {
-	const [activeStep, setActiveStep] = useState(0);
-	const [formData, setFormData] = useState({
-		name: '',
+  // Mock user context - in production, get from auth
+  const userContext: UserContext = {
+    user_id: 1,
+    organization_id: 'org_123'
+  };
 
-		condition: '',
-	});
+  const updateData = useCallback((updates: Partial<StepperData>) => {
+    setData(prev => ({ ...prev, ...updates }));
+  }, []);
 
-	const [errors, setErrors] = useState<FormErrors>({});
-	const [openExitConfirm, setOpenExitConfirm] = useState(false); // 👈 modal state
-	const [completed, setCompleted] = useState<{ [k: number]: boolean }>({});
-	const isEditing = !!ruleManagementStore.editingRule;
-	// check if form has any filled values
-	// const isFormDirty = Object.values(formData).some((v) => v && v !== 'active' && v !== false);
-	const icons: { [index: string]: React.ReactElement } = {
-		1: <StorageIcon />,
-		2: <SearchIcon />,
-		3: <AutoFixHighIcon />,
-		4: <FactCheckIcon />,
-	};
+  const handleNext = async () => {
+    if (activeStep === 1) {
+      // Step 2: Run analysis
+      await runAnalysis();
+    } else if (activeStep === 2) {
+      // Step 3: Calculate impact and prepare final rule
+      if (data.selectedRuleIndex >= 0 && data.generatedRules[data.selectedRuleIndex]) {
+        const selectedRule = data.generatedRules[data.selectedRuleIndex];
+        const impact = calculateRuleImpact(selectedRule, data.csvData);
+        const finalRule = convertOpenAIRuleToDatabase(selectedRule, userContext);
+        
+        updateData({
+          ruleImpactAnalysis: impact,
+          finalRule
+        });
+      }
+    } else if (activeStep === 3) {
+      // Step 4: Save rule
+      await saveRule();
+      return; // Don't increment step, we'll navigate away
+    }
+    
+    setActiveStep(prev => prev + 1);
+  };
 
-	const [initialData, setInitialData] = useState(formData);
+  const handleBack = () => {
+    setActiveStep(prev => prev - 1);
+  };
 
-	useEffect(() => {
-		if (isEditing && ruleManagementStore.editingRule) {
-			const r = ruleManagementStore.editingRule;
-			const data = {
-				name: r.name || '',
-				condition: r.condition || '',
-			};
-			setFormData(data);
-			setInitialData(data); // snapshot original
-		} else {
-			const blank = {
-				name: '',
-				condition: '',
-			};
-			setFormData(blank);
-			setInitialData(blank);
-		}
-	}, [isEditing, ruleManagementStore.editingRule]);
+  const runAnalysis = async () => {
+    if (!data.csvContent) {
+      updateData({ processingError: 'No CSV data available' });
+      return;
+    }
 
-	useEffect(() => {
-		const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-			const hasChanges = JSON.stringify(formData) !== JSON.stringify(initialData);
-			if (hasChanges) {
-				e.preventDefault();
-				e.returnValue = ''; // Required for Chrome
-			}
-		};
+    updateData({ 
+      isProcessing: true, 
+      processingError: null,
+      streamingStatus: null
+    });
 
-		window.addEventListener('beforeunload', handleBeforeUnload);
-		return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-	}, [formData, initialData]);
+    try {
+      if (data.analysisType === 'quick') {
+        const result = await callQuickAnalysis(data.csvContent, data.userInstructions);
+        
+        if (result.success && result.data) {
+          updateData({
+            generatedRules: result.data.rules,
+            isProcessing: false
+          });
+        } else {
+          updateData({
+            processingError: result.error || 'Analysis failed',
+            isProcessing: false
+          });
+        }
+      } else {
+        const result = await callDeepAnalysis(
+          data.csvContent, 
+          data.userInstructions,
+          (status) => updateData({ streamingStatus: status })
+        );
+        
+        if (result.success && result.data) {
+          updateData({
+            generatedRules: result.data.rules,
+            threadId: result.threadId,
+            assistantId: result.assistantId,
+            isProcessing: false,
+            streamingStatus: null
+          });
+        } else {
+          updateData({
+            processingError: result.error || 'Analysis failed',
+            isProcessing: false,
+            streamingStatus: null
+          });
+        }
+      }
+    } catch (error) {
+      updateData({
+        processingError: error instanceof Error ? error.message : 'Unknown error',
+        isProcessing: false,
+        streamingStatus: null
+      });
+    }
+  };
 
-	const resetForm = () => {
-		setFormData({
-			name: '',
-			condition: '',
-		});
-		setErrors({});
-		setActiveStep(0);
-		setCompleted({});
-		// Clear editing state so useEffect doesn’t repopulate
-		runInAction(() => {
-			ruleManagementStore.editingRule = null;
-			ruleManagementStore.isEditingFromGenerated = false;
-		});
-	};
-	const handleExitClick = () => {
-		const hasChanges = JSON.stringify(formData) !== JSON.stringify(initialData);
-		if (hasChanges) {
-			setOpenExitConfirm(true); // show confirmation
-		} else {
-			ruleManagementStore.setDisplayManualRuleStepper(false);
-			ruleManagementStore.setDisplayAIRuleStepper(false);
-			resetForm();
-		}
-	};
+  const saveRule = async () => {
+    if (!data.finalRule) {
+      updateData({ processingError: 'No rule to save' });
+      return;
+    }
 
-	const confirmExit = () => {
-		setOpenExitConfirm(false);
-		ruleManagementStore.setDisplayManualRuleStepper(false);
-		resetForm();
-	};
+    updateData({ isProcessing: true, processingError: null });
 
-	const cancelExit = () => {
-		setOpenExitConfirm(false);
-	};
+    try {
+      // Apply log_only setting from Step 4
+      const ruleToSave = {
+        ...data.finalRule,
+        log_only: data.logOnly
+      };
 
-	const handleNext = () => {
-		if (activeStep === 0) {
-			const errs: Record<string, string> = {};
-			if (!formData.name) errs.name = 'Rule name is required';
+      // In production, this would also save to api.ai_rule_generation table
+      await addRule(ruleToSave);
+      
+      // Navigate back to rule management
+      navigate('/rules');
+    } catch (error) {
+      updateData({
+        processingError: error instanceof Error ? error.message : 'Failed to save rule',
+        isProcessing: false
+      });
+    }
+  };
 
-			setErrors(errs);
-			if (Object.keys(errs).length) return;
-		}
+  const canProceed = () => {
+    switch (activeStep) {
+      case 0:
+        return data.csvContent && data.csvData.length > 0;
+      case 1:
+        return data.tokenEstimation !== null;
+      case 2:
+        return data.selectedRuleIndex >= 0 && data.generatedRules.length > 0;
+      case 3:
+        return data.finalRule !== null;
+      default:
+        return false;
+    }
+  };
 
-		if (activeStep === 1) {
-			const errs: Record<string, string> = {};
+  const getStepContent = () => {
+    switch (activeStep) {
+      case 0:
+        return (
+          <DataUploadStep
+            data={data}
+            updateData={updateData}
+            onValidation={(csvContent) => {
+              const validation = validateCSVData(csvContent);
+              if (validation.valid) {
+                const parsedData = parseCSVData(csvContent);
+                updateData({
+                  csvContent,
+                  csvData: parsedData,
+                  processingError: null
+                });
+              } else {
+                updateData({
+                  processingError: validation.error
+                });
+              }
+            }}
+          />
+        );
+      case 1:
+        return (
+          <AnalysisSelectionStep
+            data={data}
+            updateData={updateData}
+            onTokenEstimation={(csvContent) => {
+              const estimation = estimateTokenCount(csvContent);
+              updateData({ tokenEstimation: estimation });
+            }}
+          />
+        );
+      case 2:
+        return (
+          <RuleSelectionStep
+            data={data}
+            updateData={updateData}
+          />
+        );
+      case 3:
+        return (
+          <ReviewStep
+            data={data}
+            updateData={updateData}
+          />
+        );
+      default:
+        return <Typography>Unknown step</Typography>;
+    }
+  };
 
-			if (!formData.condition) {
-				errs.condition = 'Rule condition is required';
-			} else {
-				const { valid, errors: syntaxErrors } = validateRuleCondition(formData.condition);
-				if (!valid) {
-					errs.condition = syntaxErrors.join(', ');
-				}
-			}
+  return (
+    <Box sx={{ width: '100%', p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        Create Rule with AI
+      </Typography>
+      
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+          {steps.map((label) => (
+            <Step key={label}>
+              <StepLabel>{label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
 
-			setErrors(errs);
-			if (Object.keys(errs).length) return;
-		}
+        {data.processingError && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {data.processingError}
+          </Alert>
+        )}
 
-		const newCompleted = { ...completed, [activeStep]: true };
-		setCompleted(newCompleted);
-		setErrors({});
-		setActiveStep((prev) => prev + 1);
-	};
+        <Box sx={{ minHeight: 400 }}>
+          {getStepContent()}
+        </Box>
 
-	const handleBack = () => setActiveStep((prev) => prev - 1);
-	const handleChange = <K extends keyof FormData>(field: K, value: FormData[K]) => {
-		setFormData((prev) => ({ ...prev, [field]: value }));
-	};
+        <Box sx={{ display: 'flex', flexDirection: 'row', pt: 2 }}>
+          <Button
+            color="inherit"
+            disabled={activeStep === 0 || data.isProcessing}
+            onClick={handleBack}
+            sx={{ mr: 1 }}
+          >
+            Back
+          </Button>
+          <Box sx={{ flex: '1 1 auto' }} />
+          <Button
+            onClick={handleNext}
+            disabled={!canProceed() || data.isProcessing}
+            variant="contained"
+          >
+            {data.isProcessing ? (
+              <CircularProgress size={20} sx={{ mr: 1 }} />
+            ) : null}
+            {activeStep === steps.length - 1 ? 'Save Rule' : 'Next'}
+          </Button>
+        </Box>
+      </Paper>
 
-	useEffect(() => {
-		if (isEditing && ruleManagementStore.editingRule) {
-			const r = ruleManagementStore.editingRule;
-			setFormData({
-				name: r.name || '',
-				condition: r.condition || '',
-			});
-		}
-	}, [isEditing, ruleManagementStore.editingRule]);
+      {/* Processing Backdrop */}
+      <Backdrop
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={data.isProcessing}
+      >
+        <Box sx={{ textAlign: 'center' }}>
+          <CircularProgress color="inherit" sx={{ mb: 2 }} />
+          <Typography variant="h6">
+            {data.streamingStatus?.status || 'Processing...'}
+          </Typography>
+          {data.streamingStatus?.text && (
+            <Typography variant="body2" sx={{ mt: 1, maxWidth: 400 }}>
+              {data.streamingStatus.text}
+            </Typography>
+          )}
+        </Box>
+      </Backdrop>
+    </Box>
+  );
+};
 
-	// replace your handleSubmit with this one
-	const handleSubmit = async (e?: React.FormEvent) => {
-		e?.preventDefault();
-	};
-
-	const handleStep = (step: number) => () => {
-		// Validate step 1 before letting user jump to Review
-		if (step === 2) {
-			const errs: Record<string, string> = {};
-
-			if (!formData.condition) {
-				errs.condition = 'Rule condition is required';
-			} else {
-				const { valid, errors: syntaxErrors } = validateRuleCondition(formData.condition);
-				if (!valid) {
-					errs.condition = syntaxErrors.join(', ');
-				}
-			}
-
-			setErrors(errs);
-			if (Object.keys(errs).length) return;
-		}
-
-		if (completed[step] || step === activeStep || step < activeStep) {
-			setActiveStep(step);
-		}
-	};
-
-	return (
-		<Box
-			sx={{
-				width: '100%',
-				display: 'flex',
-				justifyContent: 'center',
-				mt: 6,
-			}}
-		>
-			<Box sx={{ width: '100%', maxWidth: 800 }}>
-				{/* Stepper */}
-				<Stepper activeStep={activeStep} alternativeLabel>
-					{steps.map((label, index) => (
-						<Step key={label} completed={!!completed[index]}>
-							<StepLabel
-								onClick={handleStep(index)}
-								StepIconComponent={(props) => <CircleStepIcon icons={icons} disabled={index > activeStep && !completed[index]} {...props} />}
-							>
-								{label}
-							</StepLabel>
-						</Step>
-					))}
-				</Stepper>
-
-				{/* Step content */}
-				<Box sx={{ mt: 4 }}>
-					{activeStep === 0 && (
-						<Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-							<TextField
-								required
-								label='Rule Name'
-								value={formData.name}
-								onChange={(e) => handleChange('name', e.target.value)}
-								error={!!errors.name}
-								helperText={errors.name}
-								size='small'
-								sx={{ width: '100%', maxWidth: 400 }}
-							/>
-						</Box>
-					)}
-
-					{activeStep === 1 && (
-						<>
-							<TextField
-								fullWidth
-								multiline
-								rows={4}
-								required
-								label='Rule Condition'
-								placeholder="amount_to_send > 1000 AND to_currency = 'USD'"
-								value={formData.condition}
-								onChange={(e) => handleChange('condition', e.target.value)}
-								error={!!errors.condition}
-								helperText={errors.condition}
-								InputLabelProps={{ shrink: true }}
-								sx={{ mb: 2 }}
-							/>
-						</>
-					)}
-
-					{activeStep === 2 && (
-						<Box>
-							<Typography variant='h6' fontWeight='bold' sx={{ fontSize: '1.25rem', mb: 2 }}>
-								Review Rule
-							</Typography>
-
-							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-								{/* Name */}
-								<Box>
-									<Typography variant='subtitle1' fontWeight='bold'>
-										Name
-									</Typography>
-									<Typography variant='body1'>{formData.name || '-'}</Typography>
-								</Box>
-
-								{/* Condition */}
-								<Box>
-									<Typography variant='subtitle1' fontWeight='bold'>
-										Condition
-									</Typography>
-									<Typography
-										variant='body2'
-										sx={{
-											fontFamily: 'monospace',
-											whiteSpace: 'pre-wrap',
-											wordBreak: 'break-word',
-											bgcolor: 'grey.200', // 👈 more obvious background
-											p: 2, // 👈 bigger padding
-											borderRadius: 1,
-											border: '1px solid',
-											borderColor: 'grey.400',
-										}}
-									>
-										{formData.condition || '-'}
-									</Typography>
-								</Box>
-							</Box>
-						</Box>
-					)}
-				</Box>
-
-				{/* Buttons */}
-				<Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
-					{/* Exit */}
-					<Button variant='outlined' color='secondary' onClick={handleExitClick}>
-						Exit
-					</Button>
-
-					{/* Left side buttons */}
-					<Box>
-						{activeStep > 0 && (
-							<Button onClick={handleBack} sx={{ mr: 1 }}>
-								Back
-							</Button>
-						)}
-						{activeStep < steps.length - 1 ? (
-							<Button variant='contained' onClick={handleNext}>
-								Next
-							</Button>
-						) : (
-							<Button variant='contained' color='success' onClick={handleSubmit}>
-								{isEditing ? 'Save' : 'Submit'}
-							</Button>
-						)}
-					</Box>
-				</Box>
-
-				{/* Exit Confirmation Dialog */}
-				<Dialog open={openExitConfirm} onClose={cancelExit}>
-					<DialogTitle>Are you sure?</DialogTitle>
-					<DialogContent>
-						<DialogContentText>You have unsaved data. If you exit now, all progress will be lost. Do you really want to exit?</DialogContentText>
-					</DialogContent>
-					<DialogActions>
-						<Button onClick={cancelExit} color='primary'>
-							No, stay here
-						</Button>
-						<Button onClick={confirmExit} color='secondary' variant='contained'>
-							Yes, exit
-						</Button>
-					</DialogActions>
-				</Dialog>
-			</Box>
-		</Box>
-	);
-}
+export default CreateRuleByAI;
