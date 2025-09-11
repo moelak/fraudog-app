@@ -1,28 +1,12 @@
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Alert,
-  Button,
-  LinearProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem
-} from '@mui/material';
-import {
-  CloudUpload as CloudUploadIcon,
-  Delete as DeleteIcon
-} from '@mui/icons-material';
-import { StepperData } from '../CreateRuleByAI';
+import { 
+  CloudArrowUpIcon, 
+  TrashIcon, 
+  CheckCircleIcon, 
+  ExclamationTriangleIcon,
+  InformationCircleIcon 
+} from '@heroicons/react/24/outline';
+import type { StepperData } from '@/components/RuleManagement/createRuleByAI/CreateRuleManagement';
 
 interface DataUploadStepProps {
   data: StepperData;
@@ -38,6 +22,7 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({
   const [isDragOver, setIsDragOver] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
   const [errors, setErrors] = React.useState<{[key: string]: string}>({});
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const parseCSV = (text: string): { headers: string[]; rows: string[][] } => {
     const lines = text.split('\n').filter(line => line.trim());
@@ -103,159 +88,193 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({
     if (file) handleFileUpload(file);
   };
 
-  const removeFile = () => {
-    updateData({ 
-      csvFile: null, 
-      csvContent: '', 
-      csvData: [] 
+  const handleRemoveFile = () => {
+    updateData({
+      csvFile: undefined,
+      csvContent: '',
+      csvData: undefined
     });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  const renderFilePreview = () => {
+    if (!data.csvFile) return null;
+
+    return (
+      <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+        <div className="flex items-center">
+          <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
+          <span className="font-medium text-green-800">File uploaded successfully</span>
+          <button
+            onClick={handleRemoveFile}
+            className="ml-auto text-red-600 hover:text-red-800"
+            aria-label="Remove file"
+          >
+            <TrashIcon className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="mt-2 text-sm text-gray-600">
+          <p>File: {data.csvFile.name}</p>
+          <p>Size: {(data.csvFile.size / 1024).toFixed(2)} KB</p>
+        </div>
+      </div>
+    );
   };
 
-  const csvHeaders = data.csvContent ? parseCSV(data.csvContent).headers : [];
+  const renderDataPreview = () => {
+    if (!data.csvData?.length) return null;
+
+    const headers = data.csvContent.split('\n')[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const previewRows = data.csvData.slice(0, 5); // Show first 5 rows in preview
+
+    return (
+      <div className="mt-6">
+        <h3 className="text-sm font-medium text-gray-700 mb-2">Data Preview</h3>
+        <div className="overflow-x-auto">
+          <div className="inline-block min-w-full align-middle">
+            <div className="overflow-hidden shadow-sm ring-1 ring-black ring-opacity-5 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-300">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {headers.map((header, index) => (
+                      <th 
+                        key={index}
+                        scope="col"
+                        className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6"
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {previewRows.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {row.map((cell: string, cellIndex: number) => (
+                        <td 
+                          key={`${rowIndex}-${cellIndex}`}
+                          className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500 sm:pl-6 truncate max-w-xs"
+                          title={cell}
+                        >
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {data.csvData.length > 5 && (
+          <p className="mt-2 text-sm text-gray-500">
+            Showing 5 of {data.csvData.length} rows. Only the first 1000 rows are displayed in the preview.
+          </p>
+        )}
+      </div>
+    );
+  };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* CSV Upload Section */}
-      <Box>
-        <Typography variant="h6" gutterBottom>
-          Upload Transaction Data
-        </Typography>
-        
-        {!data.csvFile ? (
-          <Paper
-            sx={{
-              border: '2px dashed',
-              borderColor: isDragOver ? 'primary.main' : 'grey.300',
-              bgcolor: isDragOver ? 'primary.50' : 'grey.50',
-              p: 4,
-              textAlign: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                borderColor: 'primary.main',
-                bgcolor: 'primary.50'
-              }
-            }}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onClick={() => document.getElementById('csv-upload')?.click()}
-          >
-            {isUploading ? (
-              <Box>
-                <LinearProgress sx={{ mb: 2 }} />
-                <Typography>Processing file...</Typography>
-              </Box>
-            ) : (
-              <Box>
-                <CloudUploadIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-                <Typography variant="h6" gutterBottom>
-                  Drop your CSV file here or click to browse
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Supports CSV files up to 10MB
-                </Typography>
-              </Box>
-            )}
-            <input
-              id="csv-upload"
-              type="file"
-              accept=".csv"
-              style={{ display: 'none' }}
-              onChange={handleFileInputChange}
-            />
-          </Paper>
-        ) : (
-          <Paper sx={{ p: 3, bgcolor: 'success.50', border: '1px solid', borderColor: 'success.200' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-              <Box>
-                <Typography variant="subtitle1" fontWeight="bold">
-                  {data.csvFile.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {formatFileSize(data.csvFile.size)} • {data.csvData.length} rows • {csvHeaders.length} columns
-                </Typography>
-              </Box>
-              <Button
-                startIcon={<DeleteIcon />}
-                color="error"
-                onClick={removeFile}
-              >
-                Remove
-              </Button>
-            </Box>
-            
-            {/* Data Preview */}
-            <Typography variant="subtitle2" gutterBottom>
-              Data Preview (first 5 rows):
-            </Typography>
-            <TableContainer component={Paper} sx={{ maxHeight: 300 }}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    {csvHeaders.map((header, index) => (
-                      <TableCell key={index} sx={{ fontWeight: 'bold' }}>
-                        {header}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {data.csvData.slice(0, 5).map((row, rowIndex) => (
-                    <TableRow key={rowIndex}>
-                      {row.map((cell, cellIndex) => (
-                        <TableCell key={cellIndex}>
-                          {cell.length > 50 ? `${cell.substring(0, 50)}...` : cell}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
-        )}
-        
-        {errors.csvData && (
-          <Alert severity="error" sx={{ mt: 1 }}>
-            {errors.csvData}
-          </Alert>
-        )}
-      </Box>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-medium text-gray-900">Upload Transaction Data</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Upload a CSV file containing transaction data for analysis. The first row should contain headers.
+        </p>
+      </div>
 
-      {/* Custom Instructions */}
-      <Box>
-        <Typography variant="h6" gutterBottom>
-          Custom Instructions (Optional)
-        </Typography>
-        <TextField
-          fullWidth
-          multiline
+      <div 
+        className={`mt-4 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-lg ${
+          isDragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+        }`}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
+        <div className="space-y-1 text-center">
+          <CloudArrowUpIcon className="mx-auto h-12 w-12 text-gray-400" />
+          <div className="flex text-sm text-gray-600">
+            <label
+              htmlFor="file-upload"
+              className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+            >
+              <span>Upload a file</span>
+              <input
+                id="file-upload"
+                name="file-upload"
+                type="file"
+                className="sr-only"
+                accept=".csv"
+                onChange={handleFileInputChange}
+                ref={fileInputRef}
+              />
+            </label>
+            <p className="pl-1">or drag and drop</p>
+          </div>
+          <p className="text-xs text-gray-500">CSV up to 10MB</p>
+        </div>
+      </div>
+
+      {isUploading && (
+        <div className="mt-4">
+          <div className="h-1 w-full bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-600 rounded-full animate-pulse"></div>
+          </div>
+          <p className="mt-1 text-sm text-gray-500">Processing file...</p>
+        </div>
+      )}
+
+      {errors.csvData && (
+        <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-400">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <ExclamationTriangleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{errors.csvData}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isUploading && data.csvFile && (
+        <div className="space-y-4">
+          {renderFilePreview()}
+          {renderDataPreview()}
+        </div>
+      )}
+
+      <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <InformationCircleIcon className="h-5 w-5 text-blue-400" aria-hidden="true" />
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-blue-800">Data Privacy</h3>
+            <div className="mt-2 text-sm text-blue-700">
+              <p>Your data is processed securely and never stored permanently. We only use it to generate fraud detection rules.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <h2 className="text-lg font-medium text-gray-900">Custom Instructions (Optional)</h2>
+        <textarea
+          className="block w-full mt-1 p-2 border border-gray-300 rounded-lg"
           rows={4}
-          label="Additional instructions for AI analysis"
           placeholder="e.g., Focus on high-value transactions, Consider geographic patterns, Prioritize velocity-based rules..."
           value={data.userInstructions}
           onChange={(e) => updateData({ userInstructions: e.target.value })}
-          helperText="Provide specific guidance for the AI to focus on particular fraud patterns or business requirements"
         />
-      </Box>
-
-      {/* Privacy Notice */}
-      <Alert severity="info">
-        <Typography variant="body2">
-          <strong>Privacy Notice:</strong> Your transaction data will be sent to OpenAI for analysis. 
-          Please ensure you have appropriate permissions and consider data privacy requirements.
-        </Typography>
-      </Alert>
-    </Box>
+        <p className="mt-1 text-sm text-gray-500">
+          Provide specific guidance for the AI to focus on particular fraud patterns or business requirements.
+        </p>
+      </div>
+    </div>
   );
 };
 

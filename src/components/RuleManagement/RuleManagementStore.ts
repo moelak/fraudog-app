@@ -1,12 +1,14 @@
 // components/RuleManagement/RuleManagementStore.ts
 import { makeAutoObservable } from "mobx";
 import { 
-  DatabaseRule, 
-  AIGenerationRecord, 
   createInitialAIGenerationRecord,
-  updateAIGenerationWithResponse,
-  type UserContext 
-} from "../../utils/ruleConverter";
+  updateAIGenerationWithResponse
+} from "@/utils/ruleConverter";
+import type { 
+  DatabaseRule, 
+  AIGenerationRecord,
+  UserContext 
+} from "@/utils/ruleConverter";
 
 export interface Rule {
   id: string;

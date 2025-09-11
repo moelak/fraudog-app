@@ -1,4 +1,4 @@
-import { OpenAIResponse } from '../utils/ruleConverter';
+import type { OpenAIResponse } from '@/utils/ruleConverter';
 
 export interface TokenEstimation {
   originalRecords: number;

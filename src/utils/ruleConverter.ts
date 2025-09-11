@@ -9,6 +9,7 @@ export interface OpenAIRule {
     pattern_type: string;
     confidence_level: number;
     expected_false_positive_rate: number;
+    improvements?: string;
   };
 }
 
@@ -19,7 +20,7 @@ export interface OpenAIResponse {
 // Database Rule Types
 export interface DatabaseRule {
   id?: number;
-  user_id?: number;
+  user_id?: string;
   name: string;
   description: string;
   category: string;
@@ -117,7 +118,7 @@ export const convertOpenAIRuleToDatabase = (
     status: 'active',
     log_only: false, // User configurable in Step 4
     source: 'ai_generated',
-    user_id: userContext.user_id,
+    user_id: userContext.user_id.toString(),
     organization_id: userContext.organization_id,
     is_deleted: false
   };
@@ -133,7 +134,7 @@ export const createInitialAIGenerationRecord = (
 ): Omit<AIGenerationRecord, 'id' | 'created_at' | 'updated_at'> => {
   return {
     organization_id: userContext.organization_id,
-    user_id: userContext.user_id,
+    user_id: userContext.user_id.toString(),
     description: "AI-generated fraud detection rule",
     status: 'processing',
     user_instructions: userInstructions,

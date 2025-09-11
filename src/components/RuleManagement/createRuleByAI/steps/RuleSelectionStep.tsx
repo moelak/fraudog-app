@@ -1,25 +1,7 @@
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Button,
-  Card,
-  CardContent,
-  CardActions,
-  Chip,
-  Alert,
-  Divider,
-  Grid
-} from '@mui/material';
-import {
-  CheckCircle as CheckCircleIcon,
-  Security as SecurityIcon,
-  TrendingUp as TrendingUpIcon,
-  Warning as WarningIcon
-} from '@mui/icons-material';
-import { StepperData } from '../CreateRuleByAI';
-import { OpenAIRule } from '../../../utils/ruleConverter';
+import { CheckCircleIcon, ShieldCheckIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import type { StepperData } from '@/components/RuleManagement/createRuleByAI/CreateRuleByAI';
+import type { OpenAIRule } from '@/utils/ruleConverter';
 
 interface RuleSelectionStepProps {
   data: StepperData;
@@ -34,17 +16,28 @@ const RuleSelectionStep: React.FC<RuleSelectionStepProps> = ({
     updateData({ selectedRuleIndex: index });
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity.toLowerCase()) {
-      case 'high': return 'error';
-      case 'medium': return 'warning';
-      case 'low': return 'info';
-      default: return 'default';
+  const getSeverityColor = (severity: string | number) => {
+    if (typeof severity === 'number') {
+      if (severity >= 80) return 'bg-red-100 text-red-800';
+      if (severity >= 50) return 'bg-yellow-100 text-yellow-800';
+      return 'bg-blue-100 text-blue-800';
     }
+
+    const severityLower = severity.toLowerCase();
+    if (severityLower === 'high' || severityLower === 'error') return 'bg-red-100 text-red-800';
+    if (severityLower === 'medium' || severityLower === 'warning') return 'bg-yellow-100 text-yellow-800';
+    if (severityLower === 'low' || severityLower === 'info') return 'bg-blue-100 text-blue-800';
+    if (severityLower === 'success') return 'bg-green-100 text-green-800';
+    return 'bg-gray-100 text-gray-800';
+  };
+
+  const getDecisionColor = (decision: string) => {
+    if (decision === 'deny') return 'bg-red-100 text-red-800';
+    if (decision === 'allow') return 'bg-green-100 text-green-800';
+    return 'bg-yellow-100 text-yellow-800';
   };
 
   const formatCondition = (condition: string) => {
-    // Format SQL-like conditions for better readability
     return condition
       .replace(/AND/g, '\nAND')
       .replace(/OR/g, '\nOR')
@@ -54,187 +47,170 @@ const RuleSelectionStep: React.FC<RuleSelectionStepProps> = ({
 
   if (data.generatedRules.length === 0) {
     return (
-      <Box sx={{ textAlign: 'center', py: 4 }}>
-        <Typography variant="h6" color="text.secondary" gutterBottom>
-          No rules generated yet
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
+      <div className="text-center py-4">
+        <h3 className="text-lg font-medium text-gray-500 mb-2">No rules generated yet</h3>
+        <p className="text-sm text-gray-500">
           Please run the analysis in the previous step to generate fraud detection rules.
-        </Typography>
-      </Box>
+        </p>
+      </div>
     );
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <Box>
-        <Typography variant="h6" gutterBottom>
-          Generated Fraud Detection Rules
-        </Typography>
-        <Typography variant="body2" color="text.secondary" paragraph>
-          Select the rule that best fits your fraud detection needs. Each rule has been analyzed for potential impact on your transaction data.
-        </Typography>
-      </Box>
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-lg font-medium text-gray-900">Generated Fraud Detection Rules</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Select the rule that best fits your fraud detection needs.
+        </p>
+      </div>
 
-      {/* Rules Grid */}
-      <Grid container spacing={3}>
+      <div className="space-y-4">
         {data.generatedRules.map((rule, index) => (
-          <Grid item xs={12} key={index}>
-            <Card 
-              sx={{ 
-                border: data.selectedRuleIndex === index ? '2px solid' : '1px solid',
-                borderColor: data.selectedRuleIndex === index ? 'primary.main' : 'grey.300',
-                position: 'relative',
-                '&:hover': { 
-                  borderColor: 'primary.main',
-                  boxShadow: 2
-                }
-              }}
-            >
-              {data.selectedRuleIndex === index && (
-                <CheckCircleIcon 
-                  sx={{ 
-                    position: 'absolute', 
-                    top: 16, 
-                    right: 16, 
-                    color: 'primary.main',
-                    fontSize: 28
-                  }} 
-                />
+          <div
+            key={index}
+            onClick={() => handleRuleSelect(index)}
+            className={`relative p-4 border rounded-lg cursor-pointer transition-colors ${
+              data.selectedRuleIndex === index
+                ? 'border-blue-500 ring-2 ring-blue-200 bg-blue-50'
+                : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+            }`}
+          >
+            {data.selectedRuleIndex === index && (
+              <CheckCircleIcon
+                className="absolute top-4 right-4 h-6 w-6 text-blue-500"
+                aria-hidden="true"
+              />
+            )}
+
+            <div className="space-y-3">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">{rule.rule_name}</h3>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSeverityColor(
+                      rule.risk_score || 'medium'
+                    )}`}
+                  >
+                    Risk: {rule.risk_score || 'N/A'}
+                  </span>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-300">
+                    {rule.metadata?.pattern_type || 'Pattern-based'}
+                  </span>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getDecisionColor(
+                      rule.decision || 'review'
+                    )}`}
+                  >
+                    {rule.decision || 'Review'}
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-600">{rule.description}</p>
+
+              <div className="border-t border-gray-200 my-3"></div>
+
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Rule Condition:</h4>
+                <div className="p-3 bg-gray-50 rounded-md font-mono text-sm overflow-x-auto">
+                  <pre className="whitespace-pre-wrap m-0">{formatCondition(rule.conditions)}</pre>
+                </div>
+              </div>
+
+              {rule.metadata?.improvements && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-1">Key Improvements:</h4>
+                  <p className="text-sm text-gray-600">{rule.metadata.improvements}</p>
+                </div>
               )}
-              
-              <CardContent>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="h6" gutterBottom>
-                    {rule.rule_name}
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                    <Chip 
-                      label={rule.risk_score || 'Medium'} 
-                      color={getSeverityColor(rule.risk_score || 'medium')}
-                      size="small"
-                    />
-                    <Chip 
-                      label={rule.metadata?.pattern_type || 'Pattern-based'} 
-                      variant="outlined"
-                      size="small"
-                    />
-                    <Chip 
-                      label={rule.decision || 'Review'} 
-                      color={rule.decision === 'deny' ? 'error' : rule.decision === 'allow' ? 'success' : 'warning'}
-                      size="small"
-                    />
-                  </Box>
-                </Box>
 
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  {rule.description}
-                </Typography>
-
-                <Divider sx={{ my: 2 }} />
-
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Rule Condition:
-                  </Typography>
-                  <Paper sx={{ p: 2, bgcolor: 'grey.50', fontFamily: 'monospace', fontSize: '0.875rem' }}>
-                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-                      {formatCondition(rule.conditions)}
-                    </pre>
-                  </Paper>
-                </Box>
-
-                {rule.metadata?.improvements && (
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Key Improvements:
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {rule.metadata.improvements}
-                    </Typography>
-                  </Box>
-                )}
-
-                {/* Impact Analysis (if available) */}
-                {data.selectedRuleIndex === index && data.ruleImpactAnalysis && (
-                  <Box sx={{ mt: 2, p: 2, bgcolor: 'info.50', borderRadius: 1 }}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Estimated Impact Analysis:
-                    </Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={4}>
-                        <Box sx={{ textAlign: 'center' }}>
-                          <SecurityIcon sx={{ color: 'success.main', mb: 1 }} />
-                          <Typography variant="h6" color="success.main">
-                            {data.ruleImpactAnalysis.wouldCatch}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Potential Catches
-                          </Typography>
-                        </Box>
-                      </Grid>
-                      <Grid item xs={4}>
-                        <Box sx={{ textAlign: 'center' }}>
-                          <WarningIcon sx={{ color: 'warning.main', mb: 1 }} />
-                          <Typography variant="h6" color="warning.main">
-                            {data.ruleImpactAnalysis.falsePositives}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            False Positives
-                          </Typography>
-                        </Box>
-                      </Grid>
-                      <Grid item xs={4}>
-                        <Box sx={{ textAlign: 'center' }}>
-                          <TrendingUpIcon sx={{ color: 'primary.main', mb: 1 }} />
-                          <Typography variant="h6" color="primary.main">
-                            ${data.ruleImpactAnalysis.potentialFraudPrevented.toLocaleString()}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Fraud Prevented
-                          </Typography>
-                        </Box>
-                      </Grid>
-                    </Grid>
-                  </Box>
-                )}
-              </CardContent>
-
-              <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
-                <Button
-                  variant={data.selectedRuleIndex === index ? "contained" : "outlined"}
-                  onClick={() => handleRuleSelect(index)}
-                  startIcon={data.selectedRuleIndex === index ? <CheckCircleIcon /> : undefined}
-                >
-                  {data.selectedRuleIndex === index ? 'Selected' : 'Use This Rule'}
-                </Button>
-              </CardActions>
-            </Card>
-          </Grid>
+              {data.selectedRuleIndex === index && data.ruleImpactAnalysis && (
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                  <h4 className="text-sm font-medium text-gray-800 mb-3">Estimated Impact Analysis:</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <ShieldCheckIcon className="h-6 w-6 mx-auto mb-1 text-green-500" />
+                      <p className="text-xl font-semibold text-green-600">
+                        {data.ruleImpactAnalysis.wouldCatch}
+                      </p>
+                      <p className="text-xs text-gray-500">Potential Catches</p>
+                    </div>
+                    <div className="text-center">
+                      <ExclamationTriangleIcon className="h-6 w-6 mx-auto mb-1 text-yellow-500" />
+                      <p className="text-xl font-semibold text-yellow-600">
+                        {data.ruleImpactAnalysis.falsePositives}
+                      </p>
+                      <p className="text-xs text-gray-500">False Positives</p>
+                    </div>
+                    <div className="text-center">
+                      <svg
+                        className="h-6 w-6 mx-auto mb-1 text-blue-500"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <p className="text-xl font-semibold text-blue-600">
+                        ${data.ruleImpactAnalysis.potentialFraudPrevented.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-gray-500">Potential Fraud Prevented</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         ))}
-      </Grid>
+      </div>
 
-      {/* Selection Summary */}
-      {data.selectedRuleIndex >= 0 && (
-        <Alert severity="success">
-          <Typography variant="body2">
-            <strong>Rule Selected:</strong> {data.generatedRules[data.selectedRuleIndex].rule_name}
-          </Typography>
-          <Typography variant="body2" sx={{ mt: 1 }}>
-            You can proceed to the next step to review and configure the final rule settings.
-          </Typography>
-        </Alert>
+      {data.selectedRuleIndex >= 0 ? (
+        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <CheckCircleIcon className="h-5 w-5 text-green-400" aria-hidden="true" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-green-800">
+                Rule Selected: {data.generatedRules[data.selectedRuleIndex].rule_name}
+              </h3>
+              <p className="mt-1 text-sm text-green-700">
+                You can proceed to the next step to review and configure the final rule settings.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-5 w-5 text-blue-400"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-blue-700">
+                Please select a rule to continue to the final review step.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
-
-      {/* No Selection Warning */}
-      {data.selectedRuleIndex < 0 && (
-        <Alert severity="info">
-          <Typography variant="body2">
-            Please select a rule to continue to the final review step.
-          </Typography>
-        </Alert>
-      )}
-    </Box>
+    </div>
   );
 };
 

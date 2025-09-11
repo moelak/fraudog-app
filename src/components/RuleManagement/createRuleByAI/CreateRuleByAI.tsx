@@ -12,7 +12,7 @@ import {
   Backdrop
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { useRuleManagementStore } from '../../../hooks/useRuleManagementStore';
+import { useRuleManagementStore } from '@/hooks/useRuleManagementStore';
 import { 
   callQuickAnalysis, 
   callDeepAnalysis, 
@@ -21,14 +21,14 @@ import {
   parseCSVData,
   type TokenEstimation,
   type StreamingStatus
-} from '../../../services/openaiService';
+} from '@/services/openaiService';
 import {
   convertOpenAIRuleToDatabase,
   calculateRuleImpact,
   type OpenAIRule,
   type UserContext,
   type DatabaseRule
-} from '../../../utils/ruleConverter';
+} from '@/utils/ruleConverter';
 
 // Step Components
 import DataUploadStep from './steps/DataUploadStep';

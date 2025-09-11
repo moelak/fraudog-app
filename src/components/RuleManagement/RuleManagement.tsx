@@ -29,7 +29,7 @@ const RuleManagement = observer(({ onSearchByDateRange }: Props) => {
 					<div>
 						<h1 className='text-2xl md:text-3xl font-bold text-gray-900'>Create New Rule</h1>
 						<p className='mt-2 text-gray-600'>
-							<span className='block sm:inline'>Create rules manualy</span>
+							<span className='block sm:inline'>Create rules manually</span>
 						</p>
 					</div>
 				) : ruleManagementStore.displayAIRuleStepper ? (
