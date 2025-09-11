@@ -47,7 +47,8 @@ export interface StepperData {
   // Step 1: Data Upload
   csvFile: File | null;
   csvContent: string;
-  csvData: any[];
+  csvData: string[][]; // Fixed: Changed from any[] to string[][]
+  csvHeaders: string[];
   userInstructions: string;
   
   // Step 2: Analysis Selection
@@ -85,7 +86,8 @@ const CreateRuleByAI: React.FC = () => {
   const [data, setData] = useState<StepperData>({
     csvFile: null,
     csvContent: '',
-    csvData: [],
+    csvData: [] as string[][], // Fix: Explicitly type as string[][]
+    csvHeaders: [],
     userInstructions: '',
     analysisType: 'quick',
     tokenEstimation: null,
