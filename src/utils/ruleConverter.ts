@@ -6,7 +6,7 @@ export interface OpenAIRule {
   conditions: string;
   decision: string;
   metadata: {
-    pattern_type: string;
+    category: string;
     confidence_level: number;
     expected_false_positive_rate: number;
     improvements?: string;
@@ -33,7 +33,7 @@ export interface DatabaseRule {
   updated_at?: Date;
   source: 'ai_generated';
   organization_id?: string;
-  decision: 'allow' | 'deny' | 'review';
+  decision: string;
 }
 
 export interface AIGenerationRecord {
@@ -111,7 +111,7 @@ export const convertOpenAIRuleToDatabase = (
   return {
     name: openAIRule.rule_name,
     description: openAIRule.description,
-    category: openAIRule.metadata?.pattern_type || 'General',
+    category: openAIRule.metadata?.category || 'General',
     condition: openAIRule.conditions,
     severity: convertRiskScoreToSeverity(openAIRule.risk_score),
     decision: normalizeDecision(openAIRule.decision),

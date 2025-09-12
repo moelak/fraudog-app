@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   BoltIcon, 
   CpuChipIcon, 
   CurrencyDollarIcon,
   ClockIcon,
   DocumentTextIcon,
-  CalculatorIcon
+  CalculatorIcon,
+  InformationCircleIcon,
+  ChevronDownIcon,
+  ChevronUpIcon
 } from '@heroicons/react/24/outline';
 import type { StepperData } from '@/components/RuleManagement/createRuleByAI/CreateRuleByAI';
 import type { TokenEstimation } from '@/services/openaiService';
@@ -21,6 +24,8 @@ const AnalysisSelectionStep: React.FC<AnalysisSelectionStepProps> = ({
   updateData,
   onTokenEstimation
 }) => {
+  const [showCostBreakdown, setShowCostBreakdown] = useState(false);
+
   React.useEffect(() => {
     if (data.csvContent && !data.tokenEstimation) {
       onTokenEstimation(data.csvContent);
@@ -32,9 +37,20 @@ const AnalysisSelectionStep: React.FC<AnalysisSelectionStepProps> = ({
   };
 
   const formatCost = (tokens: number, pricePerToken: number): string => {
-    const cost = (tokens * pricePerToken).toFixed(4);
+    const cost = (tokens * pricePerToken).toFixed(2);
     return `$${cost}`;
   };
+
+  const CostEstimateButton = ({ cost, onClick }: { cost: string; onClick: () => void }) => (
+    <button
+      onClick={onClick}
+      className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors cursor-pointer group"
+    >
+      <CurrencyDollarIcon className="h-3.5 w-3.5 mr-1" />
+      {cost}
+      <InformationCircleIcon className="h-3.5 w-3.5 ml-1 opacity-60 group-hover:opacity-100" />
+    </button>
+  );
 
   const AnalysisOptionCard = ({
     type,
@@ -87,10 +103,20 @@ const AnalysisSelectionStep: React.FC<AnalysisSelectionStepProps> = ({
           <p className="mt-1 text-sm text-gray-600">{description}</p>
           
           <div className="mt-3 flex flex-wrap gap-2">
-            <div className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              <CurrencyDollarIcon className="h-3.5 w-3.5 mr-1" />
-              {cost}
-            </div>
+            {data.tokenEstimation ? (
+              <CostEstimateButton 
+                cost={cost} 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCostBreakdown(!showCostBreakdown);
+                }}
+              />
+            ) : (
+              <div className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <CurrencyDollarIcon className="h-3.5 w-3.5 mr-1" />
+                {cost}
+              </div>
+            )}
             <div className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
               <ClockIcon className="h-3.5 w-3.5 mr-1" />
               {time}
@@ -165,7 +191,7 @@ const AnalysisSelectionStep: React.FC<AnalysisSelectionStepProps> = ({
           <AnalysisOptionCard
             type="deep"
             title="Deep Analysis"
-            description="Comprehensive analysis using OpenAI Assistants with code interpreter. Performs statistical analysis, pattern detection, and generates detailed rules with explanations."
+            description="Comprehensive analysis using statistical analysis, pattern detection, and generates detailed rules with explanations."
             icon={<CpuChipIcon />}
             cost={data.tokenEstimation ? formatCost(data.tokenEstimation.processedTokens * 2, 0.00003) : 'Calculating...'}
             time="2-3 minutes"
@@ -176,10 +202,21 @@ const AnalysisSelectionStep: React.FC<AnalysisSelectionStepProps> = ({
         </div>
       </div>
 
-      {/* Cost Breakdown */}
-      {data.tokenEstimation && (
-        <div className="p-6 bg-gray-50 rounded-lg">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Cost Breakdown</h2>
+      {/* Cost Breakdown Dropdown */}
+      {data.tokenEstimation && showCostBreakdown && (
+        <div className="p-6 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-gray-900 flex items-center">
+              <CalculatorIcon className="h-5 w-5 mr-2 text-gray-600" />
+              Cost Breakdown
+            </h2>
+            <button
+              onClick={() => setShowCostBreakdown(false)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <ChevronUpIcon className="h-5 w-5" />
+            </button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <h3 className="font-medium text-gray-700 mb-3 flex items-center">

@@ -97,38 +97,32 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ data, updateData }) => {
             <h3 className="text-lg font-medium text-gray-900">Impact Analysis</h3>
           </div>
           
-          <Grid container spacing={4}>
-            <Grid item xs={12} sm={4}>
-              <div className="p-4 text-center bg-gray-50 rounded-lg">
-                <p className="text-2xl font-semibold text-green-600">
-                  {ruleImpactAnalysis.wouldCatch}
-                </p>
-                <p className="text-xs text-gray-500">
-                  Transactions Caught
-                </p>
-              </div>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <div className="p-4 text-center bg-gray-50 rounded-lg">
-                <p className="text-2xl font-semibold text-yellow-600">
-                  {ruleImpactAnalysis.falsePositives}
-                </p>
-                <p className="text-xs text-gray-500">
-                  Potential False Positives
-                </p>
-              </div>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <div className="p-4 text-center bg-gray-50 rounded-lg">
-                <p className="text-2xl font-semibold text-blue-600">
-                  ${ruleImpactAnalysis.potentialFraudPrevented.toLocaleString()}
-                </p>
-                <p className="text-xs text-gray-500">
-                  Potential Fraud Prevented
-                </p>
-              </div>
-            </Grid>
-          </Grid>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-4 text-center bg-gray-50 rounded-lg">
+              <p className="text-2xl font-semibold text-green-600">
+                {ruleImpactAnalysis.wouldCatch}
+              </p>
+              <p className="text-xs text-gray-500">
+                Transactions Caught
+              </p>
+            </div>
+            <div className="p-4 text-center bg-gray-50 rounded-lg">
+              <p className="text-2xl font-semibold text-yellow-600">
+                {ruleImpactAnalysis.falsePositives}
+              </p>
+              <p className="text-xs text-gray-500">
+                Potential False Positives
+              </p>
+            </div>
+            <div className="p-4 text-center bg-gray-50 rounded-lg">
+              <p className="text-2xl font-semibold text-blue-600">
+                ${ruleImpactAnalysis.potentialFraudPrevented.toLocaleString()}
+              </p>
+              <p className="text-xs text-gray-500">
+                Potential Fraud Prevented
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

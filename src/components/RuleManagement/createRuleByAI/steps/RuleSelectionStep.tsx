@@ -95,7 +95,7 @@ const RuleSelectionStep: React.FC<RuleSelectionStepProps> = ({
                     Risk: {rule.risk_score || 'N/A'}
                   </span>
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-300">
-                    {rule.metadata?.pattern_type || 'Pattern-based'}
+                    {rule.metadata?.category || 'Pattern-based'}
                   </span>
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getDecisionColor(
