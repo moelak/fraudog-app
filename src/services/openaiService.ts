@@ -128,8 +128,9 @@ export const callQuickAnalysis = async (
         'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
-        testData: processedData,
-        userInstructions
+        csvContent: processedData,
+        fileName: 'transactions.csv',
+        userInstructions: userInstructions
       }),
     });
 
@@ -165,32 +166,71 @@ export const callQuickAnalysis = async (
  */
 export const callDeepAnalysis = async (
   csvData: string,
+  fileName: string = 'transactions.csv',
   userInstructions: string = '',
   onStatusUpdate?: (status: StreamingStatus) => void
 ): Promise<DeepAnalysisResult> => {
+  console.log('🔍 callDeepAnalysis - Starting streaming request');
+  console.log('📊 Input parameters:', {
+    csvDataLength: csvData.length,
+    fileName,
+    userInstructionsLength: userInstructions.length,
+    userInstructions: userInstructions.substring(0, 100) + (userInstructions.length > 100 ? '...' : ''),
+    hasStatusCallback: !!onStatusUpdate
+  });
+
   try {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     if (!supabaseUrl) {
       throw new Error('Supabase URL not configured');
     }
 
-    const response = await fetch(`${supabaseUrl}/functions/v1/openai-assistants-interpreter`, {
+    const requestUrl = `${supabaseUrl}/functions/v1/openai-assistants-interpreter`;
+    const requestHeaders = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+    };
+    const requestBody = {
+      csvContent: csvData,
+      fileName: fileName,
+      userInstructions: userInstructions
+    };
+
+    console.log('🌐 Deep Analysis request details:', {
+      url: requestUrl,
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': requestHeaders['Content-Type'],
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 10)}...`,
+        'apikey': `${import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 10)}...`
       },
-      body: JSON.stringify({
-        testData: csvData,
-        userInstructions
-      }),
+      bodyKeys: Object.keys(requestBody),
+      bodySize: JSON.stringify(requestBody).length
+    });
+
+    console.log('📤 Making streaming fetch request...');
+    const response = await fetch(requestUrl, {
+      method: 'POST',
+      headers: requestHeaders,
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log('📥 Streaming response received:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      headers: Object.fromEntries(response.headers.entries())
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error('❌ HTTP error response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
     }
 
     if (!response.body) {
+      console.error('❌ No response body available for streaming');
       throw new Error('No response body');
     }
 

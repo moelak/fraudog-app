@@ -359,7 +359,8 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({ data, updateData, onVal
         csvFile: file,
         csvContent: csvContent,
         csvHeaders: parsedData.headers,
-        csvData: parsedData.rows.slice(0, 1000) // Limit to first 1000 rows for preview
+        csvData: parsedData.rows.slice(0, 1000), // Limit to first 1000 rows for preview
+        fileName: file.name // Store the original filename
       });
       
       onValidation(csvContent);
@@ -460,23 +461,31 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({ data, updateData, onVal
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {previewRows.map((row, rowIndex) => {
-                    if (!Array.isArray(row)) {
-                      console.warn(`Row ${rowIndex} is not an array:`, row);
-                      return null;
+                    // Handle both object and array formats
+                    const isObject = typeof row === 'object' && !Array.isArray(row);
                     
+                    if (!isObject && !Array.isArray(row)) {
+                      return null; // Skip invalid rows
                     }
                     
                     return (
                       <tr key={rowIndex}>
-                        {row.map((cell: string, cellIndex: number) => (
-                          <td 
-                            key={`${rowIndex}-${cellIndex}`}
-                            className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500 sm:pl-6 truncate max-w-xs"
-                            title={String(cell || '')}
-                          >
-                            {String(cell || '')}
-                          </td>
-                        ))}
+                        {data.csvHeaders.map((header, cellIndex) => {
+                          // Get cell value based on data structure
+                          const cellValue = isObject 
+                            ? (row as Record<string, any>)[header] 
+                            : (row as string[])[cellIndex];
+                          
+                          return (
+                            <td 
+                              key={`${rowIndex}-${cellIndex}`}
+                              className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500 sm:pl-6 truncate max-w-xs"
+                              title={String(cellValue || '')}
+                            >
+                              {String(cellValue || '')}
+                            </td>
+                          );
+                        })}
                       </tr>
                     );
                   })}

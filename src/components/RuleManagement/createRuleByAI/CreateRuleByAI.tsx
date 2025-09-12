@@ -55,6 +55,7 @@ export interface StepperData {
   csvContent: string;
   csvData: string[][]; // Fixed: Changed from any[] to string[][]
   csvHeaders: string[];
+  fileName: string;
   userInstructions: string;
   
   // Step 2: Analysis Selection
@@ -95,6 +96,7 @@ const CreateRuleByAI: React.FC = () => {
     csvContent: '',
     csvData: [] as string[][], // Fix: Explicitly type as string[][]
     csvHeaders: [],
+    fileName: '', // Initialize fileName field
     userInstructions: '',
     analysisType: 'quick',
     tokenEstimation: null,
@@ -112,8 +114,9 @@ const CreateRuleByAI: React.FC = () => {
   const initialData: StepperData = {
     csvFile: null,
     csvContent: '',
-    csvData: [],
+    csvData: [] as Record<string, any>[],
     csvHeaders: [],
+    fileName: '', // Initialize fileName field
     userInstructions: '',
     analysisType: 'quick',
     tokenEstimation: null,
@@ -205,7 +208,7 @@ const CreateRuleByAI: React.FC = () => {
 
     try {
       if (data.analysisType === 'quick') {
-        const result = await callQuickAnalysis(data.csvContent, data.userInstructions);
+        const result = await callQuickAnalysis(data.csvContent, data.fileName, data.userInstructions);
         
         if (result.success && result.data) {
           updateData({
@@ -221,6 +224,7 @@ const CreateRuleByAI: React.FC = () => {
       } else {
         const result = await callDeepAnalysis(
           data.csvContent, 
+          data.fileName,
           data.userInstructions,
           (status) => updateData({ streamingStatus: status })
         );
