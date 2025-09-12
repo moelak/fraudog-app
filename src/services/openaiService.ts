@@ -121,7 +121,7 @@ export const callQuickAnalysis = async (
       throw new Error('Supabase URL not configured');
     }
 
-    const response = await fetch(`${supabaseUrl}/functions/v1/openai-chat-completion`, {
+    const response = await fetch(`${supabaseUrl}/functions/v1/openai-chatcompletion`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -134,8 +134,17 @@ export const callQuickAnalysis = async (
       }),
     });
 
+    console.log('📥 Quick Analysis response received:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      headers: Object.fromEntries(response.headers.entries())
+    });
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error('❌ HTTP error response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
     }
 
     const data = await response.json();
@@ -153,7 +162,22 @@ export const callQuickAnalysis = async (
       throw new Error(data.error || 'Unknown error occurred');
     }
   } catch (error) {
-    console.error('Quick Analysis API error:', error);
+    console.error('💥 Quick Analysis API error:', error);
+    console.error('🔍 Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    
+    // Check if it's a network/CORS error
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.error('🌐 Network/CORS Error detected - this usually indicates:');
+      console.error('  1. CORS policy blocking the request');
+      console.error('  2. Network connectivity issues');
+      console.error('  3. Invalid Supabase URL or Edge Function not deployed');
+      console.error('  4. Authentication issues with API keys');
+    }
+    
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
