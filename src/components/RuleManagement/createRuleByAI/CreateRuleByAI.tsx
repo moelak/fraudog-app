@@ -9,9 +9,15 @@ import {
   Paper,
   Alert,
   CircularProgress,
-  Backdrop
+  Backdrop,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { ruleManagementStore } from '@/components/RuleManagement/RuleManagementStore';
 import { useRuleManagementStore } from '@/hooks/useRuleManagementStore';
 import { 
   callQuickAnalysis, 
@@ -83,6 +89,7 @@ const CreateRuleByAI: React.FC = () => {
   const { addRule } = useRuleManagementStore();
   
   const [activeStep, setActiveStep] = useState(0);
+  const [openExitConfirm, setOpenExitConfirm] = useState(false);
   const [data, setData] = useState<StepperData>({
     csvFile: null,
     csvContent: '',
@@ -101,6 +108,25 @@ const CreateRuleByAI: React.FC = () => {
     streamingStatus: null
   });
 
+  // Initial data for change detection
+  const initialData: StepperData = {
+    csvFile: null,
+    csvContent: '',
+    csvData: [],
+    csvHeaders: [],
+    userInstructions: '',
+    analysisType: 'quick',
+    tokenEstimation: null,
+    generatedRules: [],
+    selectedRuleIndex: -1,
+    ruleImpactAnalysis: null,
+    finalRule: null,
+    logOnly: false,
+    isProcessing: false,
+    processingError: null,
+    streamingStatus: null
+  };
+
   // Mock user context - in production, get from auth
   const userContext: UserContext = {
     user_id: 1,
@@ -110,6 +136,31 @@ const CreateRuleByAI: React.FC = () => {
   const updateData = useCallback((updates: Partial<StepperData>) => {
     setData(prev => ({ ...prev, ...updates }));
   }, []);
+
+  const resetForm = () => {
+    setData(initialData);
+    setActiveStep(0);
+  };
+
+  const handleExitClick = () => {
+    const hasChanges = JSON.stringify(data) !== JSON.stringify(initialData);
+    if (hasChanges) {
+      setOpenExitConfirm(true); // show confirmation
+    } else {
+      ruleManagementStore.setDisplayAIRuleStepper(false); // safe to exit
+      resetForm();
+    }
+  };
+
+  const cancelExit = () => {
+    setOpenExitConfirm(false);
+  };
+
+  const confirmExit = () => {
+    setOpenExitConfirm(false);
+    ruleManagementStore.setDisplayAIRuleStepper(false);
+    resetForm();
+  };
 
   const handleNext = async () => {
     if (activeStep === 1) {
@@ -217,8 +268,9 @@ const CreateRuleByAI: React.FC = () => {
       // In production, this would also save to api.ai_rule_generation table
       await addRule(ruleToSave);
       
-      // Navigate back to rule management
-      navigate('/rules');
+      // Close the AI rule stepper and return to rule management
+      ruleManagementStore.setDisplayAIRuleStepper(false);
+      resetForm();
     } catch (error) {
       updateData({
         processingError: error instanceof Error ? error.message : 'Failed to save rule',
@@ -298,9 +350,6 @@ const CreateRuleByAI: React.FC = () => {
 
   return (
     <Box sx={{ width: '100%', p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Create Rule with AI
-      </Typography>
       
       <Paper sx={{ p: 3, mb: 3 }}>
         <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
@@ -322,25 +371,52 @@ const CreateRuleByAI: React.FC = () => {
         </Box>
 
         <Box sx={{ display: 'flex', flexDirection: 'row', pt: 2 }}>
-          <Button
-            color="inherit"
-            disabled={activeStep === 0 || data.isProcessing}
-            onClick={handleBack}
-            sx={{ mr: 1 }}
+          {/* Exit button on left */}
+          <Button 
+            variant="outlined" 
+            color="secondary" 
+            onClick={handleExitClick}
           >
-            Back
+            Exit
           </Button>
+
+          {/* Back/Next buttons on right */}
           <Box sx={{ flex: '1 1 auto' }} />
-          <Button
-            onClick={handleNext}
-            disabled={!canProceed() || data.isProcessing}
-            variant="contained"
-          >
-            {data.isProcessing ? (
-              <CircularProgress size={20} sx={{ mr: 1 }} />
-            ) : null}
-            {activeStep === steps.length - 1 ? 'Save Rule' : 'Next'}
-          </Button>
+          <Box>
+            {activeStep > 0 && (
+              <Button 
+                onClick={handleBack} 
+                sx={{ mr: 1 }}
+                disabled={data.isProcessing}
+              >
+                Back
+              </Button>
+            )}
+            {activeStep < steps.length - 1 ? (
+              <Button 
+                variant="contained" 
+                onClick={handleNext}
+                disabled={!canProceed() || data.isProcessing}
+              >
+                {data.isProcessing ? (
+                  <CircularProgress size={20} sx={{ mr: 1 }} />
+                ) : null}
+                Next
+              </Button>
+            ) : (
+              <Button 
+                variant="contained" 
+                color="success" 
+                onClick={handleNext}
+                disabled={!canProceed() || data.isProcessing}
+              >
+                {data.isProcessing ? (
+                  <CircularProgress size={20} sx={{ mr: 1 }} />
+                ) : null}
+                Save Rule
+              </Button>
+            )}
+          </Box>
         </Box>
       </Paper>
 
@@ -361,6 +437,24 @@ const CreateRuleByAI: React.FC = () => {
           )}
         </Box>
       </Backdrop>
+
+      {/* Exit Confirmation Dialog */}
+      <Dialog open={openExitConfirm} onClose={cancelExit}>
+        <DialogTitle>Are you sure?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            You have unsaved data. If you exit now, all progress will be lost. Do you really want to exit?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelExit} color="primary">
+            No, stay here
+          </Button>
+          <Button onClick={confirmExit} color="secondary" variant="contained">
+            Yes, exit
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

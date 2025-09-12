@@ -463,6 +463,7 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({ data, updateData, onVal
                     if (!Array.isArray(row)) {
                       console.warn(`Row ${rowIndex} is not an array:`, row);
                       return null;
+                    
                     }
                     
                     return (
@@ -562,7 +563,7 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({ data, updateData, onVal
               <h3 className="text-sm font-medium text-blue-800">File Statistics</h3>
               <div className="mt-2 text-sm text-blue-700">
                 <p>Successfully loaded {data.csvData.length} rows with {data.csvHeaders?.length || 0} columns.</p>
-                <p>Preview shows first 5 rows. All data will be used for analysis.</p>
+                <p>Preview shows the column headers, please make sure these are the correct headers</p>
               </div>
             </div>
           </div>
