@@ -10,14 +10,19 @@ export function useColumns() {
   const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setColumns([]);
+      setOrganizationId(null);
+      setLoading(false);
+      return;
+    }
 
     const fetchColumns = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        // 1. Find the org ID for this user
+        // 1. Get org for user
         const { data: orgRow, error: orgErr } = await supabase
           .from('organizations')
           .select('organization_id')
@@ -25,10 +30,11 @@ export function useColumns() {
           .single();
 
         if (orgErr || !orgRow) throw orgErr || new Error('Organization not found for user');
+
         const orgId = orgRow.organization_id as string;
         setOrganizationId(orgId);
 
-        // 2. Fetch columns for that org
+        // 2. Fetch column list
         const { data, error } = await supabase
           .from('organizations_column')
           .select('column_name')
@@ -36,9 +42,10 @@ export function useColumns() {
 
         if (error) throw error;
 
-        setColumns((data || []).map((row) => row.column_name));
+        setColumns((data || []).map((row) => row.column_name.toLowerCase())); // normalize
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch columns');
+        setColumns([]);
       } finally {
         setLoading(false);
       }
