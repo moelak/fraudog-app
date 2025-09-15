@@ -83,7 +83,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ data, updateData, streamingStat
     );
   }
 
-  const displayRule = isEditing ? editedRule : finalRule;
+  const displayRule = isEditing ? (editedRule || finalRule) : finalRule;
 
   return (
     <div className="mt-2 space-y-6">
