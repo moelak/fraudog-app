@@ -291,7 +291,7 @@ export const callDeepAnalysis = async (
                   });
                   break;
                 
-                case 'completed':
+                case 'completed': 
                   // Improved data extraction with better error handling
                   let extractedData = null;
                   if (parsed.data) {

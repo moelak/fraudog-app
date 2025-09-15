@@ -17,6 +17,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { ruleManagementStore } from '@/components/RuleManagement/RuleManagementStore';
 import { useRuleManagementStore } from '@/hooks/useRuleManagementStore';
+import { useRules } from '@/hooks/useRules';
 import { 
   callQuickAnalysis, 
   callDeepAnalysis, 
@@ -89,6 +90,7 @@ export interface StepperData {
 const CreateRuleByAI: React.FC = () => {
   const navigate = useNavigate();
   const { addRule } = useRuleManagementStore();
+  const { createRule } = useRules();
   
   const [activeStep, setActiveStep] = useState(0);
   const [openExitConfirm, setOpenExitConfirm] = useState(false);
@@ -336,14 +338,21 @@ const CreateRuleByAI: React.FC = () => {
     updateData({ isProcessing: true, processingError: null });
 
     try {
-      // Apply log_only setting from Step 4
+      // Convert DatabaseRule to CreateRuleData format
       const ruleToSave = {
-        ...data.finalRule,
-        log_only: data.logOnly
+        name: data.finalRule.name,
+        description: data.finalRule.description,
+        category: data.finalRule.category,
+        condition: data.finalRule.condition,
+        status: data.finalRule.status as 'active' | 'inactive' | 'warning',
+        severity: data.finalRule.severity,
+        log_only: data.logOnly, // Apply log_only setting from Step 4
+        source: 'AI' as const,
+        decision: data.finalRule.decision
       };
 
-      // In production, this would also save to api.ai_rule_generation table
-      await addRule(ruleToSave);
+      // Save to public.rules table via Supabase
+      await createRule(ruleToSave);
       
       // Close the AI rule stepper and return to rule management
       ruleManagementStore.setDisplayAIRuleStepper(false);

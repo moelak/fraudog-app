@@ -179,11 +179,11 @@ const AnalysisSelectionStep: React.FC<AnalysisSelectionStepProps> = ({
           <AnalysisOptionCard
             type="quick"
             title="Quick Analysis"
-            description="Fast rule generation using GPT-4 Turbo. Analyzes patterns and generates 3-5 fraud detection rules in under 30 seconds."
+            description="Fast rule generation. Analyzes patterns and generates 1 fraud detection in under 30 seconds"
             icon={<BoltIcon />}
             cost={data.tokenEstimation ? formatCost(data.tokenEstimation.processedTokens, 0.00001) : 'Calculating...'}
             time="~30 seconds"
-            rules="3-5 rules"
+            rules="1 rule"
             features={[]}
             isSelected={data.analysisType === 'quick'}
           />
@@ -195,7 +195,7 @@ const AnalysisSelectionStep: React.FC<AnalysisSelectionStepProps> = ({
             icon={<CpuChipIcon />}
             cost={data.tokenEstimation ? formatCost(data.tokenEstimation.processedTokens * 2, 0.00003) : 'Calculating...'}
             time="2-3 minutes"
-            rules="5-10 rules"
+            rules="3-5 rules"
             features={[{ label: "Detailed insights", color: "secondary" }]}
             isSelected={data.analysisType === 'deep'}
           />
