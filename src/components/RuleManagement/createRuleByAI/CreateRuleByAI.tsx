@@ -14,6 +14,12 @@ import {
   DialogContentText,
   DialogActions
 } from '@mui/material';
+import { 
+  CloudUpload as UploadIcon,
+  Analytics as AnalysisIcon,
+  Rule as RuleIcon,
+  CheckCircle as ReviewIcon
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { ruleManagementStore } from '@/components/RuleManagement/RuleManagementStore';
 import { useRuleManagementStore } from '@/hooks/useRuleManagementStore';
@@ -153,6 +159,7 @@ const CreateRuleByAI: React.FC = () => {
   const resetForm = () => {
     setData(initialData);
     setActiveStep(0);
+    setCompleted([false, false, false, false]);
   };
 
   const handleExitClick = () => {
@@ -201,6 +208,9 @@ const CreateRuleByAI: React.FC = () => {
       return;
     }
 
+    // Mark current step as completed before advancing
+    markStepCompleted(activeStep);
+
     const advance = () => setActiveStep(prev => prev + 1);
 
     switch (activeStep) {
@@ -229,6 +239,21 @@ const CreateRuleByAI: React.FC = () => {
 
   const handleBack = () => {
     setActiveStep(prev => prev - 1);
+  };
+
+  const handleStep = (step: number) => () => {
+    // Only allow clicking on completed steps or the current step
+    if (step <= activeStep || completed[step]) {
+      setActiveStep(step);
+    }
+  };
+
+  const markStepCompleted = (stepIndex: number) => {
+    setCompleted(prev => {
+      const newCompleted = [...prev];
+      newCompleted[stepIndex] = true;
+      return newCompleted;
+    });
   };
 
   const runAnalysis = async () => {
@@ -413,6 +438,7 @@ const CreateRuleByAI: React.FC = () => {
               const estimation = estimateTokenCount(csvContent);
               updateData({ tokenEstimation: estimation });
             }}
+            inProgress={data.isProcessing}
           />
         );
       case 2:
@@ -441,29 +467,48 @@ const CreateRuleByAI: React.FC = () => {
     }
   };
 
+  const [completed, setCompleted] = useState([false, false, false, false]);
+
   return (
-    <Box sx={{ width: '100%', p: 3 }}>
-      
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-          {steps.map((label) => (
-            <Step key={label}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
-          ))}
+    <Box sx={{
+      width: '100%',
+      display: 'flex',
+      justifyContent: 'center',
+      mt: 6,
+    }}>
+      <Box sx={{ width: '100%', maxWidth: 800 }}>
+        {/* Stepper */}
+        <Stepper activeStep={activeStep} alternativeLabel>
+          {steps.map((label, index) => {
+            const stepIcons = [UploadIcon, AnalysisIcon, RuleIcon, ReviewIcon];
+            const StepIconComponent = stepIcons[index];
+            
+            return (
+              <Step key={label} completed={completed[index]}>
+                <StepLabel
+                  onClick={handleStep(index)}
+                  sx={{ cursor: 'pointer' }}
+                >
+                  {label}
+                </StepLabel>
+              </Step>
+            );
+          })}
         </Stepper>
 
         {data.processingError && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" sx={{ mb: 3, mt: 4 }}>
             {data.processingError}
           </Alert>
         )}
 
-        <Box sx={{ minHeight: 400 }}>
+        {/* Step content */}
+        <Box sx={{ mt: 4, minHeight: 400 }}>
           {getStepContent()}
         </Box>
 
-        <Box sx={{ display: 'flex', flexDirection: 'row', pt: 2 }}>
+        {/* Buttons */}
+        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
           {/* Exit button on left */}
           <Button 
             variant="outlined" 
@@ -474,8 +519,7 @@ const CreateRuleByAI: React.FC = () => {
           </Button>
 
           {/* Back/Next buttons on right */}
-          <Box sx={{ flex: '1 1 auto' }} />
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box>
             {nextButtonError && (
               <Typography variant="caption" color="error" sx={{ mr: 2, fontStyle: 'italic' }}>
                 {nextButtonError}
@@ -521,25 +565,25 @@ const CreateRuleByAI: React.FC = () => {
             )}
           </Box>
         </Box>
-      </Paper>
 
-      {/* Exit Confirmation Dialog */}
-      <Dialog open={openExitConfirm} onClose={cancelExit}>
-        <DialogTitle>Are you sure?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            You have unsaved data. If you exit now, all progress will be lost. Do you really want to exit?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={cancelExit} color="primary">
-            No, stay here
-          </Button>
-          <Button onClick={confirmExit} color="secondary" variant="contained">
-            Yes, exit
-          </Button>
-        </DialogActions>
-      </Dialog>
+        {/* Exit Confirmation Dialog */}
+        <Dialog open={openExitConfirm} onClose={cancelExit}>
+          <DialogTitle>Are you sure?</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              You have unsaved data. If you exit now, all progress will be lost. Do you really want to exit?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={cancelExit} color="primary">
+              No, stay here
+            </Button>
+            <Button onClick={confirmExit} color="secondary" variant="contained">
+              Yes, exit
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
     </Box>
   );
 };

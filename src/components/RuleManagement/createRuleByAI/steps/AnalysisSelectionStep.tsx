@@ -17,12 +17,14 @@ interface AnalysisSelectionStepProps {
   data: StepperData;
   updateData: (updates: Partial<StepperData>) => void;
   onTokenEstimation: (csvContent: string) => void;
+  inProgress?: boolean;
 }
 
 const AnalysisSelectionStep: React.FC<AnalysisSelectionStepProps> = ({
   data,
   updateData,
-  onTokenEstimation
+  onTokenEstimation,
+  inProgress
 }) => {
   const [showCostBreakdown, setShowCostBreakdown] = useState(false);
 
@@ -33,7 +35,9 @@ const AnalysisSelectionStep: React.FC<AnalysisSelectionStepProps> = ({
   }, [data.csvContent, data.tokenEstimation, onTokenEstimation]);
 
   const handleAnalysisTypeChange = (type: 'quick' | 'deep') => {
-    updateData({ analysisType: type });
+    if (!inProgress) {
+      updateData({ analysisType: type });
+    }
   };
 
   const formatCost = (tokens: number, pricePerToken: number): string => {
@@ -195,7 +199,7 @@ const AnalysisSelectionStep: React.FC<AnalysisSelectionStepProps> = ({
             icon={<CpuChipIcon />}
             cost={data.tokenEstimation ? formatCost(data.tokenEstimation.processedTokens * 2, 0.00003) : 'Calculating...'}
             time="2-3 minutes"
-            rules="3-5 rules"
+            rules="3 rules"
             features={[{ label: "Detailed insights", color: "secondary" }]}
             isSelected={data.analysisType === 'deep'}
           />
