@@ -1,16 +1,19 @@
 import React from 'react';
-import { CheckCircleIcon, ShieldCheckIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, ShieldCheckIcon, ExclamationTriangleIcon, CogIcon } from '@heroicons/react/24/outline';
 import type { StepperData } from '@/components/RuleManagement/createRuleByAI/CreateRuleByAI';
 import type { OpenAIRule } from '@/utils/ruleConverter';
+import type { StreamingStatus } from '@/services/openaiService';
 
 interface RuleSelectionStepProps {
   data: StepperData;
   updateData: (updates: Partial<StepperData>) => void;
+  streamingStatuses: StreamingStatus[];
 }
 
-const RuleSelectionStep: React.FC<RuleSelectionStepProps> = ({
+const RuleSelectionStep: React.FC<RuleSelectionStepProps> = ({ 
   data,
-  updateData
+  updateData,
+  streamingStatuses 
 }) => {
   const handleRuleSelect = (index: number) => {
     updateData({ selectedRuleIndex: index });
@@ -44,6 +47,67 @@ const RuleSelectionStep: React.FC<RuleSelectionStepProps> = ({
       .replace(/\(/g, '(\n  ')
       .replace(/\)/g, '\n)');
   };
+
+  // Unified loading view for both Quick and Deep analysis
+  if (data.isProcessing) {
+    const isDeep = data.analysisType === 'deep';
+    const title = isDeep ? 'Deep Analysis in Progress...' : 'Quick Analysis in Progress...';
+    const description = isDeep
+      ? 'The AI is performing a detailed statistical analysis. This may take a few minutes.'
+      : 'The AI is generating rules using GPT-4 Turbo. This is usually done in under 30 seconds.';
+
+    // Estimate progress for the progress bar
+    const totalSteps = 5; // Assuming 5 steps for deep analysis
+    const currentProgress = isDeep && streamingStatuses.length > 0
+      ? (streamingStatuses[streamingStatuses.length - 1].step / totalSteps) * 100
+      : (isDeep ? 5 : 20); // Initial progress guess
+
+    return (
+      <div className="text-center py-8">
+        <h3 className="text-xl font-semibold text-gray-800 mb-2">{title}</h3>
+        <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">{description}</p>
+
+        {/* Progress Bar */}
+        <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4 max-w-2xl mx-auto">
+          {isDeep ? (
+            <div 
+              className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
+              style={{ width: `${Math.max(currentProgress, 5)}%` }}
+            ></div>
+          ) : (
+            <div className="relative w-full h-2.5 overflow-hidden rounded-full">
+              <div className="absolute top-0 left-0 w-full h-full bg-gray-200"></div>
+              <div className="absolute top-0 left-0 h-full bg-blue-600 w-1/4 animate-indeterminate"></div>
+            </div>
+          )}
+        </div>
+
+        {/* Streaming statuses for Deep Analysis */}
+        {isDeep && (
+          <div className="space-y-4 max-w-2xl mx-auto text-left bg-gray-50 p-4 rounded-lg border mt-6">
+            {streamingStatuses.length > 0 ? (
+              streamingStatuses.map((status, index) => (
+                <div key={index} className="flex items-start animate-fade-in">
+                  <div className="flex-shrink-0 mt-1">
+                    <CogIcon className="h-5 w-5 text-blue-500 animate-spin" style={{ animationDuration: '2s' }} />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-gray-700">{status.status}</p>
+                    <p className="text-sm text-gray-500">{status.text}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex items-center justify-center text-gray-500">
+                <CogIcon className="h-5 w-5 animate-spin mr-2" />
+                <span>Initializing analysis engine...</span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   if (data.generatedRules.length === 0) {
     return (

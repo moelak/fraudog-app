@@ -8,8 +8,6 @@ import {
   Typography,
   Paper,
   Alert,
-  CircularProgress,
-  Backdrop,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -78,7 +76,7 @@ export interface StepperData {
   // Processing state
   isProcessing: boolean;
   processingError: string | null;
-  streamingStatus: StreamingStatus | null;
+  streamingStatuses: StreamingStatus[]; // Changed from single object to array
   
   // OpenAI metadata
   threadId?: string;
@@ -91,6 +89,7 @@ const CreateRuleByAI: React.FC = () => {
   
   const [activeStep, setActiveStep] = useState(0);
   const [openExitConfirm, setOpenExitConfirm] = useState(false);
+  const [nextButtonError, setNextButtonError] = useState<string | null>(null);
   const [data, setData] = useState<StepperData>({
     csvFile: null,
     csvContent: '',
@@ -107,7 +106,7 @@ const CreateRuleByAI: React.FC = () => {
     logOnly: false,
     isProcessing: false,
     processingError: null,
-    streamingStatus: null
+    streamingStatuses: [] // Changed from null to empty array
   });
 
   // Initial data for change detection
@@ -127,7 +126,7 @@ const CreateRuleByAI: React.FC = () => {
     logOnly: false,
     isProcessing: false,
     processingError: null,
-    streamingStatus: null
+    streamingStatuses: [] // Changed from null to empty array
   };
 
   // Mock user context - in production, get from auth
@@ -166,28 +165,54 @@ const CreateRuleByAI: React.FC = () => {
   };
 
   const handleNext = async () => {
-    if (activeStep === 1) {
-      // Step 2: Run analysis
-      await runAnalysis();
-    } else if (activeStep === 2) {
-      // Step 3: Calculate impact and prepare final rule
-      if (data.selectedRuleIndex >= 0 && data.generatedRules[data.selectedRuleIndex]) {
-        const selectedRule = data.generatedRules[data.selectedRuleIndex];
-        const impact = calculateRuleImpact(selectedRule, data.csvData);
-        const finalRule = convertOpenAIRuleToDatabase(selectedRule, userContext);
-        
-        updateData({
-          ruleImpactAnalysis: impact,
-          finalRule
-        });
+    if (!canProceed() || data.isProcessing) {
+      let errorMsg = 'Please complete the current step to continue.';
+      if (data.isProcessing) {
+        errorMsg = 'Analysis is currently in progress.';
+      } else {
+        switch (activeStep) {
+          case 0:
+            errorMsg = 'Please upload a CSV file to proceed.';
+            break;
+          case 1:
+            errorMsg = 'Token analysis must be complete.';
+            break;
+          case 2:
+            errorMsg = 'Please select a rule to continue.';
+            break;
+          case 3:
+            errorMsg = 'A final rule must be configured.';
+            break;
+        }
       }
-    } else if (activeStep === 3) {
-      // Step 4: Save rule
-      await saveRule();
-      return; // Don't increment step, we'll navigate away
+      setNextButtonError(errorMsg);
+      setTimeout(() => setNextButtonError(null), 3000); // Clear error after 3s
+      return;
     }
-    
-    setActiveStep(prev => prev + 1);
+
+    const advance = () => setActiveStep(prev => prev + 1);
+
+    switch (activeStep) {
+      case 1: // Token Analysis
+        runAnalysis();
+        advance();
+        break;
+      case 2: // Output Rules
+        if (data.selectedRuleIndex >= 0 && data.generatedRules[data.selectedRuleIndex]) {
+          const selectedRule = data.generatedRules[data.selectedRuleIndex];
+          const impact = calculateRuleImpact(selectedRule, data.csvData);
+          const finalRule = convertOpenAIRuleToDatabase(selectedRule, userContext);
+          updateData({ ruleImpactAnalysis: impact, finalRule });
+        }
+        advance();
+        break;
+      case 3: // Review
+        await saveRule(); // This function handles navigation, so we don't advance
+        break;
+      default:
+        advance(); // Default behavior for other steps (e.g., step 0)
+        break;
+    }
   };
 
   const handleBack = () => {
@@ -203,7 +228,7 @@ const CreateRuleByAI: React.FC = () => {
     updateData({ 
       isProcessing: true, 
       processingError: null,
-      streamingStatus: null
+      streamingStatuses: [] // Reset streaming statuses
     });
 
     try {
@@ -226,7 +251,7 @@ const CreateRuleByAI: React.FC = () => {
           data.csvContent, 
           data.fileName,
           data.userInstructions,
-          (status) => updateData({ streamingStatus: status })
+          (status) => updateData(prev => ({ ...prev, streamingStatuses: [...prev.streamingStatuses, status] }))
         );
         
         if (result.success && result.data) {
@@ -234,22 +259,19 @@ const CreateRuleByAI: React.FC = () => {
             generatedRules: result.data.rules,
             threadId: result.threadId,
             assistantId: result.assistantId,
-            isProcessing: false,
-            streamingStatus: null
+            isProcessing: false
           });
         } else {
           updateData({
             processingError: result.error || 'Analysis failed',
-            isProcessing: false,
-            streamingStatus: null
+            isProcessing: false
           });
         }
       }
     } catch (error) {
       updateData({
         processingError: error instanceof Error ? error.message : 'Unknown error',
-        isProcessing: false,
-        streamingStatus: null
+        isProcessing: false
       });
     }
   };
@@ -386,12 +408,16 @@ const CreateRuleByAI: React.FC = () => {
 
           {/* Back/Next buttons on right */}
           <Box sx={{ flex: '1 1 auto' }} />
-          <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {nextButtonError && (
+              <Typography variant="caption" color="error" sx={{ mr: 2, fontStyle: 'italic' }}>
+                {nextButtonError}
+              </Typography>
+            )}
             {activeStep > 0 && (
               <Button 
                 onClick={handleBack} 
                 sx={{ mr: 1 }}
-                disabled={data.isProcessing}
               >
                 Back
               </Button>
@@ -400,11 +426,14 @@ const CreateRuleByAI: React.FC = () => {
               <Button 
                 variant="contained" 
                 onClick={handleNext}
-                disabled={!canProceed() || data.isProcessing}
+                sx={{
+                  ...((!canProceed() || data.isProcessing) && {
+                    backgroundColor: '#e0e0e0',
+                    color: 'rgba(0, 0, 0, 0.38)',
+                    cursor: 'not-allowed',
+                  })
+                }}
               >
-                {data.isProcessing ? (
-                  <CircularProgress size={20} sx={{ mr: 1 }} />
-                ) : null}
                 Next
               </Button>
             ) : (
@@ -412,35 +441,20 @@ const CreateRuleByAI: React.FC = () => {
                 variant="contained" 
                 color="success" 
                 onClick={handleNext}
-                disabled={!canProceed() || data.isProcessing}
+                sx={{
+                  ...((!canProceed() || data.isProcessing) && {
+                    backgroundColor: '#e0e0e0',
+                    color: 'rgba(0, 0, 0, 0.38)',
+                    cursor: 'not-allowed',
+                  })
+                }}
               >
-                {data.isProcessing ? (
-                  <CircularProgress size={20} sx={{ mr: 1 }} />
-                ) : null}
                 Save Rule
               </Button>
             )}
           </Box>
         </Box>
       </Paper>
-
-      {/* Processing Backdrop */}
-      <Backdrop
-        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
-        open={data.isProcessing}
-      >
-        <Box sx={{ textAlign: 'center' }}>
-          <CircularProgress color="inherit" sx={{ mb: 2 }} />
-          <Typography variant="h6">
-            {data.streamingStatus?.status || 'Processing...'}
-          </Typography>
-          {data.streamingStatus?.text && (
-            <Typography variant="body2" sx={{ mt: 1, maxWidth: 400 }}>
-              {data.streamingStatus.text}
-            </Typography>
-          )}
-        </Box>
-      </Backdrop>
 
       {/* Exit Confirmation Dialog */}
       <Dialog open={openExitConfirm} onClose={cancelExit}>
