@@ -3,6 +3,7 @@ export interface OpenAIRule {
   rule_name: string;
   description: string;
   risk_score: number;
+  severity: string;
   conditions: string;
   decision: string;
   metadata: {

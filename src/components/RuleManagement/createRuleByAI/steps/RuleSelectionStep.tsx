@@ -167,7 +167,7 @@ const RuleSelectionStep: React.FC<RuleSelectionStepProps> = ({
                 <div className="flex flex-wrap gap-2 mt-2">
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSeverityColor(
-                      rule.risk_score || 'medium'
+                      rule.severity || rule.risk_score || 'medium'
                     )}`}
                   >
                     Risk: {rule.risk_score || 'N/A'}
