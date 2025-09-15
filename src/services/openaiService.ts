@@ -29,6 +29,21 @@ export interface StreamingStatus {
   text: string;
 }
 
+export interface StreamUpdate {
+  type: 'status' | 'text_delta' | 'step_created' | 'step_progress' | 'step_completed' | 'run_created' | 'message_created' | 'message_completed' | 'completed' | 'error';
+  step?: number;
+  status?: string;
+  text?: string;
+  fullText?: string;
+  eventType?: string;
+  data?: any;
+  message?: string;
+  runId?: string;
+  threadId?: string;
+  assistantId?: string;
+  fileId?: string;
+}
+
 export interface DeepAnalysisResult {
   success: boolean;
   data?: OpenAIResponse;
@@ -168,16 +183,9 @@ export const callDeepAnalysis = async (
   csvData: string,
   fileName: string = 'transactions.csv',
   userInstructions: string = '',
-  onStatusUpdate?: (status: StreamingStatus) => void
+  onUpdate?: (update: StreamUpdate) => void
 ): Promise<DeepAnalysisResult> => {
-  console.log('🔍 callDeepAnalysis - Starting streaming request');
-  console.log('📊 Input parameters:', {
-    csvDataLength: csvData.length,
-    fileName,
-    userInstructionsLength: userInstructions.length,
-    userInstructions: userInstructions.substring(0, 100) + (userInstructions.length > 100 ? '...' : ''),
-    hasStatusCallback: !!onStatusUpdate
-  });
+  console.log('Starting deep analysis...');
 
   try {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -197,40 +205,18 @@ export const callDeepAnalysis = async (
       userInstructions: userInstructions
     };
 
-    console.log('🌐 Deep Analysis request details:', {
-      url: requestUrl,
-      method: 'POST',
-      headers: {
-        'Content-Type': requestHeaders['Content-Type'],
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 10)}...`,
-        'apikey': `${import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 10)}...`
-      },
-      bodyKeys: Object.keys(requestBody),
-      bodySize: JSON.stringify(requestBody).length
-    });
-
-    console.log('📤 Making streaming fetch request...');
     const response = await fetch(requestUrl, {
       method: 'POST',
       headers: requestHeaders,
       body: JSON.stringify(requestBody),
     });
 
-    console.log('📥 Streaming response received:', {
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok,
-      headers: Object.fromEntries(response.headers.entries())
-    });
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ HTTP error response:', errorText);
       throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
     }
 
     if (!response.body) {
-      console.error('❌ No response body available for streaming');
       throw new Error('No response body');
     }
 
@@ -239,47 +225,132 @@ export const callDeepAnalysis = async (
     let buffer = '';
     let finalResult: DeepAnalysisResult | null = null;
 
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+    let streamClosed = false;
 
-        buffer += decoder.decode(value, { stream: true });
+    try {
+      while (!streamClosed) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          streamClosed = true;
+          break;
+        }
+
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
 
         for (const line of lines) {
-          if (line.trim() === '') continue;
+          if (line.trim() === '' || !line.startsWith('data: ')) continue;
+
+          const jsonStr = line.slice(6);
+          if (jsonStr === '[DONE]') {
+            continue;
+          }
           
           try {
-            if (line.startsWith('data: ')) {
-              const jsonStr = line.slice(6);
-              if (jsonStr === '[DONE]') continue;
-              
-              const parsed = JSON.parse(jsonStr);
-              
-              if (parsed.type === 'status' && onStatusUpdate) {
-                onStatusUpdate({
-                  step: parsed.step || 0,
-                  status: parsed.status || '',
-                  text: parsed.text || ''
-                });
-              } else if (parsed.type === 'final') {
-                finalResult = {
-                  success: true,
-                  data: parsed.data,
-                  threadId: parsed.threadId,
-                  assistantId: parsed.assistantId
-                };
-              } else if (parsed.type === 'error') {
-                finalResult = {
-                  success: false,
-                  error: parsed.error
-                };
+            const parsed = JSON.parse(jsonStr);
+
+            // Validate that we have a proper streaming update before processing
+            if (!parsed || typeof parsed !== 'object') {
+              console.warn('Invalid streaming data structure');
+              continue;
+            }
+
+            if (onUpdate) {
+              // Handle all event types
+              switch (parsed.type) {
+                case 'status':
+                  onUpdate({
+                    type: 'status',
+                    step: parsed.step || 0,
+                    status: parsed.status || '',
+                    text: parsed.text || parsed.message || ''
+                  });
+                  break;
+                
+                case 'text_delta':
+                  onUpdate({
+                    type: 'text_delta',
+                    fullText: parsed.fullText || ''
+                  });
+                  break;
+                
+                case 'step_created':
+                case 'step_progress':
+                case 'step_completed':
+                case 'run_created':
+                case 'message_created':
+                case 'message_completed':
+                  onUpdate({
+                    type: parsed.type,
+                    text: parsed.message || JSON.stringify(parsed),
+                    eventType: parsed.type
+                  });
+                  break;
+                
+                case 'completed':
+                  // Improved data extraction with better error handling
+                  let extractedData = null;
+                  if (parsed.data) {
+                    extractedData = parsed.data;
+                  } else if (parsed.success && parsed.rules) {
+                    // Handle case where rules are at top level
+                    extractedData = { rules: parsed.rules };
+                  }
+
+                  onUpdate({
+                    type: 'completed',
+                    data: extractedData,
+                    text: 'Analysis completed successfully!'
+                  });
+                  
+                  finalResult = {
+                    success: true,
+                    data: extractedData,
+                    threadId: parsed.debugInfo?.threadId || parsed.threadId,
+                    assistantId: parsed.debugInfo?.assistantId || parsed.assistantId
+                  };
+                  
+                  console.log(`Analysis completed: ${extractedData?.rules?.length || 0} rules generated`);
+                  break;
+                
+                case 'error':
+                  const errorMessage = parsed.message || parsed.error || 'An error occurred';
+                  onUpdate({
+                    type: 'error',
+                    text: errorMessage
+                  });
+                  finalResult = { success: false, error: errorMessage };
+                  console.error('Stream error:', errorMessage);
+                  break;
+                
+                default:
+                  // Handle any other event types as generic text - only if type is valid
+                  if (parsed.type) {
+                    onUpdate({
+                      type: parsed.type,
+                      text: parsed.message || parsed.status || JSON.stringify(parsed),
+                      eventType: parsed.type
+                    });
+                  }
               }
             }
+
+            // Legacy handling for 'final' type (keep for backwards compatibility)
+            if (parsed.type === 'final') {
+              finalResult = {
+                success: true,
+                data: parsed.data,
+                threadId: parsed.threadId,
+                assistantId: parsed.assistantId
+              };
+            }
           } catch (parseError) {
-            console.warn('Failed to parse streaming response:', parseError);
+            console.error('Failed to parse streaming JSON:', parseError);
+            // Continue processing other chunks instead of breaking
           }
         }
       }
@@ -289,9 +360,8 @@ export const callDeepAnalysis = async (
 
     return finalResult || {
       success: false,
-      error: 'No final result received'
+      error: 'No final result received from stream. The connection may have been interrupted.'
     };
-
   } catch (error) {
     console.error('Deep Analysis API error:', error);
     return {

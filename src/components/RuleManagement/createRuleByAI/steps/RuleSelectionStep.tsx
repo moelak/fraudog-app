@@ -3,18 +3,26 @@ import { CheckCircleIcon, ShieldCheckIcon, ExclamationTriangleIcon, CogIcon } fr
 import type { StepperData } from '@/components/RuleManagement/createRuleByAI/CreateRuleByAI';
 import type { OpenAIRule } from '@/utils/ruleConverter';
 import type { StreamingStatus } from '@/services/openaiService';
+import { renderMarkdown } from '@/utils/markdownRenderer';
 
 interface RuleSelectionStepProps {
   data: StepperData;
   updateData: (updates: Partial<StepperData>) => void;
-  streamingStatuses: StreamingStatus[];
+  streamingStatuses?: StreamingStatus[];
+  streamingEvents?: string[];
+  streamingText?: string;
+  analysisContext?: string;
 }
 
 const RuleSelectionStep: React.FC<RuleSelectionStepProps> = ({ 
   data,
   updateData,
-  streamingStatuses 
+  streamingStatuses = [],
+  streamingEvents = [],
+  streamingText = '',
+  analysisContext,
 }) => {
+
   const handleRuleSelect = (index: number) => {
     updateData({ selectedRuleIndex: index });
   };
@@ -54,12 +62,15 @@ const RuleSelectionStep: React.FC<RuleSelectionStepProps> = ({
     const title = isDeep ? 'Deep Analysis in Progress...' : 'Quick Analysis in Progress...';
     const description = isDeep
       ? 'The AI is performing a detailed statistical analysis. This may take a few minutes.'
-      : 'The AI is generating rules using GPT-4 Turbo. This is usually done in under 30 seconds.';
+      : 'The AI is quickly generating rules, and is usually done in under 30 seconds.';
 
     // Estimate progress for the progress bar
-    const totalSteps = 5; // Assuming 5 steps for deep analysis
-    const currentProgress = isDeep && streamingStatuses.length > 0
-      ? (streamingStatuses[streamingStatuses.length - 1].step / totalSteps) * 100
+    const totalSteps = 7; // File upload, assistant creation, thread creation, message creation, run creation, polling, completion
+    const currentStep = streamingStatuses.length > 0 
+      ? Math.max(streamingStatuses[streamingStatuses.length - 1].step || 1, 1)
+      : 1;
+    const currentProgress = isDeep 
+      ? Math.min((currentStep / totalSteps) * 100, 95) // Cap at 95% until completion
       : (isDeep ? 5 : 20); // Initial progress guess
 
     return (
@@ -82,27 +93,16 @@ const RuleSelectionStep: React.FC<RuleSelectionStepProps> = ({
           )}
         </div>
 
-        {/* Streaming statuses for Deep Analysis */}
-        {isDeep && (
-          <div className="space-y-4 max-w-2xl mx-auto text-left bg-gray-50 p-4 rounded-lg border mt-6">
-            {streamingStatuses.length > 0 ? (
-              streamingStatuses.map((status, index) => (
-                <div key={index} className="flex items-start animate-fade-in">
-                  <div className="flex-shrink-0 mt-1">
-                    <CogIcon className="h-5 w-5 text-blue-500 animate-spin" style={{ animationDuration: '2s' }} />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-700">{status.status}</p>
-                    <p className="text-sm text-gray-500">{status.text}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="flex items-center justify-center text-gray-500">
-                <CogIcon className="h-5 w-5 animate-spin mr-2" />
-                <span>Initializing analysis engine...</span>
-              </div>
-            )}
+        {/* AI Analysis Response - Real-time streaming */}
+        {streamingText && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center mb-2">
+              <CogIcon className="h-5 w-5 text-blue-600 mr-2 animate-spin" />
+              <h3 className="text-lg font-medium text-blue-900">AI Analysis in Progress</h3>
+            </div>
+            <div className="text-sm text-blue-800 whitespace-pre-wrap max-h-48 overflow-y-auto">
+              {streamingText}
+            </div>
           </div>
         )}
       </div>
@@ -124,6 +124,20 @@ const RuleSelectionStep: React.FC<RuleSelectionStepProps> = ({
     <div className="space-y-4">
       <div>
         <h2 className="text-lg font-medium text-gray-900">Generated Fraud Detection Rules</h2>
+        {(analysisContext || streamingText) && data.generatedRules.length > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center mb-2">
+              <CogIcon className="h-5 w-5 text-blue-600 mr-2" />
+              <h3 className="text-lg font-medium text-blue-900">AI Analysis Context</h3>
+            </div>
+            <div 
+              className="text-sm text-blue-800 max-h-64 overflow-y-auto"
+              dangerouslySetInnerHTML={{ 
+                __html: renderMarkdown(analysisContext || streamingText || '') 
+              }}
+            />
+          </div>
+        )}
         <p className="mt-1 text-sm text-gray-500">
           Select the rule that best fits your fraud detection needs.
         </p>

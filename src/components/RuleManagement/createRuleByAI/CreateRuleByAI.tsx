@@ -77,10 +77,13 @@ export interface StepperData {
   isProcessing: boolean;
   processingError: string | null;
   streamingStatuses: StreamingStatus[]; // Changed from single object to array
+  streamingText: string; // To hold the full text from text_delta events
+  streamingEvents: string[]; // To hold all streaming events as text
   
   // OpenAI metadata
   threadId?: string;
   assistantId?: string;
+  analysisContext?: string; // Store AI analysis for context
 }
 
 const CreateRuleByAI: React.FC = () => {
@@ -106,7 +109,10 @@ const CreateRuleByAI: React.FC = () => {
     logOnly: false,
     isProcessing: false,
     processingError: null,
-    streamingStatuses: [] // Changed from null to empty array
+    streamingStatuses: [], // Changed from null to empty array
+    streamingText: '',
+    streamingEvents: [],
+    analysisContext: '', // Initialize analysisContext field
   });
 
   // Initial data for change detection
@@ -126,7 +132,10 @@ const CreateRuleByAI: React.FC = () => {
     logOnly: false,
     isProcessing: false,
     processingError: null,
-    streamingStatuses: [] // Changed from null to empty array
+    streamingStatuses: [], // Changed from null to empty array
+    streamingText: '',
+    streamingEvents: [],
+    analysisContext: '', // Initialize analysisContext field
   };
 
   // Mock user context - in production, get from auth
@@ -194,8 +203,9 @@ const CreateRuleByAI: React.FC = () => {
 
     switch (activeStep) {
       case 1: // Token Analysis
-        runAnalysis();
+        // Advance UI immediately and run analysis in the background
         advance();
+        runAnalysis();
         break;
       case 2: // Output Rules
         if (data.selectedRuleIndex >= 0 && data.generatedRules[data.selectedRuleIndex]) {
@@ -225,55 +235,96 @@ const CreateRuleByAI: React.FC = () => {
       return;
     }
 
+    // Set processing to true, but do not await the full analysis here
+    // The UI will show a loading state, and the promise will resolve in the background
     updateData({ 
       isProcessing: true, 
       processingError: null,
-      streamingStatuses: [] // Reset streaming statuses
+      streamingStatuses: [],
+      generatedRules: [], // Clear previous rules
+      streamingText: '', // Reset streaming text
+      streamingEvents: [], // Reset streaming events
     });
 
-    try {
-      if (data.analysisType === 'quick') {
-        const result = await callQuickAnalysis(data.csvContent, data.fileName, data.userInstructions);
-        
-        if (result.success && result.data) {
-          updateData({
-            generatedRules: result.data.rules,
-            isProcessing: false
-          });
+    const performAnalysis = async () => {
+      try {
+        let result;
+        if (data.analysisType === 'quick') {
+          result = await callQuickAnalysis(data.csvContent, data.fileName, data.userInstructions);
         } else {
-          updateData({
-            processingError: result.error || 'Analysis failed',
-            isProcessing: false
-          });
+          result = await callDeepAnalysis(
+            data.csvContent, 
+            data.fileName,
+            data.userInstructions,
+            (update) => {
+              if (update.type === 'status') {
+                setData(prev => ({
+                  ...prev,
+                  streamingStatuses: [...prev.streamingStatuses, { 
+                    step: update.step || 0, 
+                    status: update.status || update.message || '', 
+                    text: update.text || update.message || '' 
+                  }],
+                  streamingEvents: [...prev.streamingEvents, `[${update.type}] ${update.text || update.status || update.message || ''}`]
+                }));
+              } else if (update.type === 'text_delta') {
+                setData(prev => ({
+                  ...prev,
+                  streamingText: update.fullText || ''
+                }));
+              } else if (update.type === 'completed') {
+                setData(prev => ({
+                  ...prev,
+                  streamingEvents: [...prev.streamingEvents, `[${update.type}] ${update.text || update.message || 'Analysis completed'}`],
+                  generatedRules: update.data?.rules || [],
+                  analysisContext: prev.streamingText, // Store AI analysis for context
+                  isProcessing: false
+                }));
+              } else if (update.type === 'error') {
+                setData(prev => ({
+                  ...prev,
+                  streamingEvents: [...prev.streamingEvents, `[${update.type}] ERROR: ${update.text || update.message || 'Unknown error'}`],
+                  isProcessing: false
+                }));
+              } else if (['step_created', 'step_progress', 'step_completed', 'run_created', 'message_created', 'message_completed'].includes(update.type)) {
+                setData(prev => ({
+                  ...prev,
+                  streamingEvents: [...prev.streamingEvents, `[${update.type}] ${update.text || update.message || JSON.stringify(update)}`]
+                }));
+              } else {
+                // Handle any other event types
+                setData(prev => ({
+                  ...prev,
+                  streamingEvents: [...prev.streamingEvents, `[${update.type || 'unknown'}] ${update.text || update.message || JSON.stringify(update)}`]
+                }));
+              }
+            }
+          );
         }
-      } else {
-        const result = await callDeepAnalysis(
-          data.csvContent, 
-          data.fileName,
-          data.userInstructions,
-          (status) => updateData(prev => ({ ...prev, streamingStatuses: [...prev.streamingStatuses, status] }))
-        );
         
         if (result.success && result.data) {
           updateData({
             generatedRules: result.data.rules,
             threadId: result.threadId,
             assistantId: result.assistantId,
-            isProcessing: false
+            isProcessing: false, // Turn off processing only on success
+            processingError: null,
           });
         } else {
           updateData({
             processingError: result.error || 'Analysis failed',
-            isProcessing: false
+            isProcessing: false, // Turn off processing on failure
           });
         }
+      } catch (error) {
+        updateData({
+          processingError: error instanceof Error ? error.message : 'Unknown error',
+          isProcessing: false, // Turn off processing on catch
+        });
       }
-    } catch (error) {
-      updateData({
-        processingError: error instanceof Error ? error.message : 'Unknown error',
-        isProcessing: false
-      });
-    }
+    };
+
+    performAnalysis();
   };
 
   const saveRule = async () => {
@@ -300,7 +351,7 @@ const CreateRuleByAI: React.FC = () => {
     } catch (error) {
       updateData({
         processingError: error instanceof Error ? error.message : 'Failed to save rule',
-        isProcessing: false
+        isProcessing: false,
       });
     }
   };
@@ -360,6 +411,9 @@ const CreateRuleByAI: React.FC = () => {
           <RuleSelectionStep
             data={data}
             updateData={updateData}
+            streamingStatuses={data.streamingStatuses}
+            streamingText={data.streamingText}
+            streamingEvents={data.streamingEvents}
           />
         );
       case 3:
@@ -367,6 +421,10 @@ const CreateRuleByAI: React.FC = () => {
           <ReviewStep
             data={data}
             updateData={updateData}
+            streamingStatuses={data.streamingStatuses}
+            streamingText={data.streamingText}
+            streamingEvents={data.streamingEvents}
+            analysisContext={data.analysisContext}
           />
         );
       default:
