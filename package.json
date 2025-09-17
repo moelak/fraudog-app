@@ -19,7 +19,9 @@
     "@mui/material": "^7.3.1",
     "@mui/x-date-pickers": "^8.10.0",
     "@mui/x-date-pickers-pro": "^8.10.0",
+    "@types/papaparse": "^5.3.16",
     "@types/react-toastify": "^4.0.2",
+    "@types/xlsx": "^0.0.35",
     "ag-grid-community": "^33.3.2",
     "ag-grid-react": "^33.3.2",
     "antd": "^5.26.5",
@@ -29,12 +31,14 @@
     "mobx": "^6.12.0",
     "mobx-react-lite": "^4.0.5",
     "openai": "^5.19.1",
+    "papaparse": "^5.5.3",
     "react": "^19.1.0",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^6.22.1",
     "react-toastify": "^10.0.6",
-    "sql-parser": "^0.5.0"
+    "sql-parser": "^0.5.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.27.0",

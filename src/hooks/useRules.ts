@@ -169,7 +169,6 @@ export function useRules() {
       .gte('timestamp', window.fromISO)       // inclusive
       .lt('timestamp', window.toExclusiveISO); // exclusive
 
-      console.log("=>>", metrics?.filter((item)=> item.rule_id === "0b940e70-e328-4af5-b4a4-1b99fd8dc6f6" ))
     if (metricsErr) throw metricsErr;
 
     const sums = new Map<string, { c: number; fp: number; cb: number }>();
