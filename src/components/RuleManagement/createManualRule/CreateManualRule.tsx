@@ -555,10 +555,6 @@ export default function CreateManualRule() {
 		const matches = [...description.matchAll(/@([a-zA-Z0-9_]+)/g)].map((m) => m[1]);
 
 		if (mode === 'ai') {
-			// if (matches.length === 0) {
-			// 	errors.push('At least one @column reference is required.');
-			// }
-
 			const invalid = matches.filter((col) => !columns.some((c) => c.toLowerCase() === col.toLowerCase()));
 			if (invalid.length > 0) {
 				errors.push(`Invalid column(s): ${invalid.join(', ')}`);
