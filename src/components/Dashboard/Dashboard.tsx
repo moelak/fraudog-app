@@ -37,7 +37,8 @@ const Dashboard = observer(() => {
 	const navigation = [
 		{ name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
 		{ name: 'Rule Management', href: '/dashboard/rules', icon: ShieldCheckIcon },
-		{ name: 'Rule Generation Tester', href: '/dashboard/test-rulegeneration', icon: ShieldCheckIcon },
+		// TODO: The Rule Generation Tester to be moved to an Admin view, so that it can be used to improve prompts. Visualization will also be incorporated once we have more data streaming through. 
+		// { name: 'Rule Generation Tester', href: '/dashboard/test-rulegeneration', icon: ShieldCheckIcon },
 		// { name: 'Visualization', href: '/dashboard/visualization', icon: ChartBarIcon },
 		{ name: 'Monitoring', href: '/dashboard/monitoring', icon: EyeIcon },
 		{ name: 'Chargebacks', href: '/dashboard/chargebacks', icon: CreditCardIcon },
