@@ -379,9 +379,11 @@ export const callQuickAnalysis = async (
 ): Promise<QuickAnalysisResult> => {
   const startTime = Date.now();
   
+  // Get token estimation outside try block so it's accessible in catch
+  const estimation = estimateTokenCount(csvData);
+  
   try {
-    // Get token estimation and apply sampling if needed
-    const estimation = estimateTokenCount(csvData);
+    // Apply sampling if needed
     const processedData = estimation.samplingApplied 
       ? sampleCSVData(csvData, estimation.processedRecords)
       : csvData;
@@ -438,6 +440,7 @@ export const callQuickAnalysis = async (
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
       debugInfo: {
+        ...estimation,
         processingTime: Date.now() - startTime
       }
     };
