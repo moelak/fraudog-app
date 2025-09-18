@@ -375,7 +375,7 @@ const CreateRuleByAI: React.FC = () => {
         severity: data.finalRule.severity,
         log_only: data.logOnly, // Apply log_only setting from Step 4
         source: 'AI' as const,
-        decision: data.finalRule.decision
+        decision: data.finalRule.decision as 'allow' | 'review' | 'deny'
       };
 
       // Save to public.rules table via Supabase
