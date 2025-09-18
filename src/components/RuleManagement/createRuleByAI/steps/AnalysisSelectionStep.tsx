@@ -45,7 +45,7 @@ const AnalysisSelectionStep: React.FC<AnalysisSelectionStepProps> = ({
     return `$${cost}`;
   };
 
-  const CostEstimateButton = ({ cost, onClick }: { cost: string; onClick: () => void }) => (
+  const CostEstimateButton = ({ cost, onClick }: { cost: string; onClick: (e: React.MouseEvent<HTMLButtonElement>) => void }) => (
     <button
       onClick={onClick}
       className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors cursor-pointer group"
