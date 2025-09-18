@@ -157,7 +157,7 @@ const AnalysisSelectionStep: React.FC<AnalysisSelectionStepProps> = ({
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <p className="text-sm font-medium text-gray-500">Total Records</p>
               <p className="text-xl font-semibold text-gray-900">
-                {data.csvData.length.toLocaleString()}
+                {Array.isArray(data.csvData) ? data.csvData.length.toLocaleString() : 'N/A'}
               </p>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm">

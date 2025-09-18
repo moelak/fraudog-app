@@ -23,7 +23,11 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({ data, updateData, onVal
 	const fileInputRef = React.useRef<HTMLInputElement>(null);
 
 	// Simple CSV parser to avoid Papa Parse dependency
-	const parseCSVText = (text: string): { headers: string[]; rows: string[][] } => {
+	const parseCSVText = (text: string): { 
+		headers: string[]; 
+		rows: string[][];
+		jsonData: Record<string, any>[] 
+	} => {
 		const lines = text.split('\n').filter((line) => line.trim());
 		if (lines.length === 0) throw new Error('Empty file');
 
@@ -56,8 +60,17 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({ data, updateData, onVal
 
 		const headers = parseCSVLine(lines[0]);
 		const rows = lines.slice(1).map((line) => parseCSVLine(line));
+		
+		// Convert rows to array of objects with proper typing
+		const jsonData: Record<string, any>[] = rows.map(row => {
+			const obj: Record<string, any> = {};
+			headers.forEach((header, index) => {
+				obj[header] = row[index] || '';
+			});
+			return obj;
+		});
 
-		return { headers, rows };
+		return { headers, rows, jsonData };
 	};
 
 	// Universal file parser that handles multiple formats
@@ -90,20 +103,11 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({ data, updateData, onVal
 			reader.onload = (e) => {
 				try {
 					const text = e.target?.result as string;
-					const { headers, rows } = parseCSVText(text);
+					const { headers, rows, jsonData } = parseCSVText(text);
 
 					if (rows.length === 0) {
 						throw new Error('Empty CSV file');
 					}
-
-					// Convert to JSON format
-					const jsonData = rows.map((row) => {
-						const obj: Record<string, unknown> = {};
-						headers.forEach((header, index) => {
-							obj[header] = row[index] || '';
-						});
-						return obj;
-					});
 
 					resolve({
 						headers,
@@ -348,7 +352,7 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({ data, updateData, onVal
 				csvFile: file,
 				csvContent: csvContent,
 				csvHeaders: parsedData.headers,
-				csvData: parsedData.rows.slice(0, 1000), // Limit to first 1000 rows for preview
+				csvData: parsedData.jsonData, // This is now Record<string, any>[]
 				fileName: file.name, // Store the original filename
 			});
 
@@ -388,7 +392,7 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({ data, updateData, onVal
 		updateData({
 			csvFile: null,
 			csvContent: '',
-			csvData: [] as string[][],
+			csvData: [], // This will be Record<string, any>[]
 			csvHeaders: [],
 		});
 		if (fileInputRef.current) {
@@ -453,7 +457,7 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({ data, updateData, onVal
 											<tr key={rowIndex}>
 												{data.csvHeaders.map((header, cellIndex) => {
 													// Get cell value based on data structure
-													const cellValue = isObject ? (row as Record<string, unknown>)[header] : (row as string[])[cellIndex];
+													const cellValue = isObject ? (row as Record<string, any>)[header] : (row as string[])[cellIndex];
 
 													return (
 														<td

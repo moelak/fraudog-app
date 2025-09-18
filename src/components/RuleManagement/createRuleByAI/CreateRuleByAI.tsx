@@ -57,8 +57,10 @@ const steps = [
 export interface StepperData {
   // Step 1: Data Upload
   csvFile: File | null;
+  // Raw CSV string - for storage, validation, API calls
   csvContent: string;
-  csvData: string[][]; // Fixed: Changed from any[] to string[][]
+  // Parsed object array - for UI, calculations, processing
+  csvData: Record<string, any>[];
   csvHeaders: string[];
   fileName: string;
   userInstructions: string;
@@ -104,7 +106,7 @@ const CreateRuleByAI: React.FC = () => {
   const [data, setData] = useState<StepperData>({
     csvFile: null,
     csvContent: '',
-    csvData: [] as string[][], // Fix: Explicitly type as string[][]
+    csvData: [] as Record<string, any>[], // Fix: Explicitly type as string[][]
     csvHeaders: [],
     fileName: '', // Initialize fileName field
     userInstructions: '',
@@ -277,10 +279,10 @@ const CreateRuleByAI: React.FC = () => {
       try {
         let result;
         if (data.analysisType === 'quick') {
-          result = await callQuickAnalysis(data.csvContent, data.fileName, data.userInstructions);
+          result = await callQuickAnalysis(data.csvData, data.fileName, data.userInstructions);
         } else {
           result = await callDeepAnalysis(
-            data.csvContent, 
+            data.csvData, 
             data.fileName,
             data.userInstructions,
             (update) => {
@@ -413,11 +415,11 @@ const CreateRuleByAI: React.FC = () => {
             data={data}
             updateData={updateData}
             onValidation={(csvContent) => {
-              const validation = validateCSVData(csvContent);
+              const parsedData = parseCSVData(csvContent);
+              const validation = validateCSVData(parsedData);
               if (validation.valid) {
-                const parsedData = parseCSVData(csvContent);
                 updateData({
-                  csvContent,
+                  csvContent: csvContent,
                   csvData: parsedData,
                   processingError: null
                 });
@@ -435,7 +437,7 @@ const CreateRuleByAI: React.FC = () => {
             data={data}
             updateData={updateData}
             onTokenEstimation={(csvContent) => {
-              const estimation = estimateTokenCount(csvContent);
+              const estimation = estimateTokenCount(data.csvData);
               updateData({ tokenEstimation: estimation });
             }}
             inProgress={data.isProcessing}

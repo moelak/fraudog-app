@@ -33,7 +33,7 @@ export interface Rule {
   hasCalculated?: boolean;
 
   displayName?: string;
-  decision:  'allow' | 'review' | 'deny';
+  decision:  string;
   
   // AI-specific fields
   ai_generation_id?: string;  // Link to ai_rule_generation table
