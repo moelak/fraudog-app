@@ -49,7 +49,6 @@ export class RuleManagementStore {
 
   isCreateModalOpen = false;
   isEditModalOpen = false;
-  isChargebackAnalysisOpen = false;
   isDeleteConfirmModalOpen = false;
   editingRule: Rule | null = null;
   deletingRule: Rule | null = null;
@@ -281,8 +280,6 @@ openCreateModal = () => {
     this.isEditingFromGenerated = false;
   }
 
-  openChargebackAnalysis = () => { this.isChargebackAnalysisOpen = true; };
-  closeChargebackAnalysis = () => { this.isChargebackAnalysisOpen = false; };
   openDeleteConfirmModal = (rule: Rule) => { this.deletingRule = rule; this.isDeleteConfirmModalOpen = true; };
   closeDeleteConfirmModal = () => { this.isDeleteConfirmModalOpen = false; this.deletingRule = null; };
 
