@@ -184,10 +184,10 @@ export const updateAIGenerationWithResponse = (
  */
 export const calculateRuleImpact = (
   rule: OpenAIRule,
-  csvData: any[]
+  csvData: Record<string, any>[]
 ): { wouldCatch: number; falsePositives: number; potentialFraudPrevented: number } => {
   // This is a simplified calculation - in production, you'd want more sophisticated analysis
-  const totalTransactions = csvData.length;
+  const totalTransactions = csvData.length || 1; // Prevent division by zero
   const estimatedCatchRate = rule.metadata?.confidence_level || 70;
   const estimatedFalsePositiveRate = rule.metadata?.expected_false_positive_rate || 0.05;
   
@@ -195,7 +195,19 @@ export const calculateRuleImpact = (
   const falsePositives = Math.round(wouldCatch * estimatedFalsePositiveRate);
   
   // Estimate fraud prevented based on average transaction amount
-  const avgAmount = csvData.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0) / totalTransactions;
+  // Safely parse amount from different possible field names
+  const avgAmount = csvData.reduce((sum, row) => {
+    const amount = parseFloat(
+      row.amount || 
+      row.Amount || 
+      row.AMOUNT || 
+      row.transaction_amount || 
+      row.Transaction_Amount ||
+      '0'
+    );
+    return sum + (isNaN(amount) ? 0 : amount);
+  }, 0) / totalTransactions;
+  
   const potentialFraudPrevented = Math.round(wouldCatch * avgAmount);
 
   return {

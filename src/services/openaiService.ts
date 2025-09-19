@@ -53,14 +53,72 @@ export interface DeepAnalysisResult {
 }
 
 /**
- * Estimate token count for CSV data
+ * Converts an array of objects to a CSV string
+ * @param data - Array of objects to convert to CSV (matches StepperData.csvData)
+ * @returns CSV formatted string with headers and data rows
  */
-export const estimateTokenCount = (csvData: string): TokenEstimation => {
-  const lines = csvData.split('\n').filter(line => line.trim());
-  const originalRecords = Math.max(0, lines.length - 1); // Subtract header
+export const convertToCSV = (data: Record<string, any>[]): string => {
+  if (data.length === 0) return '';
+  
+  const headers = Object.keys(data[0]);
+  const rows = data.map(obj => 
+    headers.map(header => 
+      `"${String(obj[header] || '').replace(/"/g, '""')}"`
+    ).join(',')
+  );
+  
+  return [headers.join(','), ...rows].join('\n');
+};
+
+/**
+ * Parses a CSV string into an array of objects
+ * @param csvContent - CSV formatted string to parse (matches StepperData.csvContent)
+ * @returns Array of objects where keys are column headers and values are row values
+ */
+export function parseCSVData(csvContent: string): Record<string, any>[] {
+  const lines = csvContent.split('\n').filter(line => line.trim());
+  if (lines.length < 2) return [];
+  
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"/, '').replace(/"$/, ''));
+  
+  return lines.slice(1).map(line => {
+    const values = line.split(',').map(v => v.trim().replace(/^"/, '').replace(/"$/, ''));
+    return headers.reduce((obj, header, i) => {
+      obj[header] = values[i] || '';
+      return obj;
+    }, {} as Record<string, any>);
+  });
+}
+
+/**
+ * Validates CSV data format and content
+ * @param csvData - The CSV data to validate (matches StepperData.csvData)
+ * @returns Object with validation result and optional error message
+ */
+export function validateCSVData(csvData: Record<string, any>[]): { valid: boolean; error?: string } {
+  if (!Array.isArray(csvData) || csvData.length === 0) {
+    return { valid: false, error: 'Data must be a non-empty array' };
+  }
+  
+  const firstItem = csvData[0];
+  if (typeof firstItem !== 'object' || firstItem === null) {
+    return { valid: false, error: 'Data items must be objects' };
+  }
+  
+  return { valid: true };
+}
+
+/**
+ * Estimates token count for the provided data array
+ * @param csvData - The data to analyze (matches StepperData.csvData)
+ * @returns Token estimation details including sampling information
+ */
+export const estimateTokenCount = (csvData: Record<string, any>[]): TokenEstimation => {
+  const originalRecords = csvData.length;
+  const csvString = convertToCSV(csvData);
   
   // Rough token estimation: ~4 characters per token
-  const originalTokens = Math.ceil(csvData.length / 4);
+  const originalTokens = Math.ceil(csvString.length / 4);
   
   // Apply sampling if dataset is large (>1000 records or >50k tokens)
   const shouldSample = originalRecords > 1000 || originalTokens > 50000;
@@ -92,102 +150,39 @@ export const estimateTokenCount = (csvData: string): TokenEstimation => {
 };
 
 /**
- * Sample CSV data for processing
+ * Samples data to reduce size while maintaining distribution
+ * @param csvData - The data to sample from (matches StepperData.csvData)
+ * @param targetRecords - Target number of records to sample
+ * @returns Sampled array of objects
  */
-export const sampleCSVData = (csvData: string, targetRecords: number): string => {
-  const lines = csvData.split('\n');
-  if (lines.length <= targetRecords + 1) return csvData; // +1 for header
+export const sampleCSVData = (csvData: Record<string, any>[], targetRecords: number): Record<string, any>[] => {
+  if (csvData.length <= targetRecords) return [...csvData];
   
-  const header = lines[0];
-  const dataLines = lines.slice(1).filter(line => line.trim());
-  
-  // Simple random sampling
-  const sampledLines = [];
-  const sampleRatio = targetRecords / dataLines.length;
-  
-  for (let i = 0; i < dataLines.length; i++) {
-    if (Math.random() < sampleRatio || sampledLines.length < targetRecords) {
-      sampledLines.push(dataLines[i]);
-      if (sampledLines.length >= targetRecords) break;
-    }
+  // Fisher-Yates shuffle algorithm for random sampling
+  const shuffled = [...csvData];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   
-  return [header, ...sampledLines].join('\n');
-};
-
-/**
- * Call OpenAI Chat Completion API for quick analysis
- */
-export const callQuickAnalysis = async (
-  csvData: string,
-  userInstructions: string = ''
-): Promise<QuickAnalysisResult> => {
-  const startTime = Date.now();
-  
-  try {
-    // Get token estimation and apply sampling if needed
-    const estimation = estimateTokenCount(csvData);
-    const processedData = estimation.samplingApplied 
-      ? sampleCSVData(csvData, estimation.processedRecords)
-      : csvData;
-
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (!supabaseUrl) {
-      throw new Error('Supabase URL not configured');
-    }
-
-    const response = await fetch(`${supabaseUrl}/functions/v1/openai-chatcompletion`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-      },
-      body: JSON.stringify({
-        csvContent: processedData,
-        fileName: 'transactions.csv',
-        userInstructions: userInstructions
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-    }
-
-    const data = await response.json();
-    
-    if (data.success) {
-      return {
-        success: true,
-        data: data.data,
-        debugInfo: {
-          ...estimation,
-          processingTime: Date.now() - startTime
-        }
-      };
-    } else {
-      throw new Error(data.error || 'Unknown error occurred');
-    }
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
-  }
+  return shuffled.slice(0, targetRecords);
 };
 
 /**
  * Call OpenAI Assistants API for deep analysis with streaming
+ * @param data - The data to analyze as an array of objects
+ * @param fileName - The name of the file being analyzed (for context)
+ * @param userInstructions - Optional user instructions for the analysis
+ * @param onUpdate - Optional callback for streaming updates
  */
 export const callDeepAnalysis = async (
-  csvData: string,
-  fileName: string = 'transactions.csv',
+  data: Record<string, any>[],
+  fileName: string = 'data.csv',
   userInstructions: string = '',
   onUpdate?: (update: StreamUpdate) => void
 ): Promise<DeepAnalysisResult> => {
-  console.log('Starting deep analysis...');
-
   try {
+    const csvData = convertToCSV(data);
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     if (!supabaseUrl) {
       throw new Error('Supabase URL not configured');
@@ -372,53 +367,82 @@ export const callDeepAnalysis = async (
 };
 
 /**
- * Parse CSV data into structured format
+ * Call OpenAI Chat Completion API for quick analysis
+ * @param csvData - The data to analyze as an array of objects (matches StepperData.csvData)
+ * @param fileName - The name of the file being analyzed (for context)
+ * @param userInstructions - Optional user instructions for the analysis
  */
-export const parseCSVData = (csvContent: string): any[] => {
-  const lines = csvContent.split('\n').filter(line => line.trim());
-  if (lines.length < 2) return [];
+export const callQuickAnalysis = async (
+  csvData: Record<string, any>[],
+  fileName: string = 'transactions.csv',
+  userInstructions: string = ''
+): Promise<QuickAnalysisResult> => {
+  const startTime = Date.now();
   
-  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-  const data = [];
+  // Get token estimation outside try block so it's accessible in catch
+  const estimation = estimateTokenCount(csvData);
   
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-    const row: any = {};
-    
-    headers.forEach((header, index) => {
-      row[header] = values[index] || '';
-    });
-    
-    data.push(row);
-  }
-  
-  return data;
-};
+  try {
+    // Apply sampling if needed
+    const processedData = estimation.samplingApplied 
+      ? sampleCSVData(csvData, estimation.processedRecords)
+      : csvData;
 
-/**
- * Validate CSV format and content
- */
-export const validateCSVData = (csvContent: string): { valid: boolean; error?: string } => {
-  if (!csvContent || csvContent.trim().length === 0) {
-    return { valid: false, error: 'CSV content is empty' };
-  }
-  
-  const lines = csvContent.split('\n').filter(line => line.trim());
-  if (lines.length < 2) {
-    return { valid: false, error: 'CSV must have at least a header and one data row' };
-  }
-  
-  // Check for common transaction fields
-  const headers = lines[0].toLowerCase();
-  const requiredFields = ['amount', 'transaction'];
-  const hasRequiredFields = requiredFields.some(field => headers.includes(field));
-  
-  if (!hasRequiredFields) {
-    return { 
-      valid: false, 
-      error: 'CSV should contain transaction-related data (amount, transaction_id, etc.)' 
+    // Convert to CSV string for the API
+    const csvString = convertToCSV(processedData);
+
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl) {
+      throw new Error('Supabase URL not configured');
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/openai-chatcompletion`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        csvContent: csvString,
+        fileName,
+        userInstructions,
+        debugInfo: {
+          originalRecords: estimation.originalRecords,
+          originalTokens: estimation.originalTokens,
+          processedRecords: estimation.processedRecords,
+          processedTokens: estimation.processedTokens,
+          samplingApplied: estimation.samplingApplied
+        }
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+    }
+
+    const result = await response.json();
+    
+    if (result.success) {
+      return {
+        success: true,
+        data: result.data,
+        debugInfo: {
+          ...estimation,
+          processingTime: Date.now() - startTime
+        }
+      };
+    } else {
+      throw new Error(result.error || 'Unknown error occurred');
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      debugInfo: {
+        ...estimation,
+        processingTime: Date.now() - startTime
+      }
     };
   }
-  
-  return { valid: true };
 };

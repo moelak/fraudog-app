@@ -45,7 +45,7 @@ const AnalysisSelectionStep: React.FC<AnalysisSelectionStepProps> = ({
     return `$${cost}`;
   };
 
-  const CostEstimateButton = ({ cost, onClick }: { cost: string; onClick: () => void }) => (
+  const CostEstimateButton = ({ cost, onClick }: { cost: string; onClick: (e: React.MouseEvent<HTMLButtonElement>) => void }) => (
     <button
       onClick={onClick}
       className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors cursor-pointer group"
@@ -157,7 +157,7 @@ const AnalysisSelectionStep: React.FC<AnalysisSelectionStepProps> = ({
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <p className="text-sm font-medium text-gray-500">Total Records</p>
               <p className="text-xl font-semibold text-gray-900">
-                {data.csvData.length.toLocaleString()}
+                {Array.isArray(data.csvData) ? data.csvData.length.toLocaleString() : 'N/A'}
               </p>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm">

@@ -105,7 +105,6 @@ const RuleManagement = observer(({ onSearchByDateRange }: Props) => {
 
 			{/* Modals */}
 
-			{/* <ChargebackAnalysisModal /> */}
 			<DeleteConfirmModal />
 		</div>
 	);

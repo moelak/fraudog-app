@@ -4,7 +4,6 @@ import { useRules } from '../../hooks/useRules';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 import { EllipsisVerticalIcon, PencilIcon, ClockIcon, TrashIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 import { ruleManagementStore } from './RuleManagementStore';
-type Decision = 'allow' | 'review' | 'deny';
 
 interface RuleActionsMenuProps {
 	rule: {
@@ -24,7 +23,7 @@ interface RuleActionsMenuProps {
 		user_id: string;
 		created_at: string;
 		updated_at: string;
-		decision: Decision;
+		decision: string;
 		chargebacks: number;
 	};
 }
