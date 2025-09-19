@@ -334,8 +334,8 @@ const CreateRuleByAI: React.FC = () => {
         if (result.success && result.data) {
           updateData({
             generatedRules: result.data.rules,
-            threadId: result.threadId,
-            assistantId: result.assistantId,
+            threadId: 'threadId' in result ? result.threadId : undefined,
+            assistantId: 'assistantId' in result ? result.assistantId : undefined,
             isProcessing: false, // Turn off processing only on success
             processingError: null,
           });
