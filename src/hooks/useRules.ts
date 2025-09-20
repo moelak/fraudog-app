@@ -12,7 +12,7 @@ dayjs.extend(utc);
    Types
    ========================= */
 export interface Rule {
-  id: string;
+
   name: string;
   description: string;
   category: string;
