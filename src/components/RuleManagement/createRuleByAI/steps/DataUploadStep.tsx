@@ -22,6 +22,128 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({ data, updateData, onVal
 	const [errors, setErrors] = React.useState<{ [key: string]: string }>({});
 	const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+	// --- PII detection helpers ---
+	// Restrict name detection to explicit person-name columns only
+	const PERSON_NAME_HEADERS = React.useMemo(
+		() => new Set([
+			'full_name', 'fullname', 'first_name', 'firstname', 'last_name', 'lastname', 'given_name', 'surname', 'cardholder_name', 'customer_name'
+		]),
+		[]
+	);
+
+	// Address detection uses a stricter combination (street + locality)
+	const STREET_HEADERS = React.useMemo(
+		() => new Set(['address', 'address1', 'address2', 'street', 'street_address', 'billing_address', 'shipping_address']),
+		[]
+	);
+	const CITY_HEADERS = React.useMemo(() => new Set(['city', 'billing_city', 'shipping_city']), []);
+	const REGION_HEADERS = React.useMemo(() => new Set(['state', 'province', 'region', 'billing_state', 'shipping_state']), []);
+	const POSTAL_HEADERS = React.useMemo(() => new Set(['zip', 'zipcode', 'postal', 'postal_code', 'billing_zip', 'shipping_zip']), []);
+
+	const luhnCheck = (num: string): boolean => {
+		let sum = 0;
+		let shouldDouble = false;
+		for (let i = num.length - 1; i >= 0; i--) {
+			let digit = parseInt(num.charAt(i), 10);
+			if (shouldDouble) {
+				digit *= 2;
+				if (digit > 9) digit -= 9;
+			}
+			sum += digit;
+			shouldDouble = !shouldDouble;
+		}
+		return sum % 10 === 0;
+	};
+
+	const looksLikeName = (val: string): boolean => {
+		// Conservative check to avoid false positives like "Trust Wallet" or "MetaMask"
+		if (!val) return false;
+		if (/\d/.test(val)) return false;
+		const trimmed = val.trim();
+		if (trimmed.length < 3 || trimmed.length > 64) return false;
+		const parts = trimmed.split(/\s+/).filter(Boolean);
+		if (parts.length < 2 || parts.length > 4) return false;
+		const nameWord = /^[A-Z][a-z]+(?:['\-][A-Za-z]+)?$/; // John, O'Neil, Anne-Marie
+		// Require at least two parts that look like name words
+		let good = 0;
+		for (const p of parts) {
+			if (nameWord.test(p)) good++;
+		}
+		return good >= 2;
+	};
+
+	const looksLikeAddress = (val: string): boolean => {
+		if (!val) return false;
+		const streetSuffix = '(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Ln|Lane|Dr|Drive|Ct|Court|Pl|Place|Way|Pkwy|Parkway|Cir|Circle|Ter|Terrace)';
+		const re = new RegExp(`\\b\\d{1,6}\\s+[A-Za-z0-9.'\\- ]{3,}\\s+${streetSuffix}\\b`, 'i');
+		return re.test(val);
+	};
+
+	type PIIScanResult = {
+		detected: boolean;
+		findings: {
+			names: number;
+			creditCards: number;
+			addresses: number;
+			samples: { names: string[]; creditCards: string[]; addresses: string[] };
+		};
+	};
+
+	const scanPII = (headers: string[], jsonData: Record<string, any>[]): PIIScanResult => {
+		const lowerHeaders = headers.map(h => (h || '').toString().toLowerCase().trim());
+		const headerSet = new Set(lowerHeaders);
+		// Name: only if explicit person-name columns are present
+		const nameHeadersPresent = lowerHeaders.filter(h => PERSON_NAME_HEADERS.has(h));
+		const nameHeaderSet = new Set(nameHeadersPresent);
+		// Address: require a street-like column AND a locality column
+		const hasStreetCol = lowerHeaders.some(h => STREET_HEADERS.has(h));
+		const hasLocalityCol = lowerHeaders.some(h => CITY_HEADERS.has(h) || REGION_HEADERS.has(h) || POSTAL_HEADERS.has(h));
+		const addressHeaderSignal = hasStreetCol && hasLocalityCol;
+
+		let names = 0;
+		let creditCards = 0;
+		let addresses = 0;
+		const samples = { names: [] as string[], creditCards: [] as string[], addresses: [] as string[] };
+
+		const ROW_SCAN_LIMIT = 500; // performance guard
+		for (let i = 0; i < jsonData.length && i < ROW_SCAN_LIMIT; i++) {
+			const row = jsonData[i];
+			for (const key of Object.keys(row)) {
+				const raw = row[key];
+				if (raw === null || raw === undefined) continue;
+				const val = String(raw);
+				const keyLower = key.toString().toLowerCase();
+
+				// credit card: 16 digits, allow spaces/dashes, pass Luhn
+				const ccMatches = val.match(/\b(?:\d[ -]*?){16}\b/g);
+				if (ccMatches) {
+					for (const m of ccMatches) {
+						const digits = m.replace(/\D/g, '');
+						if (digits.length === 16 && luhnCheck(digits)) {
+							creditCards++;
+							if (samples.creditCards.length < 3) samples.creditCards.push(m.trim());
+						}
+					}
+				}
+
+				// names: only consider values under explicit person-name columns
+				if (nameHeaderSet.has(keyLower) && looksLikeName(val)) {
+					names++;
+					if (samples.names.length < 3) samples.names.push(val.trim());
+				}
+
+				// addresses: match street-like pattern in any column, but only if headers imply address columns exist
+				if (addressHeaderSignal && looksLikeAddress(val)) {
+					addresses++;
+					if (samples.addresses.length < 3) samples.addresses.push(val.trim());
+				}
+			}
+		}
+
+		const detected = (names > 0) || (creditCards > 0) || (addresses > 0);
+		return { detected, findings: { names, creditCards, addresses, samples } };
+	};
+
 	// Simple CSV parser to avoid Papa Parse dependency
 	const parseCSVText = (text: string): { 
 		headers: string[]; 
@@ -348,12 +470,18 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({ data, updateData, onVal
 			// Convert back to CSV format for compatibility with existing validation
 			const csvContent = [parsedData.headers.join(','), ...parsedData.rows.map((row) => row.join(','))].join('\n');
 
+			// PII scan
+			const pii = scanPII(parsedData.headers, parsedData.jsonData);
+
 			updateData({
 				csvFile: file,
 				csvContent: csvContent,
 				csvHeaders: parsedData.headers,
 				csvData: parsedData.jsonData, // This is now Record<string, any>[]
 				fileName: file.name, // Store the original filename
+				piiDetected: pii.detected,
+				piiAcknowledged: false,
+				piiFindings: pii.findings,
 			});
 
 			onValidation(csvContent);
@@ -385,7 +513,14 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({ data, updateData, onVal
 
 	const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
-		if (file) handleFileUpload(file);
+		if (file) {
+			// Process new file and clear the input so selecting the same file again triggers change
+			void handleFileUpload(file).finally(() => {
+				e.target.value = '';
+			});
+		} else {
+			e.target.value = '';
+		}
 	};
 
 	const handleRemoveFile = () => {
@@ -394,6 +529,9 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({ data, updateData, onVal
 			csvContent: '',
 			csvData: [], // This will be Record<string, any>[]
 			csvHeaders: [],
+			piiDetected: false,
+			piiAcknowledged: false,
+			piiFindings: { names: 0, creditCards: 0, addresses: 0, samples: { names: [], creditCards: [], addresses: [] } },
 		});
 		if (fileInputRef.current) {
 			fileInputRef.current.value = '';
@@ -417,6 +555,52 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({ data, updateData, onVal
 					<p>Size: {(data.csvFile.size / 1024).toFixed(2)} KB</p>
 					<p>Rows: {data.csvData?.length || 0}</p>
 					<p>Columns: {data.csvHeaders?.length || 0}</p>
+				</div>
+			</div>
+		);
+	};
+
+	const renderPIIWarning = () => {
+		if (!data.csvFile) return null;
+		if (!data.piiDetected) return null;
+		const acknowledged = !!data.piiAcknowledged;
+		const findings = data.piiFindings || { names: 0, creditCards: 0, addresses: 0, samples: { names: [], creditCards: [], addresses: [] } };
+
+		if (acknowledged) {
+			return (
+				<div className='rounded-md bg-yellow-50 p-4 mt-3'>
+					<div className='flex'>
+						<InformationCircleIcon className='h-5 w-5 text-yellow-600' aria-hidden='true' />
+						<div className='ml-3'>
+							<h3 className='text-sm font-medium text-yellow-800'>PII Warning Accepted</h3>
+							<p className='mt-1 text-sm text-yellow-700'>You chose to proceed with potential PII present. Consider removing PII unless it is critical for rule generation.</p>
+						</div>
+					</div>
+				</div>
+			);
+		}
+
+		return (
+			<div className='rounded-md bg-yellow-50 p-4 mt-3'>
+				<div className='flex items-start'>
+					<ExclamationTriangleIcon className='h-5 w-5 text-yellow-600 mr-2' aria-hidden='true' />
+					<div className='flex-1'>
+						<h3 className='text-sm font-medium text-yellow-800'>Potential PII Detected</h3>
+						<p className='mt-1 text-sm text-yellow-800'>
+							We found possible PII. Remove it unless critical for rule generation.
+						</p>
+						<p className='mt-1 text-sm text-yellow-800'>
+							Names: {findings.names} • 16-digit cards: {findings.creditCards} • Addresses: {findings.addresses}
+						</p>
+					</div>
+					<div className='ml-4 flex items-center space-x-2'>
+						<button onClick={() => updateData({ piiAcknowledged: true })} className='inline-flex items-center rounded-md bg-yellow-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yellow-500'>
+							Proceed Anyway
+						</button>
+						<button onClick={() => fileInputRef.current?.click()} className='inline-flex items-center rounded-md border border-yellow-700 px-3 py-2 text-sm font-semibold text-yellow-800 hover:bg-yellow-100'>
+							Upload Different File
+						</button>
+					</div>
 				</div>
 			</div>
 		);
@@ -547,6 +731,7 @@ const DataUploadStep: React.FC<DataUploadStepProps> = ({ data, updateData, onVal
 
 			{renderFilePreview()}
 			{renderDataPreview()}
+			{renderPIIWarning()}
 
 			{data.csvData && data.csvData.length > 0 && (
 				<div className='rounded-md bg-blue-50 p-4'>

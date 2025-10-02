@@ -64,6 +64,20 @@ export interface StepperData {
   csvHeaders: string[];
   fileName: string;
   userInstructions: string;
+
+  // PII scanning state
+  piiDetected?: boolean; // true if potential PII found in upload
+  piiAcknowledged?: boolean; // user has accepted warning and wants to proceed
+  piiFindings?: {
+    names: number;
+    creditCards: number;
+    addresses: number;
+    samples: {
+      names: string[];
+      creditCards: string[];
+      addresses: string[];
+    };
+  };
   
   // Step 2: Analysis Selection
   analysisType: 'quick' | 'deep';
@@ -110,6 +124,9 @@ const CreateRuleByAI: React.FC = () => {
     csvHeaders: [],
     fileName: '', // Initialize fileName field
     userInstructions: '',
+    piiDetected: false,
+    piiAcknowledged: false,
+    piiFindings: { names: 0, creditCards: 0, addresses: 0, samples: { names: [], creditCards: [], addresses: [] } },
     analysisType: 'quick',
     tokenEstimation: null,
     generatedRules: [],
@@ -133,6 +150,9 @@ const CreateRuleByAI: React.FC = () => {
     csvHeaders: [],
     fileName: '', // Initialize fileName field
     userInstructions: '',
+    piiDetected: false,
+    piiAcknowledged: false,
+    piiFindings: { names: 0, creditCards: 0, addresses: 0, samples: { names: [], creditCards: [], addresses: [] } },
     analysisType: 'quick',
     tokenEstimation: null,
     generatedRules: [],
@@ -192,7 +212,9 @@ const CreateRuleByAI: React.FC = () => {
       } else {
         switch (activeStep) {
           case 0:
-            errorMsg = 'Please upload a CSV file to proceed.';
+            errorMsg = data.piiDetected && !data.piiAcknowledged
+              ? 'Potential PII detected. Accept the warning to proceed.'
+              : 'Please upload a CSV file to proceed.';
             break;
           case 1:
             errorMsg = 'Token analysis must be complete.';
@@ -395,7 +417,12 @@ const CreateRuleByAI: React.FC = () => {
   const canProceed = () => {
     switch (activeStep) {
       case 0:
-        return data.csvContent && data.csvData.length > 0;
+        return (
+          !!data.csvContent &&
+          data.csvData.length > 0 &&
+          // Gate by PII: either none detected or user acknowledged
+          (!data.piiDetected || !!data.piiAcknowledged)
+        );
       case 1:
         return data.tokenEstimation !== null;
       case 2:
