@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import {
@@ -16,7 +16,7 @@ import {
 import Overview from '../Overview/Overview';
 import Reports from '../Reports/Reports';
 import Settings from '../Settings/Settings';
-// TODO: see comment below 
+// TODO: see comment below
 // import Visualization from '../Visualization/Visualization';
 // import TestOpenAI from '../RuleManagement/TestOpenAI';
 import Monitoring from '../Monitoring/Monitoring';
@@ -30,15 +30,19 @@ import AccountManagementModal from '../Auth/AccountManagementModal';
 import { dashboardStore } from './DashboardStore';
 import { settingsStore } from '../Settings/SettingsStore';
 import RuleManagementContainer from '../RuleManagement/RuleManagementContainer';
+import { useNotifications } from '@/hooks/useNotifications';
 
 const Dashboard = observer(() => {
 	const location = useLocation();
 	const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+	const [showNotifications, setShowNotifications] = useState(false); // 👈 new local state
+	const dropdownRef = useRef<HTMLDivElement | null>(null);
 
+	const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 	const navigation = [
 		{ name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
 		{ name: 'Rule Management', href: '/dashboard/rules', icon: ShieldCheckIcon },
-		// TODO: The Rule Generation Tester to be moved to an Admin view, so that it can be used to improve prompts. Visualization will also be incorporated once we have more data streaming through. 
+		// TODO: The Rule Generation Tester to be moved to an Admin view, so that it can be used to improve prompts. Visualization will also be incorporated once we have more data streaming through.
 		// { name: 'Rule Generation Tester', href: '/dashboard/test-rulegeneration', icon: ShieldCheckIcon },
 		// { name: 'Visualization', href: '/dashboard/visualization', icon: ChartBarIcon },
 		{ name: 'Monitoring', href: '/dashboard/monitoring', icon: EyeIcon },
@@ -60,6 +64,48 @@ const Dashboard = observer(() => {
 	const handleOverlayClick = () => {
 		dashboardStore.closeSidebar();
 	};
+
+	const toggleNotifications = () => setShowNotifications((prev) => !prev);
+
+	useEffect(() => {
+		function handleClickOutside(event: MouseEvent) {
+			if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+				setShowNotifications(false);
+			}
+		}
+
+		if (showNotifications) {
+			document.addEventListener('mousedown', handleClickOutside);
+		} else {
+			document.removeEventListener('mousedown', handleClickOutside);
+		}
+
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside);
+		};
+	}, [showNotifications]);
+
+	function formatNotificationTime(dateString: string): string {
+		const date = new Date(dateString);
+		const now = new Date();
+		const diffMs = now.getTime() - date.getTime();
+		const diffHours = diffMs / (1000 * 60 * 60);
+
+		if (diffHours < 1) {
+			const diffMinutes = Math.floor(diffMs / (1000 * 60));
+			return `${diffMinutes}m ago`;
+		}
+		if (diffHours < 24) {
+			return `${Math.floor(diffHours)}h ago`;
+		}
+		return date.toLocaleString(undefined, {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+		});
+	}
 
 	return (
 		<div className='flex h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden'>
@@ -125,49 +171,71 @@ const Dashboard = observer(() => {
 							{/* Notification Bell */}
 							<div className='relative'>
 								<button
-									onClick={dashboardStore.toggleNotifications}
+									onClick={toggleNotifications}
 									className='relative p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full transition-colors'
 								>
 									<span className='sr-only'>View notifications</span>
 									<BellIcon className='h-6 w-6' />
-									{dashboardStore.unreadNotifications > 0 && (
+									{unreadCount > 0 && (
 										<span className='absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs font-medium rounded-full flex items-center justify-center'>
-											{dashboardStore.unreadNotifications > 9 ? '9+' : dashboardStore.unreadNotifications}
+											{unreadCount > 9 ? '9+' : unreadCount}
 										</span>
 									)}
 								</button>
 
-								{/* Notification Dropdown */}
-								{dashboardStore.showNotifications && (
-									<div className='absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50'>
-										<div className='p-4 border-b border-gray-100'>
-											<div className='flex items-center justify-between'>
-												<h3 className='text-lg font-medium text-gray-900'>Notifications</h3>
-												{dashboardStore.unreadNotifications > 0 && (
-													<button onClick={dashboardStore.markAllAsRead} className='text-sm text-blue-600 hover:text-blue-800'>
-														Mark all as read
-													</button>
-												)}
-											</div>
+								{showNotifications && (
+									<div ref={dropdownRef} className='absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-[9999] overflow-hidden'>
+										{/* Header */}
+										<div className='px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-50'>
+											<h3 className='text-sm font-semibold text-gray-700'>Notifications</h3>
+											{unreadCount > 0 && (
+												<button
+													onClick={async () => {
+														await markAllAsRead(); // 👈 updates all for this user
+														setShowNotifications(false); // optional: close dropdown after action
+													}}
+													className='text-xs font-medium text-blue-600 hover:text-blue-800'
+												>
+													Mark all read
+												</button>
+											)}
 										</div>
-										<div className='max-h-96 overflow-y-auto'>
-											{dashboardStore.notifications.length === 0 ? (
-												<div className='p-4 text-center text-gray-500'>No notifications</div>
+
+										{/* List */}
+
+										<div className='max-h-96 overflow-y-auto divide-y divide-gray-100'>
+											{notifications.length === 0 ? (
+												<div className='p-4 text-center text-gray-400'>No notifications</div>
 											) : (
-												dashboardStore.notifications.map((notification) => (
+												notifications.map((n) => (
 													<div
-														key={notification.id}
-														className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${!notification.read ? 'bg-blue-50' : ''}`}
-														onClick={() => dashboardStore.markAsRead(notification.id)}
+														key={n.id}
+														className={`flex items-start gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer ${!n.is_read ? 'bg-blue-50/40' : ''}`}
+														onClick={async () => {
+															await markAsRead(n.id); // 👈 mark single notification as read
+														}}
 													>
-														<div className='flex items-start'>
-															<div className={`flex-shrink-0 w-2 h-2 rounded-full mt-2 ${!notification.read ? 'bg-blue-500' : 'bg-gray-300'}`} />
-															<div className='ml-3 flex-1'>
-																<p className='text-sm font-medium text-gray-900'>{notification.title}</p>
-																<p className='text-sm text-gray-500 mt-1'>{notification.message}</p>
-																<p className='text-xs text-gray-400 mt-1'>{notification.timestamp}</p>
+														{/* Icon */}
+														<div className='flex-shrink-0 mt-1'>
+															{n.type === 'rule.created' && <span className='w-2.5 h-2.5 bg-green-500 rounded-full block' />}
+															{n.type === 'rule.updated' && <span className='w-2.5 h-2.5 bg-yellow-500 rounded-full block' />}
+															{n.type === 'rule.deleted' && <span className='w-2.5 h-2.5 bg-red-500 rounded-full block' />}
+															{!['rule.created', 'rule.updated', 'rule.deleted'].includes(n.type) && (
+																<span className='w-2.5 h-2.5 bg-gray-400 rounded-full block' />
+															)}
+														</div>
+
+														{/* Content */}
+														<div className='flex-1 min-w-0'>
+															<p className='text-sm font-medium text-gray-900 truncate'>{n.title}</p>
+															<div className='flex items-center justify-between mt-1'>
+																<span className='text-xs text-gray-400'>{formatNotificationTime(n.created_at)}</span>
+																{n.full_name && <span className='text-xs text-gray-500'>by {n.full_name}</span>}
 															</div>
 														</div>
+
+														{/* Unread dot */}
+														{!n.is_read && <span className='flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-2' />}
 													</div>
 												))
 											)}
