@@ -5,7 +5,7 @@ import utc from 'dayjs/plugin/utc';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
 import { ruleManagementStore } from '../components/RuleManagement/RuleManagementStore';
-
+import { RealtimeChannel } from "@supabase/supabase-js";
 dayjs.extend(utc);
 
 /* =========================
@@ -96,6 +96,7 @@ export function useRules() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
+const subscriptionRef = useRef<RealtimeChannel | null>(null);
 
   // Realtime (kept around for future use)
   // const subscriptionRef = useRef<RealtimeChannel | null>(null);
@@ -151,6 +152,59 @@ export function useRules() {
       ...r,
       displayName: orgNameMapRef.current.get(r.user_id) || r.user_id,
     })) as Rule[];
+
+
+
+useEffect(() => {
+  if (!organizationId) return;
+
+  // Clean up existing subscription if any
+  if (subscriptionRef.current) {
+    supabase.removeChannel(subscriptionRef.current);
+  }
+  // Subscribe to changes only for the same organization
+  const channel = supabase
+    .channel(`rules-changes-${organizationId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',          // INSERT, UPDATE, DELETE
+        schema: 'public',
+        table: 'rules',
+        filter: `organization_id=eq.${organizationId}`
+      },
+      async () => {
+      // async (payload) => {
+        // console.log("Realtime change:", payload);
+
+        // Option 1: Simple — refetch all rules
+        await fetchRules();
+
+        // Option 2: Optimistic — merge changes directly into store
+        // if (payload.eventType === "INSERT") {
+        //   ruleManagementStore.addRule(payload.new as Rule);
+        // }
+        // if (payload.eventType === "UPDATE") {
+        //   ruleManagementStore.updateRuleInStore(payload.new as Rule);
+        // }
+        // if (payload.eventType === "DELETE") {
+        //   ruleManagementStore.setRules(
+        //     ruleManagementStore.rules.filter(r => r.id !== payload.old.id)
+        //   );
+        // }
+      }
+    )
+    .subscribe();
+
+  subscriptionRef.current = channel;
+
+  return () => {
+    if (subscriptionRef.current) {
+      supabase.removeChannel(subscriptionRef.current);
+      subscriptionRef.current = null;
+    }
+  };
+}, [user?.id, organizationId]);
 
   // Merge metrics for rules in a UTC window and apply decision logic
   const aggregateAndApplyMetrics = async (
@@ -330,80 +384,222 @@ export function useRules() {
   /* =========================
      CRUD (unchanged behavior; refresh via fetchRules)
      ========================= */
-  const createRule = async (ruleData: CreateRuleData): Promise<Rule | null> => {
-    if (!user) throw new Error('User not authenticated');
+const createRule = async (ruleData: CreateRuleData): Promise<Rule | null> => {
+  if (!user) throw new Error('User not authenticated');
 
-    const { data: orgRow, error: orgErr } = await supabase
-      .from('organizations')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .single();
-    if (orgErr || !orgRow) throw orgErr || new Error('Organization not found for user');
-    const orgId = orgRow.organization_id as string;
+  const { data: orgRow, error: orgErr } = await supabase
+    .from('organizations')
+    .select('organization_id')
+    .eq('user_id', user.id)
+    .single();
+  if (orgErr || !orgRow) throw orgErr || new Error('Organization not found for user');
+  const orgId = orgRow.organization_id as string;
 
-    const { data, error } = await supabase
-      .from('rules')
-      .insert({ ...ruleData, user_id: user.id,  decision: ruleData.decision.toLowerCase(), organization_id: orgId, source: ruleData.source || 'User' })
-      .select()
-      .single();
-    if (error) throw error;
+  const { data, error } = await supabase
+    .from('rules')
+    .insert({
+      ...ruleData,
+      user_id: user.id,
+      decision: ruleData.decision.toLowerCase(),
+      organization_id: orgId,
+      source: ruleData.source || 'User',
+    })
+    .select()
+    .single();
+  if (error) throw error;
+
+  // 🔔 Notify + fan-out
+  const { data: notif, error: notifErr } = await supabase
+    .from('notifications')
+    .insert({
+      organization_id: orgId,
+      type: 'rule.created',
+      title: `Rule created: ${ruleData.name}`,
+      body: ruleData.description,
+      data: { ...data},
+      source_type: 'rule',
+      source_id: data.id,
+      created_by: user.id,
+    })
+    .select()
+    .single();
+  if (notifErr) throw notifErr;
+
+  await supabase.rpc('fan_out_notification', {
+    notif_id: notif.id,
+    org_id: orgId,
+    actor_user_id: user.id, // exclude yourself
+  });
+
+  void fetchRules();
+  return data as Rule;
+};
+
+const updateRule = async (id: string, updates: UpdateRuleData): Promise<Rule | null> => {
+  if (!user) throw new Error('User not authenticated');
+
+  const { data, error } = await supabase
+    .from('rules')
+    .update({
+      ...updates,
+      ...(updates.decision ? { decision: updates.decision.toLowerCase() } : {})
+    })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+
+  // 1️⃣ Insert notification
+  const { data: notif, error: notifErr } = await supabase
+    .from('notifications')
+    .insert({
+      organization_id: data.organization_id,
+      type: 'rule.updated',
+      title: `Rule updated: ${data.name}`,
+      body: updates.description || data.description,
+      data: { ...data},
+      source_type: 'rule',
+      source_id: data.id,
+      created_by: user.id,
+    })
+    .select()
+    .single();
+
+    if (notifErr) throw notifErr;
+
+    // 2️⃣ Fan out to user_notification_states
+    await supabase.rpc('fan_out_notification', {
+      notif_id: notif.id,
+      org_id: data.organization_id,
+      actor_user_id: user.id,   // exclude yourself
+    });
 
     void fetchRules();
     return data as Rule;
-  };
+};
 
-  const updateRule = async (id: string, updates: UpdateRuleData): Promise<Rule | null> => {
-    if (!user) throw new Error('User not authenticated');
-
-    const { data, error } = await supabase
-      .from('rules')
-      .update({
-        ...updates,
-        ...(updates.decision ? { decision: updates.decision.toLowerCase() } : {})
-      })
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) throw error;
-
-    void fetchRules();
-    return data as Rule;
-  };
 
   const implementRule = async (id: string) => await updateRule(id, { status: 'active' });
 
-  const softDeleteRule = async (id: string) => {
-    if (!user) throw new Error('User not authenticated');
-    const { error } = await supabase
-      .from('rules')
-      .update({ is_deleted: true, status: 'inactive' })
-      .eq('id', id)
-      .eq('user_id', user.id);
-    if (error) throw error;
-    void fetchRules();
-  };
+ const softDeleteRule = async (id: string) => {
+  if (!user) throw new Error('User not authenticated');
 
-  const recoverRule = async (id: string) => {
-    if (!user) throw new Error('User not authenticated');
-    const { error } = await supabase
-      .from('rules')
-      .update({ is_deleted: false })
-      .eq('id', id)
-      .eq('user_id', user.id);
-    if (error) throw error;
-    void fetchRules();
-  };
+  const { data, error } = await supabase
+    .from('rules')
+    .update({ is_deleted: true, status: 'inactive' })
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select()
+    .single();
+  if (error) throw error;
 
-  const permanentDeleteRule = async (id: string) => {
-    if (!user) throw new Error('User not authenticated');
-    const { error } = await supabase
-      .from('rules')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', user.id);
-    if (error) throw error;
-    void fetchRules();
-  };
+  // 🔔 Notify + fan-out
+  const { data: notif, error: notifErr } = await supabase
+    .from('notifications')
+    .insert({
+      organization_id: data.organization_id,
+      type: 'rule.deleted',
+      title: `Rule deleted: ${data.name}`,
+      body: `Rule "${data.name}" was marked inactive.`,
+      data: { rule_id: data.id },
+      source_type: 'rule',
+      source_id: data.id,
+      created_by: user.id,
+    })
+    .select()
+    .single();
+  if (notifErr) throw notifErr;
+
+  await supabase.rpc('fan_out_notification', {
+    notif_id: notif.id,
+    org_id: data.organization_id,
+    actor_user_id: user.id,
+  });
+
+  void fetchRules();
+};
+
+const recoverRule = async (id: string) => {
+  if (!user) throw new Error('User not authenticated');
+
+  const { data, error } = await supabase
+    .from('rules')
+    .update({ is_deleted: false, status: 'inactive' })
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select()
+    .single();
+  if (error) throw error;
+
+  // 🔔 Notify + fan-out
+  const { data: notif, error: notifErr } = await supabase
+    .from('notifications')
+    .insert({
+      organization_id: data.organization_id,
+      type: 'rule.recovered',
+      title: `Rule recovered: ${data.name}`,
+      body: `Rule "${data.name}" was recovered.`,
+      data: { rule_id: data.id },
+      source_type: 'rule',
+      source_id: data.id,
+      created_by: user.id,
+    })
+    .select()
+    .single();
+  if (notifErr) throw notifErr;
+
+  await supabase.rpc('fan_out_notification', {
+    notif_id: notif.id,
+    org_id: data.organization_id,
+    actor_user_id: user.id,
+  });
+
+  void fetchRules();
+};
+
+const permanentDeleteRule = async (id: string) => {
+  if (!user) throw new Error('User not authenticated');
+
+  const { data: existingRule } = await supabase
+    .from('rules')
+    .select('id, name, organization_id')
+    .eq('id', id)
+    .single();
+
+  const { error } = await supabase
+    .from('rules')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
+  if (error) throw error;
+
+  if (existingRule) {
+    // 🔔 Notify + fan-out
+    const { data: notif, error: notifErr } = await supabase
+      .from('notifications')
+      .insert({
+        organization_id: existingRule.organization_id,
+        type: 'rule.permanently_deleted',
+        title: `Rule permanently deleted: ${existingRule.name}`,
+        body: `Rule "${existingRule.name}" was permanently removed.`,
+        data: { rule_id: existingRule.id },
+        source_type: 'rule',
+        source_id: existingRule.id,
+        created_by: user.id,
+      })
+      .select()
+      .single();
+    if (notifErr) throw notifErr;
+
+    await supabase.rpc('fan_out_notification', {
+      notif_id: notif.id,
+      org_id: existingRule.organization_id,
+      actor_user_id: user.id,
+    });
+  }
+
+  void fetchRules();
+};
 
   const toggleRuleStatus = async (id: string) => {
     const rule = rules.find((r) => r.id === id);
@@ -447,3 +643,5 @@ export function useRules() {
     toggleRuleStatus,
   };
 }
+
+

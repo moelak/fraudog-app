@@ -135,7 +135,7 @@ export class RuleManagementStore {
       userInstructions: string;
       threadId?: string;
       assistantId?: string;
-      debugInfo?: any;
+      debugInfo?: object;
     }
   ): Promise<void> => {
     try {
