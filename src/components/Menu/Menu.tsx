@@ -27,12 +27,12 @@ import AIChat from '../AIChat/AIChat';
 import AIChatButton from '../AIChat/AIChatButton';
 import AccountMenu from '../Auth/AccountMenu';
 import AccountManagementModal from '../Auth/AccountManagementModal';
-import { dashboardStore } from './DashboardStore';
+import { menuStore } from './MenuStore';
 import { settingsStore } from '../Settings/SettingsStore';
 import RuleManagementContainer from '../RuleManagement/RuleManagementContainer';
 import { useNotifications } from '@/hooks/useNotifications';
 
-const Dashboard = observer(() => {
+const Menu = observer(() => {
 	const location = useLocation();
 	const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 	const [showNotifications, setShowNotifications] = useState(false); // 👈 new local state
@@ -40,7 +40,7 @@ const Dashboard = observer(() => {
 
 	const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 	const navigation = [
-		{ name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
+		{ name: 'Overview', href: '/dashboard', icon: HomeIcon },
 		{ name: 'Rule Management', href: '/dashboard/rules', icon: ShieldCheckIcon },
 		// TODO: The Rule Generation Tester to be moved to an Admin view, so that it can be used to improve prompts. Visualization will also be incorporated once we have more data streaming through.
 		// { name: 'Rule Generation Tester', href: '/dashboard/test-rulegeneration', icon: ShieldCheckIcon },
@@ -54,15 +54,15 @@ const Dashboard = observer(() => {
 	];
 
 	const handleOpenSidebar = () => {
-		dashboardStore.openSidebar();
+		menuStore.openSidebar();
 	};
 
 	const handleCloseSidebar = () => {
-		dashboardStore.closeSidebar();
+		menuStore.closeSidebar();
 	};
 
 	const handleOverlayClick = () => {
-		dashboardStore.closeSidebar();
+		menuStore.closeSidebar();
 	};
 
 	const toggleNotifications = () => setShowNotifications((prev) => !prev);
@@ -112,7 +112,7 @@ const Dashboard = observer(() => {
 			{/* Sidebar */}
 			<div
 				className={`fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform ${
-					dashboardStore.isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+					menuStore.isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
 				} transition-transform duration-300 ease-in-out xl:relative xl:translate-x-0`}
 			>
 				<div className='flex h-full flex-col'>
@@ -271,7 +271,7 @@ const Dashboard = observer(() => {
 			</div>
 
 			{/* Overlay for mobile sidebar */}
-			{dashboardStore.isSidebarOpen && <div className='fixed inset-0 z-30 bg-black bg-opacity-50 xl:hidden' onClick={handleOverlayClick} aria-hidden='true' />}
+			{menuStore.isSidebarOpen && <div className='fixed inset-0 z-30 bg-black bg-opacity-50 xl:hidden' onClick={handleOverlayClick} aria-hidden='true' />}
 
 			{/* AI Chat Components */}
 			{settingsStore.settings.enableChatAssistant && (
@@ -287,4 +287,4 @@ const Dashboard = observer(() => {
 	);
 });
 
-export default Dashboard;
+export default Menu;

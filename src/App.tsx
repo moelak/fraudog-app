@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
-import Dashboard from './components/Dashboard/Dashboard';
+import Menu from './components/Menu/Menu';
 import LandingPage from './components/LandingPage/LandingPage';
 import ToastContainer from './components/Toast/ToastContainer';
 
@@ -29,13 +29,13 @@ const App = () => {
         />
 
         {/* Protected dashboard */}
-        <Route
-          path="/dashboard/*"
+        <Route 
+          path="/dashboard/*" 
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <Menu />
             </ProtectedRoute>
-          }
+          } 
         />
 
         {/* Fallback */}
