@@ -32,13 +32,7 @@ export function useDashboardMetrics(range: DashboardDateRange) {
 
   const load = useCallback(
     async (window: DashboardDateRange) => {
-      if (!user?.id) {
-        setLoading(false);
-        setMetrics(EMPTY_STATE);
-        return;
-      }
-
-      if (!window.from || !window.to) {
+      if (!user?.id || !window.from || !window.to) {
         setMetrics(EMPTY_STATE);
         return;
       }
@@ -58,24 +52,27 @@ export function useDashboardMetrics(range: DashboardDateRange) {
 
         const orgId = orgRow.organization_id as string;
 
-        const from = window.from.utc().startOf('day');
-        const toExclusive = window.to.utc().add(1, 'day').startOf('day');
+        const fromLocal = window.from.startOf('day');
+        const toLocalExclusive = window.to.add(1, 'day').startOf('day');
+
+        const fromUtc = fromLocal.utc();
+        const toExclusiveUtc = toLocalExclusive.utc();
 
         const { data: rows, error: metricsErr } = await supabase
           .from('rules_metrics_hourly')
           .select('timestamp, catches, false_positives')
           .eq('organization_id', orgId)
-          .gte('timestamp', formatPgTimestamp(from))
-          .lt('timestamp', formatPgTimestamp(toExclusive));
+          .gte('timestamp', formatPgTimestamp(fromUtc))
+          .lt('timestamp', formatPgTimestamp(toExclusiveUtc));
 
         if (metricsErr) throw metricsErr;
 
-        const daysBetween = Math.max(0, toExclusive.diff(from, 'day'));
+        const totalDays = Math.max(0, toLocalExclusive.diff(fromLocal, 'day'));
         const dailyMap = new Map<string, { catches: number; falsePositives: number }>();
 
         // seed map to ensure stable chart coverage across selected range
-        for (let offset = 0; offset <= daysBetween; offset += 1) {
-          const day = from.add(offset, 'day');
+        for (let offset = 0; offset < totalDays; offset += 1) {
+          const day = fromLocal.add(offset, 'day');
           const key = day.utc().format('YYYY-MM-DD');
           if (!dailyMap.has(key)) {
             dailyMap.set(key, { catches: 0, falsePositives: 0 });
