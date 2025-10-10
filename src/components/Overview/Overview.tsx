@@ -492,7 +492,7 @@ const Overview = observer(() => {
       {
         id: 'rules-summary',
         title: 'Rule Management',
-        subtitle: 'Supabase rules + effectiveness',
+        subtitle: 'Active rules + effectiveness',
         icon: ShieldCheckIcon,
         metrics: [
           { label: 'Active Rules', value: numberFormatter.format(ruleSummary.active) },
@@ -573,7 +573,7 @@ const Overview = observer(() => {
   const chartWidgets = [
     {
       id: 'rule-trend',
-      title: 'Rule Performance (Supabase)',
+      title: 'Rule Performance',
       description: 'Daily catches vs false positives across your organization (last 7 days UTC).',
       content: (
         <div className='h-full min-h-[16rem]'>
