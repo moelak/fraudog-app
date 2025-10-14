@@ -55,6 +55,44 @@ const EMPTY_RULE_TREND: RuleTrendSeries | null = null;
 const EMPTY_LOSS: LossByWeek[] = [];
 const EMPTY_DECISIONS: DecisionWeeklyRow[] = [];
 const EMPTY_ALERTS: AlertRow[] = [];
+const DECISIONS = ['allow', 'review', 'deny'] as const;
+
+const ensureWeeklyDecisionSeries = (
+  range: DashboardDateRange,
+  source: Map<string, Map<string, number>>,
+): DecisionWeeklyRow[] => {
+  if (!range.from || !range.to) return [];
+
+  const start = range.from.startOf('week');
+  const end = range.to.startOf('week');
+  const weeks: string[] = [];
+  let cursor = start.clone();
+  while (cursor.isBefore(end) || cursor.isSame(end)) {
+    weeks.push(cursor.format('YYYY-MM-DD'));
+    cursor = cursor.add(1, 'week');
+  }
+
+  const series: DecisionWeeklyRow[] = [];
+  weeks.forEach((week) => {
+    const decisionMap = source.get(week) ?? new Map<string, number>();
+    const totals: Record<string, number> = {};
+    let weekTotal = 0;
+
+    DECISIONS.forEach((decision) => {
+      const count = decisionMap.get(decision) ?? 0;
+      totals[decision] = count;
+      weekTotal += count;
+    });
+
+    DECISIONS.forEach((decision) => {
+      const catches = totals[decision] ?? 0;
+      const percentage = weekTotal > 0 ? Math.round(((catches / weekTotal) * 100) * 10) / 10 : 0;
+      series.push({ week, decision, catches, percentage });
+    });
+  });
+
+  return series;
+};
 
 const FALLBACK_LOSS: LossByWeek[] = [
   { week: '2025-07-14', fraudLoss: 12000, nonFraudLoss: 3500 },
@@ -66,20 +104,6 @@ const FALLBACK_LOSS: LossByWeek[] = [
   { week: '2025-08-25', fraudLoss: 19800, nonFraudLoss: 5200 },
 ];
 
-const FALLBACK_DECISION_WEEKLY: DecisionWeeklyRow[] = [
-  { week: '2025-08-04', decision: 'allow', catches: 3200, percentage: 68.8 },
-  { week: '2025-08-04', decision: 'review', catches: 920, percentage: 19.8 },
-  { week: '2025-08-04', decision: 'deny', catches: 540, percentage: 11.4 },
-  { week: '2025-08-11', decision: 'allow', catches: 3350, percentage: 69.2 },
-  { week: '2025-08-11', decision: 'review', catches: 940, percentage: 19.4 },
-  { week: '2025-08-11', decision: 'deny', catches: 554, percentage: 11.4 },
-  { week: '2025-08-18', decision: 'allow', catches: 3100, percentage: 68.1 },
-  { week: '2025-08-18', decision: 'review', catches: 950, percentage: 20.9 },
-  { week: '2025-08-18', decision: 'deny', catches: 510, percentage: 11.2 },
-  { week: '2025-08-25', decision: 'allow', catches: 3450, percentage: 69.0 },
-  { week: '2025-08-25', decision: 'review', catches: 1020, percentage: 20.4 },
-  { week: '2025-08-25', decision: 'deny', catches: 530, percentage: 10.6 },
-];
 
 const FALLBACK_ALERTS: AlertRow[] = [
   {
@@ -348,18 +372,8 @@ class OverviewStore {
         weeklyDecisionTotals.set(weekKey, weekMap);
       });
 
-      const decisionByWeek: DecisionWeeklyRow[] = [];
-      Array.from(weeklyDecisionTotals.entries())
-        .sort(([weekA], [weekB]) => weekA.localeCompare(weekB))
-        .forEach(([week, decisionMap]) => {
-          const total = Array.from(decisionMap.values()).reduce((sum, value) => sum + value, 0);
-          decisionMap.forEach((count, decision) => {
-            const percentage = total > 0 ? Math.round(((count / total) * 100) * 10) / 10 : 0;
-            decisionByWeek.push({ week, decision, catches: count, percentage });
-          });
-        });
-
-      const resolvedDecisionSeries = decisionByWeek.length ? decisionByWeek : FALLBACK_DECISION_WEEKLY;
+      const decisionByWeek = ensureWeeklyDecisionSeries(range, weeklyDecisionTotals);
+      const resolvedDecisionSeries = decisionByWeek.length ? decisionByWeek : ensureWeeklyDecisionSeries(range, new Map());
 
       runInAction(() => {
         this.executiveMetrics.metrics.lossByWeek = lossByWeek.length ? lossByWeek : FALLBACK_LOSS;
@@ -373,9 +387,9 @@ class OverviewStore {
       runInAction(() => {
         this.executiveMetrics.error = message;
         this.executiveMetrics.metrics.lossByWeek = FALLBACK_LOSS;
-        this.executiveMetrics.metrics.decisionByWeek = FALLBACK_DECISION_WEEKLY;
+        this.executiveMetrics.metrics.decisionByWeek = ensureWeeklyDecisionSeries(range, new Map());
         this.executiveMetrics.rangeKey = null;
-        this.operationsMetrics.metrics.decisionByWeek = FALLBACK_DECISION_WEEKLY;
+        this.operationsMetrics.metrics.decisionByWeek = ensureWeeklyDecisionSeries(range, new Map());
       });
     } finally {
       runInAction(() => {
@@ -390,7 +404,7 @@ class OverviewStore {
 
     if (!userId || !range.from || !range.to) {
       runInAction(() => {
-        this.operationsMetrics.metrics.decisionByWeek = FALLBACK_DECISION_WEEKLY;
+        this.operationsMetrics.metrics.decisionByWeek = ensureWeeklyDecisionSeries(range, new Map());
         this.operationsMetrics.metrics.alerts = EMPTY_ALERTS;
         this.operationsMetrics.rangeKey = null;
       });
@@ -427,7 +441,7 @@ class OverviewStore {
       runInAction(() => {
         this.operationsMetrics.metrics.decisionByWeek = this.executiveMetrics.metrics.decisionByWeek.length
           ? this.executiveMetrics.metrics.decisionByWeek
-          : FALLBACK_DECISION_WEEKLY;
+          : ensureWeeklyDecisionSeries(range, new Map());
         this.operationsMetrics.metrics.alerts = normalizedAlerts.length ? normalizedAlerts : FALLBACK_ALERTS;
         this.operationsMetrics.rangeKey = key;
       });
@@ -435,7 +449,7 @@ class OverviewStore {
       const message = err instanceof Error ? err.message : 'Failed to load operations metrics';
       runInAction(() => {
         this.operationsMetrics.error = message;
-        this.operationsMetrics.metrics.decisionByWeek = FALLBACK_DECISION_WEEKLY;
+        this.operationsMetrics.metrics.decisionByWeek = ensureWeeklyDecisionSeries(range, new Map());
         this.operationsMetrics.metrics.alerts = FALLBACK_ALERTS;
         this.operationsMetrics.rangeKey = null;
       });

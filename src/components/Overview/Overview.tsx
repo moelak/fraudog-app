@@ -37,6 +37,7 @@ import { useRules } from '@/hooks/useRules';
 import { useAuth } from '@/hooks/useAuth';
 import { monitoringStore } from '@/components/Monitoring/MonitoringStore';
 import { overviewStore, type DashboardDateRange } from './OverviewStore';
+import { decisionColors, decisionAreaFill, defaultPalette } from './chartTheme';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -346,6 +347,7 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
 
       const { total, decisionTotals, topDecision, averageWeeklyFriction } = executive.frictionSummary;
       const orderedDecisions = Object.entries(decisionTotals)
+        .filter(([decision]) => decision !== 'allow')
         .sort((a, b) => b[1] - a[1])
         .slice(0, 4);
 
@@ -354,7 +356,7 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
       return (
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
           <div className='rounded-xl border border-gray-100 bg-slate-50 p-4'>
-            <p className='text-xs font-semibold uppercase tracking-wide text-slate-500'>Total Friction Volume</p>
+            <p className='text-xs font-semibold uppercase tracking-wide text-slate-500'>Total Friction (non-allow)</p>
             <p className='mt-1 text-2xl font-semibold text-slate-900'>{formatter.format(total)}</p>
             {averageWeeklyFriction && (
               <p className='mt-2 text-xs text-slate-500'>Avg weekly impact: {formatter.format(Math.round(averageWeeklyFriction))}</p>
@@ -363,9 +365,15 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
           <div className='space-y-3 rounded-xl border border-gray-100 bg-white p-4'>
             <p className='text-xs font-semibold uppercase tracking-wide text-slate-500'>Decision Mix</p>
             <ul className='space-y-2'>
-              {orderedDecisions.map(([decision, value]) => (
+            {orderedDecisions.map(([decision, value]) => (
                 <li key={decision} className='flex items-center justify-between text-sm'>
-                  <span className='text-slate-600'>{decision}</span>
+                  <span className='flex items-center gap-2 text-slate-600 capitalize'>
+                    <span
+                      className='inline-flex h-2.5 w-2.5 rounded-full'
+                      style={{ backgroundColor: decisionColors[decision] ?? '#cbd5f5' }}
+                    />
+                    {decision}
+                  </span>
                   <span className='font-medium text-slate-900'>{formatter.format(value)}</span>
                 </li>
               ))}
@@ -626,6 +634,20 @@ const severityBadgeClasses = (severity: 'low' | 'medium' | 'high' | 'critical') 
   }
 };
 
+const sanitizeEffectiveness = (value: number | null | undefined): number | null => {
+  if (value === null || value === undefined) return null;
+  if (!Number.isFinite(value)) return null;
+  const rounded = Math.round(value * 10) / 10;
+  return Math.max(0, Math.min(100, rounded));
+};
+
+const computeEffectiveness = (catches: number, falsePositives: number): number | null => {
+  if (!Number.isFinite(catches) || catches <= 0) return null;
+  const ratio = falsePositives / catches;
+  const raw = Math.round((1 - ratio) * 1000) / 10;
+  return Math.max(0, Math.min(100, raw));
+};
+
 const Overview = observer(() => {
   const {
     rules,
@@ -714,8 +736,10 @@ const Overview = observer(() => {
   }, [activeViewId, layoutsByView]);
 
   useEffect(() => {
-    void overviewStore.refreshAll(user?.id ?? undefined);
-  }, [user?.id, dateRange.from?.valueOf(), dateRange.to?.valueOf()]);
+    void overviewStore.refreshAll(user?.id ?? undefined).finally(() => {
+      scheduleChartResize();
+    });
+  }, [user?.id, dateRange.from?.valueOf(), dateRange.to?.valueOf(), scheduleChartResize]);
 
   const monitoringAlerts = monitoringStore.activeAlerts.slice();
 
@@ -769,7 +793,6 @@ const Overview = observer(() => {
 
     const sortedWeeksDecision = [...new Set(decisionRows.map((row) => row.week))].sort();
     const decisions = [...new Set(decisionRows.map((row) => row.decision))];
-    const palette = ['#2563eb', '#0ea5e9', '#14b8a6', '#f59e0b', '#8b5cf6'];
 
     const frictionStackedChart: ChartData<'line'> | null = sortedWeeksDecision.length
       ? {
@@ -779,8 +802,8 @@ const Overview = observer(() => {
             data: sortedWeeksDecision.map(
               (week) => decisionRows.find((row) => row.week === week && row.decision === decision)?.percentage ?? 0,
             ),
-            borderColor: palette[index % palette.length],
-            backgroundColor: `${palette[index % palette.length]}33`,
+            borderColor: decisionColors[decision] ?? defaultPalette[index % defaultPalette.length],
+            backgroundColor: decisionAreaFill(decision),
             fill: true,
             tension: 0.35,
             stack: 'decision-share',
@@ -793,10 +816,11 @@ const Overview = observer(() => {
       decisionTotals[row.decision] = (decisionTotals[row.decision] ?? 0) + row.catches;
     });
 
-    const totalFriction = Object.values(decisionTotals).reduce((sum, value) => sum + value, 0);
+    const nonAllowEntries = Object.entries(decisionTotals).filter(([name]) => name !== 'allow');
+    const totalNonAllow = nonAllowEntries.reduce((sum, [, value]) => sum + value, 0);
     const weekBuckets = [...new Set(decisionRows.map((row) => row.week))];
-    const averageWeeklyFriction = weekBuckets.length ? totalFriction / weekBuckets.length : undefined;
-    const topDecision = Object.entries(decisionTotals)
+    const averageWeeklyFriction = weekBuckets.length ? totalNonAllow / weekBuckets.length : undefined;
+    const topDecision = nonAllowEntries
       .sort((a, b) => b[1] - a[1])
       .map(([name, value]) => ({ name, value }))[0];
 
@@ -804,9 +828,9 @@ const Overview = observer(() => {
       lossTrendChart,
       lossBreakdownChart,
       frictionStackedChart,
-      frictionSummary: totalFriction
+      frictionSummary: decisionRows.length
         ? {
-            total: totalFriction,
+            total: totalNonAllow,
             decisionTotals,
             topDecision,
             averageWeeklyFriction,
@@ -822,11 +846,7 @@ const Overview = observer(() => {
       .map((rule) => {
         const catches = rule.catches ?? 0;
         const falsePositives = rule.false_positives ?? 0;
-        const effectiveness = typeof rule.effectiveness === 'number'
-          ? rule.effectiveness
-          : catches > 0
-            ? Math.round((1 - falsePositives / catches) * 1000) / 10
-            : null;
+        const effectiveness = sanitizeEffectiveness(rule.effectiveness) ?? computeEffectiveness(catches, falsePositives);
 
         return {
           id: rule.id,
@@ -840,22 +860,19 @@ const Overview = observer(() => {
       .sort((a, b) => {
         const aVal = a.effectiveness ?? -Infinity;
         const bVal = b.effectiveness ?? -Infinity;
-        if (aVal < bVal) return -1;
-        if (aVal > bVal) return 1;
+        if (aVal < bVal) return 1;
+        if (aVal > bVal) return -1;
         return 0;
       })
       .slice(0, 8);
 
     const totalCatches = rules.reduce((sum, rule) => sum + (rule.catches ?? 0), 0);
     const totalFalsePositives = rules.reduce((sum, rule) => sum + (rule.false_positives ?? 0), 0);
-    const avgEffectiveness = totalCatches > 0
-      ? Math.round((1 - totalFalsePositives / totalCatches) * 1000) / 10
-      : null;
+    const avgEffectiveness = computeEffectiveness(totalCatches, totalFalsePositives);
 
     const decisionRows = operationsMetrics.metrics.decisionByWeek;
     const weeks = [...new Set(decisionRows.map((row) => row.week))].sort();
     const decisions = [...new Set(decisionRows.map((row) => row.decision))];
-    const palette = ['#2563eb', '#0ea5e9', '#14b8a6', '#f97316', '#a855f7'];
 
     const ticketTrendChart: ChartData<'line'> | null = weeks.length
       ? {
@@ -865,8 +882,8 @@ const Overview = observer(() => {
             data: weeks.map(
               (week) => decisionRows.find((row) => row.week === week && row.decision === decision)?.percentage ?? 0,
             ),
-            borderColor: palette[index % palette.length],
-            backgroundColor: `${palette[index % palette.length]}33`,
+            borderColor: decisionColors[decision] ?? defaultPalette[index % defaultPalette.length],
+            backgroundColor: decisionAreaFill(decision),
             fill: true,
             tension: 0.35,
             stack: 'decision-share',
@@ -948,13 +965,13 @@ const Overview = observer(() => {
     setStoreDateRange(range);
     scheduleChartResize();
     void fetchRules();
-    void refreshAll(user?.id ?? undefined);
   };
 
   const handleRefresh = () => {
     void fetchRules();
-    void refreshAll(user?.id ?? undefined);
-    scheduleChartResize();
+    void refreshAll(user?.id ?? undefined).finally(() => {
+      scheduleChartResize();
+    });
   };
 
   const handleAddCustomView = () => {
