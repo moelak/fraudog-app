@@ -34,6 +34,8 @@ export function useDashboardMetrics(range: DashboardDateRange) {
     async (window: DashboardDateRange) => {
       if (!user?.id || !window.from || !window.to) {
         setMetrics(EMPTY_STATE);
+        setLoading(false);
+        setError(null);
         return;
       }
 
