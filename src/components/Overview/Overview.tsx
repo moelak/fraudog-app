@@ -842,7 +842,9 @@ const Overview = observer(() => {
   }, [executiveMetrics.metrics, executiveMetrics.loading, executiveMetrics.error]);
 
   const operationsContext: OperationsWidgetContext = useMemo(() => {
-    const rulesTable = rules
+    const activeRulesList = rules.filter((rule) => rule.status === 'active');
+
+    const rulesTable = activeRulesList
       .map((rule) => {
         const catches = rule.catches ?? 0;
         const falsePositives = rule.false_positives ?? 0;
@@ -857,17 +859,11 @@ const Overview = observer(() => {
           effectiveness,
         };
       })
-      .sort((a, b) => {
-        const aVal = a.effectiveness ?? -Infinity;
-        const bVal = b.effectiveness ?? -Infinity;
-        if (aVal < bVal) return 1;
-        if (aVal > bVal) return -1;
-        return 0;
-      })
+      .sort((a, b) => b.catches - a.catches)
       .slice(0, 8);
 
-    const totalCatches = rules.reduce((sum, rule) => sum + (rule.catches ?? 0), 0);
-    const totalFalsePositives = rules.reduce((sum, rule) => sum + (rule.false_positives ?? 0), 0);
+    const totalCatches = activeRulesList.reduce((sum, rule) => sum + (rule.catches ?? 0), 0);
+    const totalFalsePositives = activeRulesList.reduce((sum, rule) => sum + (rule.false_positives ?? 0), 0);
     const avgEffectiveness = computeEffectiveness(totalCatches, totalFalsePositives);
 
     const decisionRows = operationsMetrics.metrics.decisionByWeek;
