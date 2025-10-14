@@ -21,19 +21,18 @@ type DashboardMetricsState = {
 };
 
 type LossByWeek = { week: string; fraudLoss: number; nonFraudLoss: number };
-type CatchesByDecision = { day: string; decision: string; catches: number };
+type DecisionWeeklyRow = { week: string; decision: string; catches: number; percentage: number };
 
 type ExecutiveMetricsState = {
   metrics: {
     lossByWeek: LossByWeek[];
-    catchesByDecision: CatchesByDecision[];
+    decisionByWeek: DecisionWeeklyRow[];
   };
   loading: boolean;
   error: string | null;
   rangeKey: string | null;
 };
 
-type TicketTrendRow = { week: string; channel: string; tickets: number };
 type AlertRow = {
   id: string;
   title: string;
@@ -44,7 +43,7 @@ type AlertRow = {
 
 type OperationsMetricsState = {
   metrics: {
-    ticketTrend: TicketTrendRow[];
+    decisionByWeek: DecisionWeeklyRow[];
     alerts: AlertRow[];
   };
   loading: boolean;
@@ -54,8 +53,7 @@ type OperationsMetricsState = {
 
 const EMPTY_RULE_TREND: RuleTrendSeries | null = null;
 const EMPTY_LOSS: LossByWeek[] = [];
-const EMPTY_DECISIONS: CatchesByDecision[] = [];
-const EMPTY_TICKETS: TicketTrendRow[] = [];
+const EMPTY_DECISIONS: DecisionWeeklyRow[] = [];
 const EMPTY_ALERTS: AlertRow[] = [];
 
 const FALLBACK_LOSS: LossByWeek[] = [
@@ -68,38 +66,19 @@ const FALLBACK_LOSS: LossByWeek[] = [
   { week: '2025-08-25', fraudLoss: 19800, nonFraudLoss: 5200 },
 ];
 
-const FALLBACK_DECISION_SERIES: CatchesByDecision[] = [
-  { day: '2025-08-18', decision: 'allow', catches: 3100 },
-  { day: '2025-08-18', decision: 'review', catches: 950 },
-  { day: '2025-08-18', decision: 'deny', catches: 720 },
-  { day: '2025-08-19', decision: 'allow', catches: 3250 },
-  { day: '2025-08-19', decision: 'review', catches: 880 },
-  { day: '2025-08-19', decision: 'deny', catches: 805 },
-  { day: '2025-08-20', decision: 'allow', catches: 2980 },
-  { day: '2025-08-20', decision: 'review', catches: 910 },
-  { day: '2025-08-20', decision: 'deny', catches: 640 },
-  { day: '2025-08-21', decision: 'allow', catches: 3340 },
-  { day: '2025-08-21', decision: 'review', catches: 1025 },
-  { day: '2025-08-21', decision: 'deny', catches: 770 },
-];
-
-const FALLBACK_TICKETS: TicketTrendRow[] = [
-  { week: '2025-08-04', channel: 'Manual Review', tickets: 48 },
-  { week: '2025-08-04', channel: 'KYC', tickets: 32 },
-  { week: '2025-08-04', channel: '3DS', tickets: 21 },
-  { week: '2025-08-04', channel: 'Customer Service', tickets: 15 },
-  { week: '2025-08-11', channel: 'Manual Review', tickets: 52 },
-  { week: '2025-08-11', channel: 'KYC', tickets: 30 },
-  { week: '2025-08-11', channel: '3DS', tickets: 19 },
-  { week: '2025-08-11', channel: 'Customer Service', tickets: 18 },
-  { week: '2025-08-18', channel: 'Manual Review', tickets: 58 },
-  { week: '2025-08-18', channel: 'KYC', tickets: 34 },
-  { week: '2025-08-18', channel: '3DS', tickets: 24 },
-  { week: '2025-08-18', channel: 'Customer Service', tickets: 17 },
-  { week: '2025-08-25', channel: 'Manual Review', tickets: 61 },
-  { week: '2025-08-25', channel: 'KYC', tickets: 38 },
-  { week: '2025-08-25', channel: '3DS', tickets: 26 },
-  { week: '2025-08-25', channel: 'Customer Service', tickets: 22 },
+const FALLBACK_DECISION_WEEKLY: DecisionWeeklyRow[] = [
+  { week: '2025-08-04', decision: 'allow', catches: 3200, percentage: 68.8 },
+  { week: '2025-08-04', decision: 'review', catches: 920, percentage: 19.8 },
+  { week: '2025-08-04', decision: 'deny', catches: 540, percentage: 11.4 },
+  { week: '2025-08-11', decision: 'allow', catches: 3350, percentage: 69.2 },
+  { week: '2025-08-11', decision: 'review', catches: 940, percentage: 19.4 },
+  { week: '2025-08-11', decision: 'deny', catches: 554, percentage: 11.4 },
+  { week: '2025-08-18', decision: 'allow', catches: 3100, percentage: 68.1 },
+  { week: '2025-08-18', decision: 'review', catches: 950, percentage: 20.9 },
+  { week: '2025-08-18', decision: 'deny', catches: 510, percentage: 11.2 },
+  { week: '2025-08-25', decision: 'allow', catches: 3450, percentage: 69.0 },
+  { week: '2025-08-25', decision: 'review', catches: 1020, percentage: 20.4 },
+  { week: '2025-08-25', decision: 'deny', catches: 530, percentage: 10.6 },
 ];
 
 const FALLBACK_ALERTS: AlertRow[] = [
@@ -142,8 +121,8 @@ const FALLBACK_ALERTS: AlertRow[] = [
 
 class OverviewStore {
   dateRange: DashboardDateRange = {
-    from: dayjs().subtract(12, 'week'),
-    to: dayjs(),
+    from: dayjs().subtract(1, 'month').startOf('day'),
+    to: dayjs().endOf('day'),
   };
 
   dashboardMetrics: DashboardMetricsState = {
@@ -156,7 +135,7 @@ class OverviewStore {
   executiveMetrics: ExecutiveMetricsState = {
     metrics: {
       lossByWeek: EMPTY_LOSS,
-      catchesByDecision: EMPTY_DECISIONS,
+      decisionByWeek: EMPTY_DECISIONS,
     },
     loading: false,
     error: null,
@@ -165,7 +144,7 @@ class OverviewStore {
 
   operationsMetrics: OperationsMetricsState = {
     metrics: {
-      ticketTrend: EMPTY_TICKETS,
+      decisionByWeek: EMPTY_DECISIONS,
       alerts: EMPTY_ALERTS,
     },
     loading: false,
@@ -304,7 +283,7 @@ class OverviewStore {
     if (!userId || !range.from || !range.to) {
       runInAction(() => {
         this.executiveMetrics.metrics.lossByWeek = EMPTY_LOSS;
-        this.executiveMetrics.metrics.catchesByDecision = EMPTY_DECISIONS;
+        this.executiveMetrics.metrics.decisionByWeek = EMPTY_DECISIONS;
         this.executiveMetrics.rangeKey = null;
       });
       return;
@@ -359,33 +338,44 @@ class OverviewStore {
         decisionByRule.set(rule.id, ['allow', 'deny', 'review'].includes(decision) ? decision : 'review');
       });
 
-      const catchesMap = new Map<string, number>();
+      const weeklyDecisionTotals = new Map<string, Map<string, number>>();
       (metricsRows ?? []).forEach((row) => {
         if (!row?.rule_id) return;
         const decision = decisionByRule.get(row.rule_id) ?? 'review';
-        const day = dayjs.utc(row.timestamp).format('YYYY-MM-DD');
-        const keyDecision = `${day}__${decision}`;
-        const current = catchesMap.get(keyDecision) ?? 0;
-        catchesMap.set(keyDecision, current + (row.catches ?? 0));
+        const weekKey = dayjs.utc(row.timestamp).startOf('week').format('YYYY-MM-DD');
+        const weekMap = weeklyDecisionTotals.get(weekKey) ?? new Map<string, number>();
+        weekMap.set(decision, (weekMap.get(decision) ?? 0) + (row.catches ?? 0));
+        weeklyDecisionTotals.set(weekKey, weekMap);
       });
 
-      const catchesByDecision: CatchesByDecision[] = Array.from(catchesMap.entries()).map(([keyDecision, total]) => {
-        const [day, decision] = keyDecision.split('__');
-        return { day, decision, catches: total };
-      });
+      const decisionByWeek: DecisionWeeklyRow[] = [];
+      Array.from(weeklyDecisionTotals.entries())
+        .sort(([weekA], [weekB]) => weekA.localeCompare(weekB))
+        .forEach(([week, decisionMap]) => {
+          const total = Array.from(decisionMap.values()).reduce((sum, value) => sum + value, 0);
+          decisionMap.forEach((count, decision) => {
+            const percentage = total > 0 ? Math.round(((count / total) * 100) * 10) / 10 : 0;
+            decisionByWeek.push({ week, decision, catches: count, percentage });
+          });
+        });
+
+      const resolvedDecisionSeries = decisionByWeek.length ? decisionByWeek : FALLBACK_DECISION_WEEKLY;
 
       runInAction(() => {
         this.executiveMetrics.metrics.lossByWeek = lossByWeek.length ? lossByWeek : FALLBACK_LOSS;
-        this.executiveMetrics.metrics.catchesByDecision = catchesByDecision.length ? catchesByDecision : FALLBACK_DECISION_SERIES;
+        this.executiveMetrics.metrics.decisionByWeek = resolvedDecisionSeries;
         this.executiveMetrics.rangeKey = key;
+        this.operationsMetrics.metrics.decisionByWeek = resolvedDecisionSeries;
+        this.operationsMetrics.rangeKey = key;
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load executive metrics';
       runInAction(() => {
         this.executiveMetrics.error = message;
         this.executiveMetrics.metrics.lossByWeek = FALLBACK_LOSS;
-        this.executiveMetrics.metrics.catchesByDecision = FALLBACK_DECISION_SERIES;
+        this.executiveMetrics.metrics.decisionByWeek = FALLBACK_DECISION_WEEKLY;
         this.executiveMetrics.rangeKey = null;
+        this.operationsMetrics.metrics.decisionByWeek = FALLBACK_DECISION_WEEKLY;
       });
     } finally {
       runInAction(() => {
@@ -398,13 +388,9 @@ class OverviewStore {
     const range = this.dateRange;
     const key = this.rangeKey(range);
 
-    if (this.operationsMetrics.rangeKey === key && this.operationsMetrics.metrics.ticketTrend.length) {
-      return;
-    }
-
     if (!userId || !range.from || !range.to) {
       runInAction(() => {
-        this.operationsMetrics.metrics.ticketTrend = EMPTY_TICKETS;
+        this.operationsMetrics.metrics.decisionByWeek = FALLBACK_DECISION_WEEKLY;
         this.operationsMetrics.metrics.alerts = EMPTY_ALERTS;
         this.operationsMetrics.rangeKey = null;
       });
@@ -420,33 +406,15 @@ class OverviewStore {
       const orgId = await this.ensureOrganization(userId);
       if (!orgId) throw new Error('Organization not found');
 
-      const fromWeek = range.from.startOf('week');
-      const toWeekExclusive = range.to.add(1, 'week').startOf('week');
+      const { data: alertRows, error: alertErr } = await supabase
+        .from('alerts')
+        .select('id, title, severity, status, created_at')
+        .eq('organization_id', orgId)
+        .in('status', ['open', 'in_progress'])
+        .order('created_at', { ascending: false })
+        .limit(10);
 
-      const [{ data: ticketRows, error: ticketErr }, { data: alertRows, error: alertErr }] = await Promise.all([
-        supabase
-          .from('support_tickets_weekly')
-          .select('week_start, channel, tickets')
-          .eq('organization_id', orgId)
-          .gte('week_start', fromWeek.utc().toISOString())
-          .lt('week_start', toWeekExclusive.utc().toISOString()),
-        supabase
-          .from('alerts')
-          .select('id, title, severity, status, created_at')
-          .eq('organization_id', orgId)
-          .in('status', ['open', 'in_progress'])
-          .order('created_at', { ascending: false })
-          .limit(10),
-      ]);
-
-      if (ticketErr) throw ticketErr;
       if (alertErr) throw alertErr;
-
-      const normalizedTickets: TicketTrendRow[] = (ticketRows ?? []).map((row) => ({
-        week: dayjs.utc(row.week_start).format('YYYY-MM-DD'),
-        channel: row.channel ?? 'Unknown',
-        tickets: row.tickets ?? 0,
-      }));
 
       const normalizedAlerts: AlertRow[] = (alertRows ?? []).map((row) => ({
         id: row.id,
@@ -457,7 +425,9 @@ class OverviewStore {
       }));
 
       runInAction(() => {
-        this.operationsMetrics.metrics.ticketTrend = normalizedTickets.length ? normalizedTickets : FALLBACK_TICKETS;
+        this.operationsMetrics.metrics.decisionByWeek = this.executiveMetrics.metrics.decisionByWeek.length
+          ? this.executiveMetrics.metrics.decisionByWeek
+          : FALLBACK_DECISION_WEEKLY;
         this.operationsMetrics.metrics.alerts = normalizedAlerts.length ? normalizedAlerts : FALLBACK_ALERTS;
         this.operationsMetrics.rangeKey = key;
       });
@@ -465,7 +435,7 @@ class OverviewStore {
       const message = err instanceof Error ? err.message : 'Failed to load operations metrics';
       runInAction(() => {
         this.operationsMetrics.error = message;
-        this.operationsMetrics.metrics.ticketTrend = FALLBACK_TICKETS;
+        this.operationsMetrics.metrics.decisionByWeek = FALLBACK_DECISION_WEEKLY;
         this.operationsMetrics.metrics.alerts = FALLBACK_ALERTS;
         this.operationsMetrics.rangeKey = null;
       });

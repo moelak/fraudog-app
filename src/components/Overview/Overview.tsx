@@ -95,11 +95,11 @@ type DashboardView = {
 type ExecutiveWidgetContext = {
   lossTrendChart: ChartData<'line'> | null;
   lossBreakdownChart: ChartData<'doughnut'> | null;
-  frictionStackedChart: ChartData<'bar'> | null;
+  frictionStackedChart: ChartData<'line'> | null;
   frictionSummary: {
     total: number;
-    channelTotals: Record<string, number>;
-    topChannel?: { name: string; value: number };
+    decisionTotals: Record<string, number>;
+    topDecision?: { name: string; value: number };
     averageWeeklyFriction?: number;
   } | null;
   loading: boolean;
@@ -113,13 +113,13 @@ type OperationsWidgetContext = {
     description: string;
     catches: number;
     falsePositives: number;
-    falsePositiveRate: number;
+    effectiveness: number | null;
   }>;
   rulesLoading: boolean;
   ruleMonitoring: {
     active: number;
     needsAttention: number;
-    avgFalsePositive: number;
+    avgEffectiveness: number | null;
   };
   alerts: Array<{
     id: string;
@@ -129,7 +129,7 @@ type OperationsWidgetContext = {
     created_at: string;
   }>;
   alertsLoading: boolean;
-  ticketTrendChart: ChartData<'bar'> | null;
+  ticketTrendChart: ChartData<'line'> | null;
   ticketsLoading: boolean;
 };
 
@@ -321,21 +321,21 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
   'exec-friction-stack': {
     id: 'exec-friction-stack',
     title: 'Friction Pipeline',
-    description: 'Weekly friction volume by channel (3DS, KYC, manual review, auto allow).',
+    description: 'Weekly catch contribution by rule decision (stacked share).',
     icon: QueueListIcon,
     category: 'Executive',
     render: ({ executive }) => {
       if (executive.loading) return <LoadingState />;
       if (!executive.frictionStackedChart) {
-        return <EmptyState message={executive.error ?? 'No friction activity captured for this range.'} />;
+        return <EmptyState message={executive.error ?? 'No decision activity captured for this range.'} />;
       }
-      return <Bar data={executive.frictionStackedChart} options={stackedBarOptions} />;
+      return <Line data={executive.frictionStackedChart} options={stackedAreaOptions} />;
     },
   },
   'exec-friction-kpis': {
     id: 'exec-friction-kpis',
     title: 'Friction Summary',
-    description: 'Impact on growth goals and staffing sensitivity.',
+    description: 'Impact on growth goals and staffing sensitivity by decision path.',
     icon: Cog6ToothIcon,
     category: 'Executive',
     render: ({ executive }) => {
@@ -344,8 +344,8 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
         return <EmptyState message={executive.error ?? 'No friction summary available.'} />;
       }
 
-      const { total, channelTotals, topChannel, averageWeeklyFriction } = executive.frictionSummary;
-      const orderedChannels = Object.entries(channelTotals)
+      const { total, decisionTotals, topDecision, averageWeeklyFriction } = executive.frictionSummary;
+      const orderedDecisions = Object.entries(decisionTotals)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 4);
 
@@ -361,17 +361,17 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
             )}
           </div>
           <div className='space-y-3 rounded-xl border border-gray-100 bg-white p-4'>
-            <p className='text-xs font-semibold uppercase tracking-wide text-slate-500'>Friction Mix</p>
+            <p className='text-xs font-semibold uppercase tracking-wide text-slate-500'>Decision Mix</p>
             <ul className='space-y-2'>
-              {orderedChannels.map(([channel, value]) => (
-                <li key={channel} className='flex items-center justify-between text-sm'>
-                  <span className='text-slate-600'>{channel}</span>
+              {orderedDecisions.map(([decision, value]) => (
+                <li key={decision} className='flex items-center justify-between text-sm'>
+                  <span className='text-slate-600'>{decision}</span>
                   <span className='font-medium text-slate-900'>{formatter.format(value)}</span>
                 </li>
               ))}
             </ul>
-            {topChannel && (
-              <p className='text-xs text-slate-500'>Largest source: {topChannel.name} ({formatter.format(topChannel.value)})</p>
+            {topDecision && (
+              <p className='text-xs text-slate-500'>Largest share: {topDecision.name} ({formatter.format(topDecision.value)})</p>
             )}
           </div>
         </div>
@@ -381,7 +381,7 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
   'ops-rule-monitoring': {
     id: 'ops-rule-monitoring',
     title: 'Rule Monitoring Pulse',
-    description: 'Active coverage, items needing attention, and blended false positive rate.',
+    description: 'Active coverage, items needing attention, and blended effectiveness.',
     icon: PresentationChartLineIcon,
     category: 'Operations',
     render: ({ operations }) => {
@@ -400,10 +400,13 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
           helper: 'Rules flagged for tuning or review',
         },
         {
-          label: 'Avg False Positive %',
-          value: `${operations.ruleMonitoring.avgFalsePositive.toFixed(1)}%`,
+          label: 'Avg Effectiveness %',
+          value:
+            operations.ruleMonitoring.avgEffectiveness !== null
+              ? `${operations.ruleMonitoring.avgEffectiveness.toFixed(1)}%`
+              : 'N/A',
           tone: 'text-slate-700 bg-slate-50 border border-slate-100',
-          helper: 'Weighted by total catches across rules',
+          helper: 'Weighted against total catches across rules',
         },
       ];
 
@@ -423,7 +426,7 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
   'ops-rules-table': {
     id: 'ops-rules-table',
     title: 'Rule Performance Table',
-    description: 'Monitor false positive impact and catches per rule.',
+    description: 'Monitor effectiveness and catches per rule.',
     icon: TableCellsIcon,
     category: 'Operations',
     render: ({ operations }) => {
@@ -433,25 +436,27 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
         <div className='flex h-full flex-col'>
           <div className='max-h-72 flex-1 overflow-auto rounded-xl border border-gray-100'>
             <table className='min-w-full divide-y divide-gray-200'>
-              <thead className='sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500'>
-                <tr>
-                  <th className='px-4 py-3 text-left font-semibold'>Rule</th>
-                  <th className='px-4 py-3 text-left font-semibold'>Description</th>
-                  <th className='px-4 py-3 text-right font-semibold'>Catches</th>
-                  <th className='px-4 py-3 text-right font-semibold'>False Positives %</th>
+            <thead className='sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500'>
+              <tr>
+                <th className='px-4 py-3 text-left font-semibold'>Rule</th>
+                <th className='px-4 py-3 text-left font-semibold'>Description</th>
+                <th className='px-4 py-3 text-right font-semibold'>Catches</th>
+                <th className='px-4 py-3 text-right font-semibold'>Effectiveness %</th>
+              </tr>
+            </thead>
+            <tbody className='divide-y divide-gray-100 bg-white text-sm text-gray-600'>
+              {operations.rulesTable.map((rule) => (
+                <tr key={rule.id} className='hover:bg-slate-50'>
+                  <td className='px-4 py-3 font-medium text-slate-900'>{rule.name}</td>
+                  <td className='px-4 py-3'>{rule.description || '—'}</td>
+                  <td className='px-4 py-3 text-right font-medium text-slate-900'>{rule.catches.toLocaleString()}</td>
+                  <td className='px-4 py-3 text-right font-medium text-slate-900'>
+                    {rule.effectiveness !== null ? `${rule.effectiveness.toFixed(1)}%` : 'N/A'}
+                  </td>
                 </tr>
-              </thead>
-              <tbody className='divide-y divide-gray-100 bg-white text-sm text-gray-600'>
-                {operations.rulesTable.map((rule) => (
-                  <tr key={rule.id} className='hover:bg-slate-50'>
-                    <td className='px-4 py-3 font-medium text-slate-900'>{rule.name}</td>
-                    <td className='px-4 py-3'>{rule.description || '—'}</td>
-                    <td className='px-4 py-3 text-right font-medium text-slate-900'>{rule.catches.toLocaleString()}</td>
-                    <td className='px-4 py-3 text-right font-medium text-slate-900'>{rule.falsePositiveRate.toFixed(1)}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              ))}
+            </tbody>
+          </table>
           </div>
         </div>
       );
@@ -488,14 +493,14 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
   },
   'ops-ticket-trend': {
     id: 'ops-ticket-trend',
-    title: 'Friction Ticket Trend',
-    description: 'Weekly tickets opened per friction touchpoint.',
+    title: 'Decision Volume Share',
+    description: 'Weekly catch share by allow / review / deny.',
     icon: QueueListIcon,
     category: 'Operations',
     render: ({ operations }) => {
       if (operations.ticketsLoading) return <LoadingState />;
-      if (!operations.ticketTrendChart) return <EmptyState message='No tickets tracked for this period.' />;
-      return <Bar data={operations.ticketTrendChart} options={stackedBarOptions} />;
+      if (!operations.ticketTrendChart) return <EmptyState message='No decision activity captured for this range.' />;
+      return <Line data={operations.ticketTrendChart} options={stackedAreaOptions} />;
     },
   },
   'shared-rule-performance': {
@@ -524,14 +529,14 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
   },
   'shared-friction-stack': {
     id: 'shared-friction-stack',
-    title: 'Friction Volume by Channel',
-    description: 'Shared stacked breakdown of friction events.',
+    title: 'Decision Volume Share',
+    description: 'Shared stacked breakdown of rule decisions.',
     icon: QueueListIcon,
     category: 'Shared',
     render: ({ executive }) => {
       if (executive.loading) return <LoadingState />;
       if (!executive.frictionStackedChart) return <EmptyState message={executive.error ?? 'No friction data.'} />;
-      return <Bar data={executive.frictionStackedChart} options={stackedBarOptions} />;
+      return <Line data={executive.frictionStackedChart} options={stackedAreaOptions} />;
     },
   },
 };
@@ -581,7 +586,7 @@ const defaultDoughnutOptions: ChartOptions<'doughnut'> = {
   },
 };
 
-const stackedBarOptions: ChartOptions<'bar'> = {
+const stackedAreaOptions: ChartOptions<'line'> = {
   responsive: true,
   maintainAspectRatio: false,
   resizeDelay: 120,
@@ -598,7 +603,13 @@ const stackedBarOptions: ChartOptions<'bar'> = {
   },
   scales: {
     x: { stacked: true, grid: { display: false }, ticks: { color: '#475569' } },
-    y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(148,163,184,0.2)' }, ticks: { color: '#475569' } },
+    y: {
+      stacked: true,
+      beginAtZero: true,
+      max: 100,
+      grid: { color: 'rgba(148,163,184,0.2)' },
+      ticks: { color: '#475569', callback: (value) => `${value}%` },
+    },
   },
 };
 
@@ -710,7 +721,7 @@ const Overview = observer(() => {
 
   const executiveContext: ExecutiveWidgetContext = useMemo(() => {
     const lossRows = executiveMetrics.metrics.lossByWeek;
-    const frictionRows = executiveMetrics.metrics.catchesByDecision;
+    const decisionRows = executiveMetrics.metrics.decisionByWeek;
 
     const sortedWeeksLoss = [...new Set(lossRows.map((row) => row.week))].sort();
     const lossTrendChart: ChartData<'line'> | null = sortedWeeksLoss.length
@@ -756,34 +767,36 @@ const Overview = observer(() => {
         }
       : null;
 
-    const sortedDays = [...new Set(frictionRows.map((row) => row.day))].sort();
-    const decisions = [...new Set(frictionRows.map((row) => row.decision))];
+    const sortedWeeksDecision = [...new Set(decisionRows.map((row) => row.week))].sort();
+    const decisions = [...new Set(decisionRows.map((row) => row.decision))];
+    const palette = ['#2563eb', '#0ea5e9', '#14b8a6', '#f59e0b', '#8b5cf6'];
 
-    const frictionStackedChart: ChartData<'bar'> | null = sortedDays.length
+    const frictionStackedChart: ChartData<'line'> | null = sortedWeeksDecision.length
       ? {
-          labels: sortedDays.map((day) => dayjs(day).format('MMM D')),
-          datasets: decisions.map((decision, index) => {
-            const colorPalette = ['#2563eb', '#0ea5e9', '#14b8a6', '#f59e0b', '#8b5cf6'];
-            return {
-              label: decision,
-              data: sortedDays.map(
-                (day) => frictionRows.find((row) => row.day === day && row.decision === decision)?.catches ?? 0,
-              ),
-              backgroundColor: colorPalette[index % colorPalette.length],
-            } as ChartDataset<'bar'>;
-          }),
+          labels: sortedWeeksDecision.map((week) => dayjs(week).format('MMM D')),
+          datasets: decisions.map((decision, index) => ({
+            label: decision,
+            data: sortedWeeksDecision.map(
+              (week) => decisionRows.find((row) => row.week === week && row.decision === decision)?.percentage ?? 0,
+            ),
+            borderColor: palette[index % palette.length],
+            backgroundColor: `${palette[index % palette.length]}33`,
+            fill: true,
+            tension: 0.35,
+            stack: 'decision-share',
+          })),
         }
       : null;
 
-    const channelTotals: Record<string, number> = {};
-    frictionRows.forEach((row) => {
-      channelTotals[row.decision] = (channelTotals[row.decision] ?? 0) + row.catches;
+    const decisionTotals: Record<string, number> = {};
+    decisionRows.forEach((row) => {
+      decisionTotals[row.decision] = (decisionTotals[row.decision] ?? 0) + row.catches;
     });
 
-    const totalFriction = Object.values(channelTotals).reduce((sum, value) => sum + value, 0);
-    const dayBuckets = [...new Set(frictionRows.map((row) => row.day))];
-    const averageWeeklyFriction = dayBuckets.length ? totalFriction / dayBuckets.length : undefined;
-    const topChannel = Object.entries(channelTotals)
+    const totalFriction = Object.values(decisionTotals).reduce((sum, value) => sum + value, 0);
+    const weekBuckets = [...new Set(decisionRows.map((row) => row.week))];
+    const averageWeeklyFriction = weekBuckets.length ? totalFriction / weekBuckets.length : undefined;
+    const topDecision = Object.entries(decisionTotals)
       .sort((a, b) => b[1] - a[1])
       .map(([name, value]) => ({ name, value }))[0];
 
@@ -794,8 +807,8 @@ const Overview = observer(() => {
       frictionSummary: totalFriction
         ? {
             total: totalFriction,
-            channelTotals,
-            topChannel,
+            decisionTotals,
+            topDecision,
             averageWeeklyFriction,
           }
         : null,
@@ -806,36 +819,58 @@ const Overview = observer(() => {
 
   const operationsContext: OperationsWidgetContext = useMemo(() => {
     const rulesTable = rules
-      .map((rule) => ({
-        id: rule.id,
-        name: rule.name,
-        description: rule.description,
-        catches: rule.catches ?? 0,
-        falsePositives: rule.false_positives ?? 0,
-        falsePositiveRate: rule.catches ? ((rule.false_positives ?? 0) / rule.catches) * 100 : 0,
-      }))
-      .sort((a, b) => b.falsePositiveRate - a.falsePositiveRate)
+      .map((rule) => {
+        const catches = rule.catches ?? 0;
+        const falsePositives = rule.false_positives ?? 0;
+        const effectiveness = typeof rule.effectiveness === 'number'
+          ? rule.effectiveness
+          : catches > 0
+            ? Math.round((1 - falsePositives / catches) * 1000) / 10
+            : null;
+
+        return {
+          id: rule.id,
+          name: rule.name,
+          description: rule.description,
+          catches,
+          falsePositives,
+          effectiveness,
+        };
+      })
+      .sort((a, b) => {
+        const aVal = a.effectiveness ?? -Infinity;
+        const bVal = b.effectiveness ?? -Infinity;
+        if (aVal < bVal) return -1;
+        if (aVal > bVal) return 1;
+        return 0;
+      })
       .slice(0, 8);
 
     const totalCatches = rules.reduce((sum, rule) => sum + (rule.catches ?? 0), 0);
     const totalFalsePositives = rules.reduce((sum, rule) => sum + (rule.false_positives ?? 0), 0);
-    const avgFalsePositive = totalCatches > 0 ? (totalFalsePositives / totalCatches) * 100 : 0;
+    const avgEffectiveness = totalCatches > 0
+      ? Math.round((1 - totalFalsePositives / totalCatches) * 1000) / 10
+      : null;
 
-    const ticketRows = operationsMetrics.metrics.ticketTrend;
-    const weeks = [...new Set(ticketRows.map((row) => row.week))].sort();
-    const ticketChannels = [...new Set(ticketRows.map((row) => row.channel))];
+    const decisionRows = operationsMetrics.metrics.decisionByWeek;
+    const weeks = [...new Set(decisionRows.map((row) => row.week))].sort();
+    const decisions = [...new Set(decisionRows.map((row) => row.decision))];
+    const palette = ['#2563eb', '#0ea5e9', '#14b8a6', '#f97316', '#a855f7'];
 
-    const ticketTrendChart: ChartData<'bar'> | null = weeks.length
+    const ticketTrendChart: ChartData<'line'> | null = weeks.length
       ? {
           labels: weeks.map((week) => dayjs(week).format('MMM D')),
-          datasets: ticketChannels.map((channel, index) => {
-            const palette = ['#2563eb', '#0ea5e9', '#14b8a6', '#f97316', '#a855f7'];
-            return {
-              label: channel,
-              data: weeks.map((week) => ticketRows.find((row) => row.week === week && row.channel === channel)?.tickets ?? 0),
-              backgroundColor: palette[index % palette.length],
-            } as ChartDataset<'bar'>;
-          }),
+          datasets: decisions.map((decision, index) => ({
+            label: decision,
+            data: weeks.map(
+              (week) => decisionRows.find((row) => row.week === week && row.decision === decision)?.percentage ?? 0,
+            ),
+            borderColor: palette[index % palette.length],
+            backgroundColor: `${palette[index % palette.length]}33`,
+            fill: true,
+            tension: 0.35,
+            stack: 'decision-share',
+          })),
         }
       : null;
 
@@ -855,14 +890,14 @@ const Overview = observer(() => {
       ruleMonitoring: {
         active: activeRules.length,
         needsAttention: needsAttentionRules.length,
-        avgFalsePositive,
+        avgEffectiveness,
       },
       alerts,
       alertsLoading: operationsMetrics.loading,
       ticketTrendChart,
-      ticketsLoading: operationsMetrics.loading,
+      ticketsLoading: operationsMetrics.loading || executiveMetrics.loading,
     };
-  }, [rules, activeRules.length, needsAttentionRules.length, rulesLoading, operationsMetrics.metrics, operationsMetrics.loading, monitoringAlerts]);
+  }, [rules, activeRules.length, needsAttentionRules.length, rulesLoading, operationsMetrics.metrics, operationsMetrics.loading, executiveMetrics.loading, monitoringAlerts]);
 
   const sharedContext: SharedWidgetContext = useMemo(() => {
     const trend = dashboardMetrics.metrics.ruleTrend;
@@ -912,6 +947,8 @@ const Overview = observer(() => {
   const handleRangeChange = (range: { from: Dayjs | null; to: Dayjs | null }) => {
     setStoreDateRange(range);
     scheduleChartResize();
+    void fetchRules();
+    void refreshAll(user?.id ?? undefined);
   };
 
   const handleRefresh = () => {
