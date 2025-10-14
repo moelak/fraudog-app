@@ -75,7 +75,7 @@ const DEFAULT_WIDGET_SIZE = {
 } as const;
 
 const EXECUTIVE_WIDGETS = ['exec-loss-trend', 'exec-loss-breakdown', 'exec-friction-stack', 'exec-friction-kpis'] as const;
-const OPERATIONS_WIDGETS = ['ops-rules-table', 'ops-alert-list', 'ops-ticket-trend', 'shared-rule-performance'] as const;
+const OPERATIONS_WIDGETS = ['ops-rule-monitoring', 'ops-rules-table', 'ops-alert-list', 'ops-ticket-trend', 'shared-rule-performance'] as const;
 
 type WidgetId =
   | typeof EXECUTIVE_WIDGETS[number]
@@ -117,6 +117,11 @@ type OperationsWidgetContext = {
     falsePositiveRate: number;
   }>;
   rulesLoading: boolean;
+  ruleMonitoring: {
+    active: number;
+    needsAttention: number;
+    avgFalsePositive: number;
+  };
   alerts: Array<{
     id: string;
     title: string;
@@ -165,14 +170,14 @@ const EmptyState = ({ message }: { message: string }) => (
 const BUILT_IN_VIEWS: DashboardView[] = [
   {
     id: 'executive',
-    name: 'Executive View',
+    name: 'Executive Briefing',
     type: 'executive',
     widgets: [...EXECUTIVE_WIDGETS],
     locked: true,
   },
   {
     id: 'operations',
-    name: 'Operations View',
+    name: 'Operations Command',
     type: 'operations',
     widgets: [...OPERATIONS_WIDGETS],
     locked: true,
@@ -214,34 +219,39 @@ const DEFAULT_LAYOUTS_BY_VIEW: Record<string, Layouts> = {
   },
   operations: {
     lg: [
-      { i: 'ops-rules-table', x: 0, y: 0, w: 7, h: 13 },
-      { i: 'ops-alert-list', x: 7, y: 0, w: 5, h: 13 },
-      { i: 'ops-ticket-trend', x: 0, y: 13, w: 6, h: 12 },
-      { i: 'shared-rule-performance', x: 6, y: 13, w: 6, h: 12 },
+      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 12, h: 8 },
+      { i: 'ops-rules-table', x: 0, y: 8, w: 7, h: 13 },
+      { i: 'ops-alert-list', x: 7, y: 8, w: 5, h: 13 },
+      { i: 'ops-ticket-trend', x: 0, y: 21, w: 6, h: 12 },
+      { i: 'shared-rule-performance', x: 6, y: 21, w: 6, h: 12 },
     ],
     md: [
-      { i: 'ops-rules-table', x: 0, y: 0, w: 10, h: 13 },
-      { i: 'ops-alert-list', x: 0, y: 13, w: 10, h: 10 },
-      { i: 'ops-ticket-trend', x: 0, y: 23, w: 10, h: 12 },
-      { i: 'shared-rule-performance', x: 0, y: 35, w: 10, h: 12 },
+      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 10, h: 8 },
+      { i: 'ops-rules-table', x: 0, y: 8, w: 10, h: 13 },
+      { i: 'ops-alert-list', x: 0, y: 21, w: 10, h: 10 },
+      { i: 'ops-ticket-trend', x: 0, y: 31, w: 10, h: 12 },
+      { i: 'shared-rule-performance', x: 0, y: 43, w: 10, h: 12 },
     ],
     sm: [
-      { i: 'ops-rules-table', x: 0, y: 0, w: 6, h: 13 },
-      { i: 'ops-alert-list', x: 0, y: 13, w: 6, h: 10 },
-      { i: 'ops-ticket-trend', x: 0, y: 23, w: 6, h: 12 },
-      { i: 'shared-rule-performance', x: 0, y: 35, w: 6, h: 12 },
+      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 6, h: 8 },
+      { i: 'ops-rules-table', x: 0, y: 8, w: 6, h: 13 },
+      { i: 'ops-alert-list', x: 0, y: 21, w: 6, h: 10 },
+      { i: 'ops-ticket-trend', x: 0, y: 31, w: 6, h: 12 },
+      { i: 'shared-rule-performance', x: 0, y: 43, w: 6, h: 12 },
     ],
     xs: [
-      { i: 'ops-rules-table', x: 0, y: 0, w: 4, h: 13 },
-      { i: 'ops-alert-list', x: 0, y: 13, w: 4, h: 10 },
-      { i: 'ops-ticket-trend', x: 0, y: 23, w: 4, h: 12 },
-      { i: 'shared-rule-performance', x: 0, y: 35, w: 4, h: 12 },
+      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 4, h: 8 },
+      { i: 'ops-rules-table', x: 0, y: 8, w: 4, h: 13 },
+      { i: 'ops-alert-list', x: 0, y: 21, w: 4, h: 10 },
+      { i: 'ops-ticket-trend', x: 0, y: 31, w: 4, h: 12 },
+      { i: 'shared-rule-performance', x: 0, y: 43, w: 4, h: 12 },
     ],
     xxs: [
-      { i: 'ops-rules-table', x: 0, y: 0, w: 2, h: 13 },
-      { i: 'ops-alert-list', x: 0, y: 13, w: 2, h: 10 },
-      { i: 'ops-ticket-trend', x: 0, y: 23, w: 2, h: 12 },
-      { i: 'shared-rule-performance', x: 0, y: 35, w: 2, h: 12 },
+      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 2, h: 8 },
+      { i: 'ops-rules-table', x: 0, y: 8, w: 2, h: 13 },
+      { i: 'ops-alert-list', x: 0, y: 21, w: 2, h: 10 },
+      { i: 'ops-ticket-trend', x: 0, y: 31, w: 2, h: 12 },
+      { i: 'shared-rule-performance', x: 0, y: 43, w: 2, h: 12 },
     ],
   },
 };
@@ -369,6 +379,48 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
       );
     },
   },
+  'ops-rule-monitoring': {
+    id: 'ops-rule-monitoring',
+    title: 'Rule Monitoring Pulse',
+    description: 'Active coverage, items needing attention, and blended false positive rate.',
+    icon: PresentationChartLineIcon,
+    category: 'Operations',
+    render: ({ operations }) => {
+      const formatter = new Intl.NumberFormat('en-US');
+      const cards = [
+        {
+          label: 'Active Rules',
+          value: formatter.format(operations.ruleMonitoring.active),
+          tone: 'text-emerald-600 bg-emerald-50 border border-emerald-100',
+          helper: 'Enabled policies catching fraud today',
+        },
+        {
+          label: 'Needs Attention',
+          value: formatter.format(operations.ruleMonitoring.needsAttention),
+          tone: 'text-amber-600 bg-amber-50 border border-amber-100',
+          helper: 'Rules flagged for tuning or review',
+        },
+        {
+          label: 'Avg False Positive %',
+          value: `${operations.ruleMonitoring.avgFalsePositive.toFixed(1)}%`,
+          tone: 'text-slate-700 bg-slate-50 border border-slate-100',
+          helper: 'Weighted by total catches across rules',
+        },
+      ];
+
+      return (
+        <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
+          {cards.map((card) => (
+            <div key={card.label} className={`rounded-2xl px-5 py-4 ${card.tone}`}>
+              <p className='text-xs font-semibold uppercase tracking-wide text-slate-500'>{card.label}</p>
+              <p className='mt-2 text-2xl font-semibold text-slate-900'>{card.value}</p>
+              <p className='mt-1 text-xs text-slate-500'>{card.helper}</p>
+            </div>
+          ))}
+        </div>
+      );
+    },
+  },
   'ops-rules-table': {
     id: 'ops-rules-table',
     title: 'Rule Performance Table',
@@ -448,7 +500,7 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
   'shared-rule-performance': {
     id: 'shared-rule-performance',
     title: 'Rule Performance Trend',
-    description: 'Catches vs. false positives (daily view).',
+    description: 'Catches vs. false positives (daily trend).',
     icon: PresentationChartLineIcon,
     category: 'Shared',
     render: ({ shared }) => {
@@ -460,7 +512,7 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
   'shared-loss-trend': {
     id: 'shared-loss-trend',
     title: 'Chargeback Loss Trend',
-    description: 'Shared view of fraud losses.',
+    description: 'Shared lens on fraud losses.',
     icon: PresentationChartLineIcon,
     category: 'Shared',
     render: ({ executive }) => {
@@ -562,6 +614,8 @@ const severityBadgeClasses = (severity: 'low' | 'medium' | 'high' | 'critical') 
 const Overview = observer(() => {
   const {
     rules,
+    activeRules,
+    needsAttentionRules,
     loading: rulesLoading,
     fetchRules,
   } = useRules();
@@ -747,6 +801,10 @@ const Overview = observer(() => {
       .sort((a, b) => b.falsePositiveRate - a.falsePositiveRate)
       .slice(0, 8);
 
+    const totalCatches = rules.reduce((sum, rule) => sum + (rule.catches ?? 0), 0);
+    const totalFalsePositives = rules.reduce((sum, rule) => sum + (rule.false_positives ?? 0), 0);
+    const avgFalsePositive = totalCatches > 0 ? (totalFalsePositives / totalCatches) * 100 : 0;
+
     const ticketRows = operationsMetrics.metrics.ticketTrend;
     const weeks = [...new Set(ticketRows.map((row) => row.week))].sort();
     const ticketChannels = [...new Set(ticketRows.map((row) => row.channel))];
@@ -778,12 +836,17 @@ const Overview = observer(() => {
     return {
       rulesTable,
       rulesLoading: rulesLoading,
+      ruleMonitoring: {
+        active: activeRules.length,
+        needsAttention: needsAttentionRules.length,
+        avgFalsePositive,
+      },
       alerts,
       alertsLoading: operationsMetrics.loading,
       ticketTrendChart,
       ticketsLoading: operationsMetrics.loading,
     };
-  }, [rules, rulesLoading, operationsMetrics.metrics, operationsMetrics.loading, monitoringAlerts]);
+  }, [rules, activeRules.length, needsAttentionRules.length, rulesLoading, operationsMetrics.metrics, operationsMetrics.loading, monitoringAlerts]);
 
   const sharedContext: SharedWidgetContext = useMemo(() => {
     const trend = dashboardMetrics.metrics.ruleTrend;
@@ -845,7 +908,7 @@ const Overview = observer(() => {
     const id = `custom-${Date.now()}`;
     const newView: DashboardView = {
       id,
-      name: `Custom View ${index}`,
+      name: `Custom Board ${index}`,
       type: 'custom',
       widgets: [],
     };
@@ -868,7 +931,7 @@ const Overview = observer(() => {
 
   const handleRenameCurrentView = () => {
     if (!isCustomView) return;
-    const nextName = typeof window !== 'undefined' ? window.prompt('Rename view', currentView.name) : null;
+    const nextName = typeof window !== 'undefined' ? window.prompt('Rename board', currentView.name) : null;
     if (!nextName) return;
     setViews((prev) => prev.map((view) => (view.id === currentView.id ? { ...view, name: nextName } : view)));
   };
@@ -913,7 +976,7 @@ const Overview = observer(() => {
     <div className='space-y-6'>
       <header className='space-y-2'>
         <h1 className='text-2xl font-bold text-gray-900 sm:text-3xl'>Fraud Command Center</h1>
-        <p className='text-gray-600'>Role-based dashboards backed by Supabase data, tailored for leadership, operations, and bespoke workflows.</p>
+        <p className='text-gray-600'>Role-based dashboards powered by live intelligence, tailored for leadership, operations, and bespoke workflows.</p>
       </header>
 
       <nav className='flex flex-wrap items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm'>
@@ -938,7 +1001,7 @@ const Overview = observer(() => {
           className='inline-flex items-center gap-2 rounded-full border border-dashed border-slate-300 px-4 py-2 text-sm font-medium text-slate-500 transition hover:border-blue-300 hover:text-blue-600'
         >
           <PlusIcon className='h-4 w-4' />
-          New Custom View
+          New Custom Board
         </button>
         {isCustomView && (
           <div className='ml-auto flex flex-wrap items-center gap-2'>
@@ -947,7 +1010,7 @@ const Overview = observer(() => {
               onClick={handleRenameCurrentView}
               className='rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500 hover:border-blue-200 hover:text-blue-600'
             >
-              Rename
+              Rename Board
             </button>
             <button
               type='button'
@@ -964,7 +1027,7 @@ const Overview = observer(() => {
         <div className='flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between'>
           <div>
             <h2 className='text-lg font-semibold text-gray-900'>Interactive Dashboard</h2>
-            <p className='text-sm text-gray-500'>Drag, resize, and curate insights per audience. Layouts are saved locally per view.</p>
+            <p className='text-sm text-gray-500'>Drag, resize, and curate insights per audience. Layouts are saved locally per workspace.</p>
           </div>
           <div className='flex flex-col gap-3 sm:flex-row sm:items-center'>
             <DateRangeFields value={dateRange} onChange={handleRangeChange} disableFuture />
@@ -1043,9 +1106,9 @@ const Overview = observer(() => {
           <header className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
             <div>
               <h3 className='text-lg font-semibold text-gray-900'>Chart Library</h3>
-              <p className='text-sm text-gray-500'>Select widgets to assemble your personalised view. Changes save automatically.</p>
+              <p className='text-sm text-gray-500'>Select widgets to assemble your personalised workspace. Changes save automatically.</p>
             </div>
-            <span className='text-xs font-medium uppercase tracking-wide text-slate-400'>Custom View Tools</span>
+            <span className='text-xs font-medium uppercase tracking-wide text-slate-400'>Custom Board Tools</span>
           </header>
           <div className='grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3'>
             {Object.values(widgetDefinitions).map((widget) => {
