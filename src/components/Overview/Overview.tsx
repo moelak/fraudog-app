@@ -34,10 +34,9 @@ import {
 } from '@heroicons/react/24/outline';
 import DateRangeFields from '@/components/DateRangeFields/DateRangeFields';
 import { useRules } from '@/hooks/useRules';
-import { useDashboardMetrics, type DashboardDateRange } from '@/hooks/useDashboardMetrics';
-import { useExecutiveMetrics } from '@/hooks/useExecutiveMetrics';
-import { useOperationsMetrics } from '@/hooks/useOperationsMetrics';
+import { useAuth } from '@/hooks/useAuth';
 import { monitoringStore } from '@/components/Monitoring/MonitoringStore';
+import { overviewStore, type DashboardDateRange } from './OverviewStore';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -625,10 +624,15 @@ const Overview = observer(() => {
     fetchRules,
   } = useRules();
 
-  const [dateRange, setDateRange] = useState<DashboardDateRange>(() => ({
-    from: dayjs().subtract(12, 'week'),
-    to: dayjs(),
-  }));
+  const { user } = useAuth();
+  const {
+    dateRange,
+    setDateRange: setStoreDateRange,
+    dashboardMetrics,
+    executiveMetrics,
+    operationsMetrics,
+    refreshAll,
+  } = overviewStore;
 
   const scheduleChartResize = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -636,10 +640,6 @@ const Overview = observer(() => {
       window.dispatchEvent(new Event('resize'));
     });
   }, []);
-
-  const dashboardMetrics = useDashboardMetrics(dateRange);
-  const executiveMetrics = useExecutiveMetrics(dateRange);
-  const operationsMetrics = useOperationsMetrics(dateRange);
 
   const [views, setViews] = useState<DashboardView[]>(() => {
     if (typeof window === 'undefined') return BUILT_IN_VIEWS;
@@ -702,11 +702,15 @@ const Overview = observer(() => {
     }
   }, [activeViewId, layoutsByView]);
 
+  useEffect(() => {
+    void overviewStore.refreshAll(user?.id ?? undefined);
+  }, [user?.id, dateRange.from?.valueOf(), dateRange.to?.valueOf()]);
+
   const monitoringAlerts = monitoringStore.activeAlerts.slice();
 
   const executiveContext: ExecutiveWidgetContext = useMemo(() => {
     const lossRows = executiveMetrics.metrics.lossByWeek;
-    const frictionRows = executiveMetrics.metrics.frictionByChannel;
+    const frictionRows = executiveMetrics.metrics.catchesByDecision;
 
     const sortedWeeksLoss = [...new Set(lossRows.map((row) => row.week))].sort();
     const lossTrendChart: ChartData<'line'> | null = sortedWeeksLoss.length
@@ -752,18 +756,18 @@ const Overview = observer(() => {
         }
       : null;
 
-    const sortedWeeksFriction = [...new Set(frictionRows.map((row) => row.week))].sort();
-    const channels = [...new Set(frictionRows.map((row) => row.channel))];
+    const sortedDays = [...new Set(frictionRows.map((row) => row.day))].sort();
+    const decisions = [...new Set(frictionRows.map((row) => row.decision))];
 
-    const frictionStackedChart: ChartData<'bar'> | null = sortedWeeksFriction.length
+    const frictionStackedChart: ChartData<'bar'> | null = sortedDays.length
       ? {
-          labels: sortedWeeksFriction.map((week) => dayjs(week).format('MMM D')),
-          datasets: channels.map((channel, index) => {
+          labels: sortedDays.map((day) => dayjs(day).format('MMM D')),
+          datasets: decisions.map((decision, index) => {
             const colorPalette = ['#2563eb', '#0ea5e9', '#14b8a6', '#f59e0b', '#8b5cf6'];
             return {
-              label: channel,
-              data: sortedWeeksFriction.map(
-                (week) => frictionRows.find((row) => row.week === week && row.channel === channel)?.transactions ?? 0,
+              label: decision,
+              data: sortedDays.map(
+                (day) => frictionRows.find((row) => row.day === day && row.decision === decision)?.catches ?? 0,
               ),
               backgroundColor: colorPalette[index % colorPalette.length],
             } as ChartDataset<'bar'>;
@@ -773,12 +777,12 @@ const Overview = observer(() => {
 
     const channelTotals: Record<string, number> = {};
     frictionRows.forEach((row) => {
-      channelTotals[row.channel] = (channelTotals[row.channel] ?? 0) + row.transactions;
+      channelTotals[row.decision] = (channelTotals[row.decision] ?? 0) + row.catches;
     });
 
     const totalFriction = Object.values(channelTotals).reduce((sum, value) => sum + value, 0);
-    const weeklyBuckets = [...new Set(frictionRows.map((row) => row.week))];
-    const averageWeeklyFriction = weeklyBuckets.length ? totalFriction / weeklyBuckets.length : undefined;
+    const dayBuckets = [...new Set(frictionRows.map((row) => row.day))];
+    const averageWeeklyFriction = dayBuckets.length ? totalFriction / dayBuckets.length : undefined;
     const topChannel = Object.entries(channelTotals)
       .sort((a, b) => b[1] - a[1])
       .map(([name, value]) => ({ name, value }))[0];
@@ -906,15 +910,13 @@ const Overview = observer(() => {
   };
 
   const handleRangeChange = (range: { from: Dayjs | null; to: Dayjs | null }) => {
-    setDateRange(range);
+    setStoreDateRange(range);
     scheduleChartResize();
   };
 
   const handleRefresh = () => {
     void fetchRules();
-    void dashboardMetrics.refresh(dateRange);
-    void executiveMetrics.refresh(dateRange);
-    void operationsMetrics.refresh(dateRange);
+    void refreshAll(user?.id ?? undefined);
     scheduleChartResize();
   };
 
@@ -1108,7 +1110,12 @@ const Overview = observer(() => {
                     {isCustomView && (
                       <button
                         type='button'
-                        onClick={() => handleRemoveWidget(widget.id)}
+                        onMouseDown={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          event.preventDefault();
+                          handleRemoveWidget(widget.id);
+                        }}
                         className='rounded-full border border-transparent p-1 text-gray-300 transition hover:border-red-200 hover:text-red-500'
                         aria-label={`Remove ${widget.title}`}
                       >
