@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ComponentType, type ReactNode } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
   Chart as ChartJS,
@@ -538,6 +538,7 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
 const defaultLineOptions: ChartOptions<'line'> = {
   responsive: true,
   maintainAspectRatio: false,
+  resizeDelay: 120,
   plugins: {
     legend: { position: 'bottom', labels: { usePointStyle: true } },
     tooltip: {
@@ -565,6 +566,7 @@ const defaultLineOptions: ChartOptions<'line'> = {
 const defaultDoughnutOptions: ChartOptions<'doughnut'> = {
   responsive: true,
   maintainAspectRatio: false,
+  resizeDelay: 120,
   plugins: {
     legend: { position: 'bottom', labels: { usePointStyle: true } },
     tooltip: {
@@ -581,6 +583,7 @@ const defaultDoughnutOptions: ChartOptions<'doughnut'> = {
 const stackedBarOptions: ChartOptions<'bar'> = {
   responsive: true,
   maintainAspectRatio: false,
+  resizeDelay: 120,
   plugins: {
     legend: { position: 'bottom', labels: { usePointStyle: true } },
     tooltip: {
@@ -624,6 +627,13 @@ const Overview = observer(() => {
     from: dayjs().subtract(12, 'week'),
     to: dayjs(),
   }));
+
+  const scheduleChartResize = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+  }, []);
 
   const dashboardMetrics = useDashboardMetrics(dateRange);
   const executiveMetrics = useExecutiveMetrics(dateRange);
@@ -890,10 +900,12 @@ const Overview = observer(() => {
       ...prev,
       [currentView.id]: allLayouts,
     }));
+    scheduleChartResize();
   };
 
   const handleRangeChange = (range: { from: Dayjs | null; to: Dayjs | null }) => {
     setDateRange(range);
+    scheduleChartResize();
   };
 
   const handleRefresh = () => {
@@ -915,6 +927,7 @@ const Overview = observer(() => {
     setViews((prev) => [...prev, newView]);
     setLayoutsByView((prev) => ({ ...prev, [id]: createEmptyLayouts() }));
     setActiveViewId(id);
+    scheduleChartResize();
   };
 
   const handleRemoveCurrentView = () => {
@@ -957,6 +970,7 @@ const Overview = observer(() => {
         [currentView.id]: nextLayouts,
       };
     });
+    scheduleChartResize();
   };
 
   const handleRemoveWidget = (widgetId: WidgetId) => {
@@ -968,7 +982,12 @@ const Overview = observer(() => {
       ...prev,
       [currentView.id]: removeWidgetFromLayouts(prev[currentView.id] ?? createEmptyLayouts(), widgetId),
     }));
+    scheduleChartResize();
   };
+
+  useEffect(() => {
+    scheduleChartResize();
+  }, [scheduleChartResize, currentView.id, currentView.widgets.length, currentLayouts]);
 
   const activeWidgets = currentView.widgets.map((id) => widgetDefinitions[id]).filter(Boolean);
 
