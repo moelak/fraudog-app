@@ -431,27 +431,29 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
       if (operations.rulesLoading) return <LoadingState />;
       if (!operations.rulesTable.length) return <EmptyState message='No rules available in this range.' />;
       return (
-        <div className='overflow-hidden rounded-xl border border-gray-100'>
-          <table className='min-w-full divide-y divide-gray-200'>
-            <thead className='bg-gray-50 text-xs uppercase tracking-wide text-gray-500'>
-              <tr>
-                <th className='px-4 py-3 text-left font-semibold'>Rule</th>
-                <th className='px-4 py-3 text-left font-semibold'>Description</th>
-                <th className='px-4 py-3 text-right font-semibold'>Catches</th>
-                <th className='px-4 py-3 text-right font-semibold'>False Positives %</th>
-              </tr>
-            </thead>
-            <tbody className='divide-y divide-gray-100 bg-white text-sm text-gray-600'>
-              {operations.rulesTable.map((rule) => (
-                <tr key={rule.id} className='hover:bg-slate-50'>
-                  <td className='px-4 py-3 font-medium text-slate-900'>{rule.name}</td>
-                  <td className='px-4 py-3'>{rule.description || '—'}</td>
-                  <td className='px-4 py-3 text-right font-medium text-slate-900'>{rule.catches.toLocaleString()}</td>
-                  <td className='px-4 py-3 text-right font-medium text-slate-900'>{rule.falsePositiveRate.toFixed(1)}%</td>
+        <div className='flex h-full flex-col'>
+          <div className='max-h-72 flex-1 overflow-auto rounded-xl border border-gray-100'>
+            <table className='min-w-full divide-y divide-gray-200'>
+              <thead className='sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500'>
+                <tr>
+                  <th className='px-4 py-3 text-left font-semibold'>Rule</th>
+                  <th className='px-4 py-3 text-left font-semibold'>Description</th>
+                  <th className='px-4 py-3 text-right font-semibold'>Catches</th>
+                  <th className='px-4 py-3 text-right font-semibold'>False Positives %</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className='divide-y divide-gray-100 bg-white text-sm text-gray-600'>
+                {operations.rulesTable.map((rule) => (
+                  <tr key={rule.id} className='hover:bg-slate-50'>
+                    <td className='px-4 py-3 font-medium text-slate-900'>{rule.name}</td>
+                    <td className='px-4 py-3'>{rule.description || '—'}</td>
+                    <td className='px-4 py-3 text-right font-medium text-slate-900'>{rule.catches.toLocaleString()}</td>
+                    <td className='px-4 py-3 text-right font-medium text-slate-900'>{rule.falsePositiveRate.toFixed(1)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       );
     },
@@ -913,6 +915,7 @@ const Overview = observer(() => {
     void dashboardMetrics.refresh(dateRange);
     void executiveMetrics.refresh(dateRange);
     void operationsMetrics.refresh(dateRange);
+    scheduleChartResize();
   };
 
   const handleAddCustomView = () => {
@@ -940,6 +943,7 @@ const Overview = observer(() => {
     });
     const fallback = views.find((view) => view.id !== currentView.id) ?? BUILT_IN_VIEWS[0];
     setActiveViewId(fallback.id);
+    scheduleChartResize();
   };
 
   const handleRenameCurrentView = () => {
@@ -985,6 +989,14 @@ const Overview = observer(() => {
     scheduleChartResize();
   };
 
+  const handleSelectBoard = useCallback(
+    (id: string) => {
+      setActiveViewId(id);
+      scheduleChartResize();
+    },
+    [scheduleChartResize],
+  );
+
   useEffect(() => {
     scheduleChartResize();
   }, [scheduleChartResize, currentView.id, currentView.widgets.length, currentLayouts]);
@@ -1005,7 +1017,7 @@ const Overview = observer(() => {
             <button
               key={view.id}
               type='button'
-              onClick={() => setActiveViewId(view.id)}
+              onClick={() => handleSelectBoard(view.id)}
               className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition ${
                 isActive ? 'bg-blue-600 text-white shadow' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
@@ -1075,6 +1087,9 @@ const Overview = observer(() => {
           isDraggable
           isResizable
           onLayoutChange={handleLayoutChange}
+          onResizeStop={() => scheduleChartResize()}
+          onDragStop={() => scheduleChartResize()}
+          onBreakpointChange={() => scheduleChartResize()}
           draggableHandle='.widget-drag-handle'
           compactType='vertical'
         >
