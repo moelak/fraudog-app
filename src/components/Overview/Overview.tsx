@@ -667,12 +667,29 @@ const Overview = observer(() => {
     refreshAll,
   } = overviewStore;
 
+  const [pickerRange, setPickerRange] = useState<DashboardDateRange>(() => ({
+    from: dateRange.from ? dateRange.from.clone() : null,
+    to: dateRange.to ? dateRange.to.clone() : null,
+  }));
+
+  const dateRangeKey = useMemo(
+    () => `${dateRange.from?.valueOf() ?? 'null'}-${dateRange.to?.valueOf() ?? 'null'}`,
+    [dateRange.from, dateRange.to],
+  );
+
   const scheduleChartResize = useCallback(() => {
     if (typeof window === 'undefined') return;
     requestAnimationFrame(() => {
       window.dispatchEvent(new Event('resize'));
     });
   }, []);
+
+  useEffect(() => {
+    setPickerRange({
+      from: dateRange.from ? dateRange.from.clone() : null,
+      to: dateRange.to ? dateRange.to.clone() : null,
+    });
+  }, [dateRangeKey]);
 
   const [views, setViews] = useState<DashboardView[]>(() => {
     if (typeof window === 'undefined') return BUILT_IN_VIEWS;
@@ -736,10 +753,10 @@ const Overview = observer(() => {
   }, [activeViewId, layoutsByView]);
 
   useEffect(() => {
-    void overviewStore.refreshAll(user?.id ?? undefined).finally(() => {
+    void refreshAll(user?.id ?? undefined).finally(() => {
       scheduleChartResize();
     });
-  }, [user?.id, dateRange.from?.valueOf(), dateRange.to?.valueOf(), scheduleChartResize]);
+  }, [refreshAll, user?.id, dateRangeKey, scheduleChartResize]);
 
   const monitoringAlerts = monitoringStore.activeAlerts.slice();
 
@@ -958,12 +975,19 @@ const Overview = observer(() => {
   };
 
   const handleRangeChange = (range: { from: Dayjs | null; to: Dayjs | null }) => {
-    setStoreDateRange(range);
+    setPickerRange({
+      from: range.from ? range.from.clone() : null,
+      to: range.to ? range.to.clone() : null,
+    });
     scheduleChartResize();
-    void fetchRules();
   };
 
   const handleRefresh = () => {
+    const committedRange: DashboardDateRange = {
+      from: pickerRange.from ? pickerRange.from.clone() : null,
+      to: pickerRange.to ? pickerRange.to.clone() : null,
+    };
+    setStoreDateRange(committedRange);
     void fetchRules();
     void refreshAll(user?.id ?? undefined).finally(() => {
       scheduleChartResize();
@@ -1113,7 +1137,7 @@ const Overview = observer(() => {
             <p className='text-sm text-gray-500'>Drag, resize, and curate insights per audience. Layouts are saved locally per workspace.</p>
           </div>
           <div className='flex flex-col gap-3 sm:flex-row sm:items-center'>
-            <DateRangeFields value={dateRange} onChange={handleRangeChange} disableFuture />
+            <DateRangeFields value={pickerRange} onChange={handleRangeChange} disableFuture />
             <div className='flex items-center gap-3 justify-end'>
               {(rulesLoading || dashboardMetrics.loading || executiveMetrics.loading || operationsMetrics.loading) && (
                 <span className='text-sm text-gray-400'>Refreshing…</span>
