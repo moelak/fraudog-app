@@ -4,7 +4,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
-import { ruleManagementStore } from '../components/RuleManagement/RuleManagementStore';
+import {  ruleManagementStore } from '../components/RuleManagement/RuleManagementStore';
 import { RealtimeChannel } from "@supabase/supabase-js";
 dayjs.extend(utc);
 
@@ -95,7 +95,7 @@ export function useRules() {
   const [rules, setRules] = useState<Rule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  // const [organizationId, setOrganizationId] = useState<string | null>(null);
 const subscriptionRef = useRef<RealtimeChannel | null>(null);
 
   // Realtime (kept around for future use)
@@ -135,10 +135,12 @@ const subscriptionRef = useRef<RealtimeChannel | null>(null);
     const fromUtc = range.from
       ? utcDayStart(range.from)
       : dayjs.utc(dayjs().subtract(6, 'day').format('YYYY-MM-DD'));
-    const toExclusiveUtc = range.to
-      ? utcDayStart(range.to).add(1, 'day')
-      : dayjs.utc(dayjs().format('YYYY-MM-DD')).add(1, 'day');
-    return { fromISO: fmtPG(fromUtc), toExclusiveISO: fmtPG(toExclusiveUtc) };
+  // 👇 use endOf('day') so it's inclusive through 23:59:59
+  const toInclusiveUtc = range.to
+    ? dayjs.utc(range.to.format('YYYY-MM-DD')).endOf('day')
+    : dayjs.utc(dayjs().format('YYYY-MM-DD')).endOf('day');
+
+  return { fromISO: fmtPG(fromUtc), toExclusiveISO: fmtPG(toInclusiveUtc) };
   };
 
   // Use persisted window if present; otherwise default UTC window
@@ -156,7 +158,7 @@ const subscriptionRef = useRef<RealtimeChannel | null>(null);
 
 
 useEffect(() => {
-  if (!organizationId) return;
+  if (!ruleManagementStore.organizationId) return;
 
   // Clean up existing subscription if any
   if (subscriptionRef.current) {
@@ -164,14 +166,14 @@ useEffect(() => {
   }
   // Subscribe to changes only for the same organization
   const channel = supabase
-    .channel(`rules-changes-${organizationId}`)
+    .channel(`rules-changes-${ruleManagementStore.organizationId}`)
     .on(
       'postgres_changes',
       {
         event: '*',          // INSERT, UPDATE, DELETE
         schema: 'public',
         table: 'rules',
-        filter: `organization_id=eq.${organizationId}`
+        filter: `organization_id=eq.${ruleManagementStore.organizationId}`
       },
       async () => {
       // async (payload) => {
@@ -204,61 +206,98 @@ useEffect(() => {
       subscriptionRef.current = null;
     }
   };
-}, [user?.id, organizationId]);
+}, [user?.id, ruleManagementStore.organizationId]);
+
+async function fetchAllMetrics(orgId: string, ruleIds: string[], window: TimeWindow) {
+  const batchSize = 400; // number of rows to keep each time
+  const allMetrics: MetricsRow[] = [];
+
+  let offset = 0;
+  let hasNext = true;
+
+  while (hasNext) {
+    // 👇 Fetch one extra (401st) to check if there’s another page
+    const { data, error } = await supabase
+      .from("rules_metrics_hourly")
+      .select("rule_id, catches, false_positives, chargebacks, timestamp, organization_id")
+      .eq("organization_id", orgId)
+      .in("rule_id", ruleIds)
+      .gte("timestamp", window.fromISO)
+      .lte("timestamp", window.toExclusiveISO)
+      .range(offset, offset + batchSize); // returns 401 rows max (0 → 400 inclusive)
+
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+
+    // ✅ Keep only the first 400 (discard the 401st “next page indicator”)
+    const currentBatch = data.slice(0, batchSize);
+    allMetrics.push(...currentBatch);
+
+    // ✅ Decide whether to continue
+    hasNext = data.length > batchSize;
+    offset += batchSize;
+
+    console.log(
+      `Fetched ${currentBatch.length} rows at offset ${offset - batchSize}. Next page: ${
+        hasNext ? "✅ yes" : "❌ no"
+      }`
+    );
+  }
+
+  console.log(`✅ Total metrics fetched: ${allMetrics.length}`);
+  return allMetrics;
+}
+
 
   // Merge metrics for rules in a UTC window and apply decision logic
-  const aggregateAndApplyMetrics = async (
-    baseRules: Rule[],
-    window: TimeWindow,
-    orgId: string
-  ): Promise<Rule[]> => {
-    const ruleIds = baseRules.map((r) => r.id);
-    if (!ruleIds.length) return baseRules;
+// Merge metrics for rules in a UTC window and apply decision logic
+const aggregateAndApplyMetrics = async (
+  baseRules: Rule[],
+  window: TimeWindow,
+  orgId: string
+): Promise<Rule[]> => {
+  const ruleIds = baseRules.map((r) => r.id);
+  if (!ruleIds.length) return baseRules;
 
-    const { data: metrics, error: metricsErr } = await supabase
-      .from('rules_metrics_hourly')
-      .select('rule_id, catches, false_positives, chargebacks, timestamp, organization_id')
-      .eq('organization_id', orgId)
-      .in('rule_id', ruleIds)
-      .gte('timestamp', window.fromISO)       // inclusive
-      .lt('timestamp', window.toExclusiveISO); // exclusive
+  const metrics = await fetchAllMetrics(orgId, ruleIds, window);
 
-    if (metricsErr) throw metricsErr;
+  const sums = new Map<string, { c: number; fp: number; cb: number }>();
+  (metrics as MetricsRow[] | null)?.forEach((row) => {
+    const prev = sums.get(row.rule_id) ?? { c: 0, fp: 0, cb: 0 };
+    prev.c += row.catches ?? 0;
+    prev.fp += row.false_positives ?? 0;
+    prev.cb += row.chargebacks ?? 0;
+    sums.set(row.rule_id, prev);
+  });
 
-    const sums = new Map<string, { c: number; fp: number; cb: number }>();
-    (metrics as MetricsRow[] | null)?.forEach((row) => {
-      const prev = sums.get(row.rule_id) ?? { c: 0, fp: 0, cb: 0 };
-      prev.c += row.catches ?? 0;
-      prev.fp += row.false_positives ?? 0;
-      prev.cb += row.chargebacks ?? 0;
-      sums.set(row.rule_id, prev);
-    });
+  return baseRules.map((rule) => {
+    const s = sums.get(rule.id) ?? { c: 0, fp: 0, cb: 0 };
+    const catches = s.c;
+    const displayFalsePositives = s.fp;
+    const displayChargebacks = s.cb;
 
-    return baseRules.map((rule) => {
-      const s = sums.get(rule.id) ?? { c: 0, fp: 0, cb: 0 };
-      const catches = s.c;
+    let effectiveness: number | null = null;
+    if (catches > 0) {
+      const ratio = displayFalsePositives / catches;
+      effectiveness = Math.round((1 - ratio) * 1000) / 10; // 1 decimal
+    }
 
-      // Decision-specific display
-      const displayFalsePositives =  s.fp ;
-      const displayChargebacks =   s.cb
+    // ✅ check if the rule has any metrics
+    const hasMetrics = sums.has(rule.id);
 
-      let effectiveness: number | null = null;
-      if (catches > 0) {
-        const ratio = displayFalsePositives/ catches 
-        effectiveness = Math.round((1 - ratio) * 1000) / 10; // 1 decimal
-      }
+    return {
+      ...rule,
+      catches,
+      false_positives: displayFalsePositives,
+      chargebacks: displayChargebacks,
+      effectiveness,
+      isCalculating: false,
+      hasCalculated: true,
+      hasMetrics, // 👈 add this flag
+    };
+  });
+};
 
-      return {
-        ...rule,
-        catches,
-        false_positives: displayFalsePositives,
-         chargebacks: displayChargebacks,
-        effectiveness,
-        isCalculating: false,
-        hasCalculated: true,
-      };
-    });
-  };
 
   /* =========================
      Fetch (latest-wins)
@@ -283,7 +322,7 @@ useEffect(() => {
         .single();
       if (orgErr || !orgRow) throw orgErr || new Error('Organization not found for user');
       const orgId = orgRow.organization_id as string;
-      setOrganizationId(orgId);
+      // setOrganizationId(orgId);
 
       // 2) Org users (for display names)
       const { data: orgUsers, error: orgUsersErr } = await supabase
@@ -332,8 +371,9 @@ useEffect(() => {
      Search (latest-wins)
      ========================= */
   const searchByDateRange = async (range: { from: Dayjs | null; to: Dayjs | null }) => {
-    if (!user?.id || !organizationId) return;
-
+const orgId= ruleManagementStore.organizationId
+    if (!user?.id || !ruleManagementStore.organizationId) return;
+ 
     const reqId = ++activeReqIdRef.current;
     try {
       setLoading(true);
@@ -346,9 +386,18 @@ useEffect(() => {
       const { data: rulesRows, error: rulesErr } = await supabase
         .from('rules')
         .select('*')
-        .eq('organization_id', organizationId)
+        .eq('organization_id', orgId)
         .order('created_at', { ascending: false });
       if (rulesErr) throw rulesErr;
+
+      const { data: orgUsers, error: orgUsersErr } = await supabase
+        .from('organizations')
+        .select('user_id, full_name')
+        .eq('organization_id', orgId);
+      if (orgUsersErr) throw orgUsersErr;
+      orgNameMapRef.current = new Map(
+        (orgUsers || []).map((u) => [u.user_id as string, (u.full_name as string) || ''])
+      );
 
       const baseRules:Rule[] = attachDisplayNames(rulesRows).map((r) => ({
         ...r,
@@ -358,7 +407,7 @@ useEffect(() => {
         effectiveness: null,
       })) as Rule[];
 
-      const merged = await aggregateAndApplyMetrics(baseRules, window, organizationId);
+      const merged = await aggregateAndApplyMetrics(baseRules, window, ruleManagementStore.organizationId);
 
       if (reqId !== activeReqIdRef.current) return; // stale
       setRules(merged);

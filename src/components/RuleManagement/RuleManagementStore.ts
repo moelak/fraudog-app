@@ -9,6 +9,8 @@ import type {
   AIGenerationRecord,
   UserContext 
 } from "@/utils/ruleConverter";
+import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 
 export interface Rule {
   id: string;
@@ -65,6 +67,29 @@ export class RuleManagementStore {
   constructor() {
     makeAutoObservable(this);
   }
+
+  range: { from: Dayjs | null; to: Dayjs | null } = {
+    from: dayjs().subtract(6, 'day').startOf('day'),
+    to: dayjs().endOf('day'),
+  };
+
+  searchDirty = false;
+
+  setRange = (r: { from: Dayjs | null; to: Dayjs | null }) => {
+    this.range = r;
+    this.searchDirty = true; // automatically mark dirty when range changes
+  };
+
+  setSearchDirty = (value: boolean) => {
+    this.searchDirty = value;
+  };
+
+
+  organizationId: string | null = null;
+
+setOrganizationId = (id: string | null) => {
+  this.organizationId = id;
+};
 
   /**
    * Add a new AI-generated rule with dual-table saving

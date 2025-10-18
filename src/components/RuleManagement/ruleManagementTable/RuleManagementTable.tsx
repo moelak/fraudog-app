@@ -1,11 +1,11 @@
 import { observer } from 'mobx-react-lite';
-import { ruleManagementStore, type Rule } from '../RuleManagementStore';
+import { ruleManagementStore } from '../RuleManagementStore';
 
 import DeleteConfirmModal from '../DeleteConfirmModal';
 import RuleActionsMenu from '../RuleActionsMenu';
 import { Menu, Transition } from '@headlessui/react';
 import { useAuth } from '../../../hooks/useAuth';
-import dayjs, { Dayjs } from 'dayjs';
+import { Dayjs } from 'dayjs';
 
 import { ShieldCheckIcon, ExclamationTriangleIcon, MagnifyingGlassIcon, CpuChipIcon, UserIcon, ChevronDownIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { Fragment, useState } from 'react';
@@ -21,15 +21,11 @@ const RuleManagementTable = observer(({ onSearchByDateRange }: Props) => {
 	const { user } = useAuth();
 	const filteredRules = ruleManagementStore.filterRules(rules);
 	const tabCounts = ruleManagementStore.getTabCounts(rules);
-	const [range, setRange] = useState<{ from: Dayjs | null; to: Dayjs | null }>({
-		from: dayjs().subtract(6, 'day').startOf('day'),
-		to: dayjs().endOf('day'),
-	});
+
 	const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
 
-	const [searchDirty, setSearchDirty] = useState(false);
 	const [loading, setLoading] = useState(false); // NEW
-
+	const { range, setRange, searchDirty, setSearchDirty } = ruleManagementStore;
 	if (!user) return null;
 
 	const displayName =
@@ -407,7 +403,7 @@ const RuleManagementTable = observer(({ onSearchByDateRange }: Props) => {
 										{/* Actions */}
 
 										<td className='px-6 py-4 whitespace-nowrap'>
-											<RuleActionsMenu rule={rule as Rule} />
+											<RuleActionsMenu rule={rule} />
 										</td>
 									</tr>
 
