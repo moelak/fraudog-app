@@ -212,12 +212,7 @@ class OverviewStore {
   private organizationUserId: string | null = null;
 
   constructor() {
-    makeAutoObservable(this, {
-      loadDashboardMetrics: false,
-      loadExecutiveMetrics: false,
-      loadOperationsMetrics: false,
-      refreshAll: false,
-    });
+    makeAutoObservable(this);
   }
 
   setDateRange(range: DashboardDateRange) {
@@ -246,7 +241,7 @@ class OverviewStore {
     return this.organizationId;
   }
 
-  async loadDashboardMetrics(userId?: string) {
+  loadDashboardMetrics = async (userId?: string) => {
     const range = this.dateRange;
     const key = this.rangeKey(range);
 
@@ -328,7 +323,7 @@ class OverviewStore {
     }
   }
 
-  async loadExecutiveMetrics(userId?: string) {
+  loadExecutiveMetrics = async (userId?: string) => {
     const range = this.dateRange;
     const key = this.rangeKey(range);
 
@@ -430,7 +425,7 @@ class OverviewStore {
     }
   }
 
-  async loadOperationsMetrics(userId?: string) {
+  loadOperationsMetrics = async (userId?: string) => {
     const range = this.dateRange;
     const key = this.rangeKey(range);
 
@@ -492,7 +487,7 @@ class OverviewStore {
     }
   }
 
-  async refreshAll(userId?: string) {
+  refreshAll = async (userId?: string) => {
     await Promise.all([
       this.loadDashboardMetrics(userId),
       this.loadExecutiveMetrics(userId),
