@@ -37,7 +37,7 @@ export function useEventLog() {
       return null;
     }
       const actorName =
-        user?.user_metadata?.first_name + "" + user?.user_metadata?.last_name||
+        user?.user_metadata?.first_name + " " + user?.user_metadata?.last_name||
         user?.email ||
         'Unknown User';
     const { data, error } = await supabase
