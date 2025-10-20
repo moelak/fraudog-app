@@ -71,7 +71,10 @@ const RuleManagement = observer(({ onSearchByDateRange }: Props) => {
 								<Menu.Item>
 									{({ active }: { active: boolean }) => (
 										<button
-											onClick={() => ruleManagementStore.setDisplayManualRuleStepper(true)}
+											onClick={() => {
+												ruleManagementStore.openCreateModal();
+												ruleManagementStore.setDisplayManualRuleStepper(true);
+											}}
 											className={`${active ? 'bg-blue-100' : ''} block px-4 py-2 text-sm text-gray-700 w-full text-left`}
 										>
 											Manual

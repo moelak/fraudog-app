@@ -2,8 +2,9 @@ import { observer } from 'mobx-react-lite';
 import { useState, useRef, useEffect } from 'react';
 import { useRules } from '../../hooks/useRules';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
-import { EllipsisVerticalIcon, PencilIcon, ClockIcon, TrashIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
+import { EllipsisVerticalIcon, PencilIcon, ClockIcon, TrashIcon, ArrowUturnLeftIcon, PowerIcon } from '@heroicons/react/24/outline';
 import { ruleManagementStore } from './RuleManagementStore';
+import { useAuth } from '@/hooks/useAuth';
 
 interface RuleActionsMenuProps {
 	rule: {
@@ -25,6 +26,7 @@ interface RuleActionsMenuProps {
 		updated_at: string;
 		decision: string;
 		chargebacks: number;
+		displayName?: string;
 	};
 }
 
@@ -34,6 +36,7 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
 	const [isRecovering, setIsRecovering] = useState(false);
 	const [isTogglingStatus, setIsTogglingStatus] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
+	const { user } = useAuth(); // ✅ get logged-in user
 
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
@@ -47,6 +50,8 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
 			document.removeEventListener('mousedown', handleClickOutside);
 		};
 	}, []);
+
+	const canDelete = user?.id === rule.user_id;
 
 	const handleAction = async (action: string) => {
 		switch (action) {
@@ -120,13 +125,30 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
 
 								<div className='border-t border-gray-100 my-1'></div>
 
-								<button
-									onClick={() => handleAction('delete')}
-									className='flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors'
-								>
-									<TrashIcon className='h-4 w-4 mr-3' />
-									Delete Permanently
-								</button>
+								<div className='relative group'>
+									<button
+										onClick={() => handleAction('delete')}
+										disabled={!canDelete}
+										className={`flex items-center w-full px-4 py-2 text-sm transition-colors rounded-md ${
+											canDelete ? 'text-red-600 hover:bg-red-50' : 'text-gray-400 cursor-not-allowed'
+										}`}
+									>
+										<TrashIcon className='h-4 w-4 mr-3' />
+										Delete Permanently
+									</button>
+
+									{/* Tooltip (only if the user cannot delete) */}
+									{!canDelete && (
+										<div
+											className='absolute right-full top-1/2 -translate-y-1/2 mr-2
+                 opacity-0 group-hover:opacity-100 transition-opacity duration-200
+                 bg-gray-900 text-white text-xs rounded-md px-2 py-1 w-44
+                 text-left z-[9999] shadow-lg pointer-events-none whitespace-normal'
+										>
+											You can’t permanently delete this rule. Contact {rule.displayName || 'the rule owner'}.
+										</div>
+									)}
+								</div>
 							</>
 						) : (
 							// Actions for active rules
@@ -140,7 +162,10 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
 								</button>
 
 								<button
-									onClick={() => handleAction('history')}
+									onClick={() => {
+										setIsOpen(false); // 👈 close the dropdown first
+										ruleManagementStore.viewRuleHistory(rule.id); // 👈 open the modal
+									}}
 									className='flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors'
 								>
 									<ClockIcon className='h-4 w-4 mr-3' />
@@ -152,19 +177,36 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
 									disabled={isTogglingStatus}
 									className='flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50'
 								>
-									{rule.status === 'inactive' ? <ArrowUturnLeftIcon className='h-4 w-4 mr-3' /> : <TrashIcon className='h-4 w-4 mr-3 rotate-180' />}
+									{rule.status === 'inactive' ? <PowerIcon className='h-4 w-4 mr-3 text-green-500' /> : <PowerIcon className='h-4 w-4 mr-3 text-red-500 ' />}
 									{isTogglingStatus ? 'Updating...' : rule.status === 'inactive' ? 'Activate' : 'Deactivate'}
 								</button>
 
 								<div className='border-t border-gray-100 my-1'></div>
 
-								<button
-									onClick={() => handleAction('delete')}
-									className='flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors'
-								>
-									<TrashIcon className='h-4 w-4 mr-3' />
-									Delete Rule
-								</button>
+								<div className='relative group'>
+									<button
+										onClick={() => handleAction('delete')}
+										disabled={!canDelete}
+										className={`flex items-center w-full px-4 py-2 text-sm transition-colors rounded-md ${
+											canDelete ? 'text-red-600 hover:bg-red-50' : 'text-gray-400 cursor-not-allowed'
+										}`}
+									>
+										<TrashIcon className='h-4 w-4 mr-3' />
+										Delete Rule
+									</button>
+
+									{/* Tooltip (shows on hover when delete is disabled) */}
+									{!canDelete && (
+										<div
+											className='absolute right-full top-1/2 -translate-y-1/2 mr-2
+                 opacity-0 group-hover:opacity-100 transition-opacity duration-200
+                 bg-gray-900 text-white text-xs rounded-md px-2 py-1 w-44
+                 text-left z-[9999] shadow-lg pointer-events-none whitespace-normal'
+										>
+											You can’t delete this rule. Contact {rule.displayName || 'the rule owner'}.
+										</div>
+									)}
+								</div>
 							</>
 						)}
 					</div>
