@@ -2,7 +2,7 @@ import { observer } from 'mobx-react-lite';
 import { useState, useRef, useEffect } from 'react';
 import { useRules } from '../../hooks/useRules';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
-import { EllipsisVerticalIcon, PencilIcon, ClockIcon, TrashIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
+import { EllipsisVerticalIcon, PencilIcon, ClockIcon, TrashIcon, ArrowUturnLeftIcon, PowerIcon } from '@heroicons/react/24/outline';
 import { ruleManagementStore } from './RuleManagementStore';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -162,7 +162,10 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
 								</button>
 
 								<button
-									onClick={() => handleAction('history')}
+									onClick={() => {
+										setIsOpen(false); // 👈 close the dropdown first
+										ruleManagementStore.viewRuleHistory(rule.id); // 👈 open the modal
+									}}
 									className='flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors'
 								>
 									<ClockIcon className='h-4 w-4 mr-3' />
@@ -174,7 +177,7 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
 									disabled={isTogglingStatus}
 									className='flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50'
 								>
-									{rule.status === 'inactive' ? <ArrowUturnLeftIcon className='h-4 w-4 mr-3' /> : <TrashIcon className='h-4 w-4 mr-3 rotate-180' />}
+									{rule.status === 'inactive' ? <PowerIcon className='h-4 w-4 mr-3 text-green-500' /> : <PowerIcon className='h-4 w-4 mr-3 text-red-500 ' />}
 									{isTogglingStatus ? 'Updating...' : rule.status === 'inactive' ? 'Activate' : 'Deactivate'}
 								</button>
 

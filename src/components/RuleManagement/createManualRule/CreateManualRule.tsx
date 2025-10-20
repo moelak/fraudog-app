@@ -90,14 +90,27 @@ interface FormErrors {
 	descriptionInvalidColumns?: string;
 }
 import { InfoOutlined } from '@mui/icons-material';
+import { useEventLog } from '@/hooks/useEventLog';
 
 export default function CreateManualRule() {
+	const { logEvent } = useEventLog();
 	const [activeStep, setActiveStep] = useState(0);
-	const [formData, setFormData] = useState({
+	const [formData, setFormData] = useState<FormData>({
 		name: '',
 		category: '',
-		decision: '',
-		severity: '',
+		decision: 'allow',
+		severity: 'low',
+		condition: '',
+		description: '',
+		status: 'inactive',
+		log_only: false,
+	});
+
+	const [initialData, setInitialData] = useState<FormData>({
+		name: '',
+		category: '',
+		decision: 'allow',
+		severity: 'low',
 		condition: '',
 		description: '',
 		status: 'inactive',
@@ -111,7 +124,7 @@ export default function CreateManualRule() {
 	const isEditingFromGenerated = ruleManagementStore.isEditingFromGenerated;
 	const isEditing = !!ruleManagementStore.editingRule;
 	const [generating, setGenerating] = useState(false);
-	const [initialData, setInitialData] = useState(formData);
+
 	const { columns, loading: columnsLoading } = useColumns();
 	const [suggestions, setSuggestions] = useState<string[]>([]);
 	const [showSuggestions, setShowSuggestions] = useState(false);
@@ -124,26 +137,29 @@ export default function CreateManualRule() {
 	const [inputMode, setInputMode] = useState<'manual' | 'ai'>('manual');
 	const [highlightedIndex, setHighlightedIndex] = useState(0);
 	useEffect(() => {
+		console.log('isEditing', isEditing);
 		if (isEditing && ruleManagementStore.editingRule) {
 			const r = ruleManagementStore.editingRule;
-			const data = {
+			const data: FormData = {
 				name: r.name || '',
 				category: r.category || '',
-				decision: r.decision || '',
-				severity: r.severity || '',
+				decision: (r.decision as 'allow' | 'review' | 'deny') || 'allow',
+				severity: (r.severity as 'low' | 'medium' | 'high') || 'low',
 				condition: r.condition || '',
 				description: r.description || '',
-				status: r.status || 'inactive',
+				// ✅ normalize the value so it matches the union
+				status: (r.status === 'in progress' ? 'in_progress' : r.status) as FormData['status'],
 				log_only: r.log_only ?? false,
 			};
 			setFormData(data);
 			setInitialData(data); // snapshot original
 		} else {
-			const blank = {
+			resetForm();
+			const blank: FormData = {
 				name: '',
 				category: '',
-				decision: '',
-				severity: '',
+				decision: 'allow',
+				severity: 'low',
 				condition: '',
 				description: '',
 				status: 'inactive',
@@ -171,8 +187,8 @@ export default function CreateManualRule() {
 		setFormData({
 			name: '',
 			category: '',
-			decision: '',
-			severity: '',
+			decision: 'allow',
+			severity: 'low',
 			condition: '',
 			description: '',
 			status: 'inactive',
@@ -187,6 +203,20 @@ export default function CreateManualRule() {
 			ruleManagementStore.isEditingFromGenerated = false;
 		});
 	};
+
+	// helper to detect which fields changed between initial and current form data
+	const getChanges = (initial: FormData, updated: FormData) => {
+		const changes: Record<string, { old: string | boolean; new: string | boolean }> = {};
+
+		for (const key of Object.keys(updated) as (keyof FormData)[]) {
+			if (initial[key] !== updated[key]) {
+				changes[key] = { old: initial[key], new: updated[key] };
+			}
+		}
+
+		return changes;
+	};
+
 	const handleExitClick = () => {
 		const hasChanges = JSON.stringify(formData) !== JSON.stringify(initialData);
 		if (hasChanges) {
@@ -246,9 +276,6 @@ export default function CreateManualRule() {
 
 					// must include @column
 					const matches = [...formData.description.matchAll(/@([a-zA-Z0-9_]+)/g)].map((m) => m[1]);
-					// if (matches.length === 0) {
-					// 	errs.descriptionColumn = 'At least one @column reference is required.';
-					// }
 
 					// invalid/misspelled columns
 					const invalid = matches.filter((col) => !columns.some((c) => c.toLowerCase() === col.toLowerCase()));
@@ -282,11 +309,11 @@ export default function CreateManualRule() {
 			setFormData({
 				name: r.name || '',
 				category: r.category || '',
-				decision: r.decision || '',
+				decision: (r.decision as 'allow' | 'review' | 'deny') || 'allow',
 				severity: r.severity || '',
 				condition: r.condition || '',
 				description: r.description || '',
-				status: r.status || 'inactive',
+				status: (r.status as 'active' | 'inactive' | 'warning' | 'in_progress') || 'inactive',
 				log_only: r.log_only ?? false,
 			});
 		}
@@ -325,7 +352,12 @@ export default function CreateManualRule() {
 					updates.status = 'in progress';
 				}
 
+				// ✅ Get diffs between old and new form
+				const changes = getChanges(initialData, formData);
+
 				await updateRule(ruleManagementStore.editingRule.id, updates);
+
+				await logEvent(ruleManagementStore.organizationId ?? 'unknown', 'rule.updated', 'rule', ruleManagementStore.editingRule.id, { changes });
 
 				// Merge with existing rule
 				const updatedRule = {
@@ -352,7 +384,11 @@ export default function CreateManualRule() {
 					source: 'User',
 				};
 
-				await createRule(ruleData);
+				const created = await createRule(ruleData);
+
+				// ✅ Log full rule data for creation
+				await logEvent(ruleManagementStore?.organizationId ?? 'unknown', 'rule.created', 'rule', created?.id || 'unknown', { rule: ruleData });
+
 				showSuccessToast('Rule created successfully.');
 			}
 

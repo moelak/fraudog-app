@@ -8,12 +8,12 @@ import { XMarkIcon, ExclamationTriangleIcon, ArrowUturnLeftIcon } from '@heroico
 const DeleteConfirmModal = observer(() => {
 	const { softDeleteRule, permanentDeleteRule } = useRules();
 	const [isDeleting, setIsDeleting] = useState(false);
-	const [deleteType, setDeleteType] = useState<'soft' | 'permanent'>(ruleManagementStore.activeTab === 'deleted' ? 'permanent' : 'soft');
 	const [confirmText, setConfirmText] = useState('');
-
+	const deleteType = ruleManagementStore.activeTab === 'deleted' ? 'permanent' : 'soft';
 	const rule = ruleManagementStore.deletingRule;
 
 	const handleDelete = async () => {
+		setConfirmText('');
 		if (!rule) return;
 		if (confirmText.trim() !== rule.name.trim()) {
 			showErrorToast('Please type the exact rule name to confirm deletion.');
@@ -21,7 +21,7 @@ const DeleteConfirmModal = observer(() => {
 		}
 
 		setIsDeleting(true);
-
+		console.log('deleteType', deleteType);
 		try {
 			if (deleteType === 'soft') {
 				await softDeleteRule(rule.id);
@@ -58,7 +58,6 @@ const DeleteConfirmModal = observer(() => {
 
 	const handleClose = () => {
 		ruleManagementStore.closeDeleteConfirmModal();
-		setDeleteType('soft');
 		setConfirmText('');
 	};
 

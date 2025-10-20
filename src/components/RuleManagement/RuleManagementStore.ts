@@ -11,6 +11,7 @@ import type {
 } from "@/utils/ruleConverter";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
+import { supabase } from "@/lib/supabase";
 
 export interface Rule {
   id: string;
@@ -30,7 +31,6 @@ export interface Rule {
   user_id: string;
   created_at: string;
   updated_at: string;
-
   isCalculating?: boolean;
   hasCalculated?: boolean;
 
@@ -42,13 +42,26 @@ export interface Rule {
   organization_id?: string;   // Multi-tenant support
 }
 
+export interface RuleHistoryItem {
+  id: string;
+  actor_name?: string | null;
+  event_type: string;
+  created_at: string;
+  metadata?: {
+    changes?: Record<string, { old: string | null; new: string | null }>;
+  };
+}
+
+
+
 export type SearchColumn = 'all' | 'name' | 'category' | 'description' | 'condition';
 
 export class RuleManagementStore {
   activeTab: 'active' | 'all' | 'attention' | 'deleted' = 'all';
   searchQuery = '';
   searchColumn: SearchColumn = 'all';
-
+  ruleHistory: RuleHistoryItem[] = [];
+  showHistoryModal: boolean = false;
   isCreateModalOpen = false;
   isEditModalOpen = false;
   isDeleteConfirmModalOpen = false;
@@ -90,6 +103,18 @@ export class RuleManagementStore {
 setOrganizationId = (id: string | null) => {
   this.organizationId = id;
 };
+
+
+
+
+setRuleHistory = (history: RuleHistoryItem[]) => {
+  this.ruleHistory = history;
+};
+
+setShowHistoryModal = (isVisible: boolean) => {
+  this.showHistoryModal = isVisible;
+};
+
 
   /**
    * Add a new AI-generated rule with dual-table saving
@@ -309,7 +334,21 @@ openCreateModal = () => {
   closeDeleteConfirmModal = () => { this.isDeleteConfirmModalOpen = false; this.deletingRule = null; };
 
   editRule = (rule: Rule) => { this.openEditModal(rule); };
-  viewRuleHistory = (id: string) => { console.log('Viewing history for rule:', id); };
+  viewRuleHistory = async (ruleId: string) => {
+    const { data, error } = await supabase
+      .from('app_event_log')
+      .select('*')
+      .eq('subject_id', ruleId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching rule history:', error);
+      return [];
+    }
+    this.setRuleHistory(data);
+    this.setShowHistoryModal(true);
+  };
+
 
   toggleRowExpansion = (ruleId: string) => {
     if (this.expandedRows.has(ruleId)) this.expandedRows.delete(ruleId);

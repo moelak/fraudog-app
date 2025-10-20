@@ -27,6 +27,7 @@
     "ag-grid-react": "^33.3.2",
     "antd": "^5.26.5",
     "chart.js": "4.4.2",
+    "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "lottie-react": "^2.4.1",
     "mobx": "6.12.0",

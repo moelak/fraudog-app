@@ -10,6 +10,7 @@ import { Dayjs } from 'dayjs';
 import { ShieldCheckIcon, ExclamationTriangleIcon, MagnifyingGlassIcon, CpuChipIcon, UserIcon, ChevronDownIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { Fragment, useState } from 'react';
 import DateRangeFields from '../../DateRangeFields/DateRangeFields';
+import RuleHistoryModal from '../RuleHistoryModal';
 
 type Props = {
 	onSearchByDateRange: (range: { from: Dayjs | null; to: Dayjs | null }) => void | Promise<void>;
@@ -472,6 +473,7 @@ const RuleManagementTable = observer(({ onSearchByDateRange }: Props) => {
 			</div>
 
 			<DeleteConfirmModal />
+			<RuleHistoryModal />
 		</>
 	);
 });
