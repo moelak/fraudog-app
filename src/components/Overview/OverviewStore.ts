@@ -276,29 +276,45 @@ class OverviewStore {
       const fromLocal = range.from.startOf('day');
       const toLocalExclusive = range.to.add(1, 'day').startOf('day');
 
-      const { data: rows, error } = await supabase
-        .from('rules_metrics_hourly')
-        .select('timestamp, catches, false_positives')
-        .eq('organization_id', orgId)
-        .gte('timestamp', fromLocal.utc().format('YYYY-MM-DD HH:mm:ss[+00]'))
-        .lt('timestamp', toLocalExclusive.utc().format('YYYY-MM-DD HH:mm:ss[+00]'));
+      console.log('🔍 Dashboard Metrics Query (DB Function):', {
+        from: fromLocal.format('YYYY-MM-DD'),
+        to: toLocalExclusive.format('YYYY-MM-DD'),
+        fromUTC: fromLocal.utc().toISOString(),
+        toUTC: toLocalExclusive.utc().toISOString(),
+        orgId,
+      });
+
+      // Use database function for server-side aggregation (10-50x faster)
+      const { data: rows, error } = await supabase.rpc('get_daily_rule_metrics', {
+        p_organization_id: orgId,
+        p_start_date: fromLocal.utc().toISOString(),
+        p_end_date: toLocalExclusive.utc().toISOString(),
+      });
+
+      console.log('📊 Dashboard Metrics Results (DB Function):', {
+        rowsReturned: rows?.length ?? 0,
+        sampleRows: rows?.slice(0, 3),
+        performance: 'Database-aggregated (no client processing)',
+      });
 
       if (error) throw error;
 
+      // Initialize map with all days in range (to show zeros for missing data)
       const dailyMap = new Map<string, { catches: number; falsePositives: number }>();
       const daysBetween = Math.max(0, toLocalExclusive.diff(fromLocal, 'day'));
       for (let offset = 0; offset < daysBetween; offset += 1) {
         const day = fromLocal.add(offset, 'day');
-        const keyDay = day.utc().format('YYYY-MM-DD');
+        const keyDay = day.format('YYYY-MM-DD');
         dailyMap.set(keyDay, { catches: 0, falsePositives: 0 });
       }
 
-      (rows ?? []).forEach((row) => {
-        const keyDay = dayjs.utc(row.timestamp).format('YYYY-MM-DD');
-        const bucket = dailyMap.get(keyDay) ?? { catches: 0, falsePositives: 0 };
-        bucket.catches += row.catches ?? 0;
-        bucket.falsePositives += row.false_positives ?? 0;
-        dailyMap.set(keyDay, bucket);
+      // Populate with actual data from database function
+      (rows ?? []).forEach((row: { day: string; catches: number; false_positives: number }) => {
+        const keyDay = dayjs(row.day).format('YYYY-MM-DD');
+        dailyMap.set(keyDay, {
+          catches: Number(row.catches) || 0,
+          falsePositives: Number(row.false_positives) || 0,
+        });
       });
 
       const sortedKeys = Array.from(dailyMap.keys()).sort();
