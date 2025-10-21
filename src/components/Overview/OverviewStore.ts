@@ -215,9 +215,12 @@ class OverviewStore {
     makeAutoObservable(this);
   }
 
-  setDateRange(range: DashboardDateRange) {
-    this.dateRange = range;
-  }
+  setDateRange = (range: DashboardDateRange) => {
+    runInAction(() => {
+      this.dateRange.from = range.from ? range.from.clone() : null;
+      this.dateRange.to = range.to ? range.to.clone() : null;
+    });
+  };
 
   private rangeKey(range: DashboardDateRange) {
     return `${range.from?.valueOf() ?? 'null'}-${range.to?.valueOf() ?? 'null'}`;
