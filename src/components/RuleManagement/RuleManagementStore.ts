@@ -443,6 +443,7 @@ openCreateModal = () => {
   };
 
   updateRuleInStore = (updatedRule: Rule) => {
+  
     this.rules = this.rules.map(r => (r.id === updatedRule.id ? { ...updatedRule, isCalculating: false, hasCalculated: true } : r));
     this.inProgressRules = this.inProgressRules.map(r => (r.id === updatedRule.id ? { ...updatedRule, isCalculating: false, hasCalculated: true } : r));
   };
