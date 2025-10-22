@@ -10,7 +10,7 @@ import {
 	EyeIcon,
 	BellIcon,
 	CreditCardIcon,
-	ChatBubbleLeftRightIcon,
+	//ChatBubbleLeftRightIcon,
 	UsersIcon,
 } from '@heroicons/react/24/outline';
 import Overview from '../Overview/Overview';
@@ -48,7 +48,7 @@ const Menu = observer(() => {
 		{ name: 'Monitoring', href: '/dashboard/monitoring', icon: EyeIcon },
 		{ name: 'Chargebacks', href: '/dashboard/chargebacks', icon: CreditCardIcon },
 		{ name: 'Reports', href: '/dashboard/reports', icon: DocumentTextIcon },
-		{ name: 'Chat Assistant', href: '/dashboard/assistant', icon: ChatBubbleLeftRightIcon },
+		// { name: 'Chat Assistant', href: '/dashboard/assistant', icon: ChatBubbleLeftRightIcon },
 		{ name: 'User Management', href: '/dashboard/users', icon: UsersIcon },
 		{ name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
 	];

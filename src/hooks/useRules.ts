@@ -7,6 +7,7 @@ import { useAuth } from './useAuth';
 import {  ruleManagementStore } from '../components/RuleManagement/RuleManagementStore';
 import { RealtimeChannel } from "@supabase/supabase-js";
 dayjs.extend(utc);
+import { toJS } from "mobx";
 
 /* =========================
    Types
@@ -83,18 +84,19 @@ type TimeWindow = {
 /* =========================
    Guards (React 18 Dev double-run)
    ========================= */
-let hasBootstrapped = false;
 
 /* =========================
    Hook
    ========================= */
 export function useRules() {
   const { user } = useAuth();
-
+const orgId = toJS(ruleManagementStore.organizationId);
+const rangeSnapshot = toJS(ruleManagementStore.range);
   // Local state (MobX store holds table-rendering state)
   const [rules, setRules] = useState<Rule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
   // const [organizationId, setOrganizationId] = useState<string | null>(null);
 const subscriptionRef = useRef<RealtimeChannel | null>(null);
 
@@ -242,6 +244,7 @@ async function fetchAllMetrics(orgId: string, ruleIds: string[], window: TimeWin
 }
 
 
+
   // Merge metrics for rules in a UTC window and apply decision logic
 // Merge metrics for rules in a UTC window and apply decision logic
 const aggregateAndApplyMetrics = async (
@@ -350,6 +353,7 @@ const aggregateAndApplyMetrics = async (
       const merged = await aggregateAndApplyMetrics(baseRules, window, orgId);
 
       if (reqId !== activeReqIdRef.current) return; // stale
+      
       setRules(merged);
       await ruleManagementStore.setRules(merged);
     } catch (e) {
@@ -403,6 +407,7 @@ const orgId= ruleManagementStore.organizationId
       const merged = await aggregateAndApplyMetrics(baseRules, window, ruleManagementStore.organizationId);
 
       if (reqId !== activeReqIdRef.current) return; // stale
+   
       setRules(merged);
       await ruleManagementStore.setRules(merged);
     } catch (e) {
@@ -416,12 +421,34 @@ const orgId= ruleManagementStore.organizationId
   /* =========================
      Initial load (once)
      ========================= */
-  useEffect(() => {
-    if (!user?.id) return;
-    if (hasBootstrapped) return;
-    hasBootstrapped = true;
+// useEffect(() => {
+//   if (!user?.id) return;
+//   if (!ruleManagementStore.organizationId) return;
+// console.log("test=>>>")
+//   // wait until range is ready
+//   if (ruleManagementStore.range?.from && ruleManagementStore.range?.to) {
+//     void refetchWithCurrentRange();
+//   } else {
+//     // fallback to default 7-day fetch
+//     void fetchRules();
+//   }
+// }, [user?.id]);
+
+const hasFetchedRef = useRef(false);
+
+useEffect(() => {
+  if (hasFetchedRef.current) return;
+  if (!user?.id || !orgId) return;
+
+  hasFetchedRef.current = true;
+
+  if (rangeSnapshot?.from && rangeSnapshot?.to) {
+    void refetchWithCurrentRange();
+  } else {
     void fetchRules();
-  }, [user?.id]);
+  }
+}, [orgId]);
+
 
   /* =========================
      CRUD (unchanged behavior; refresh via fetchRules)
@@ -473,7 +500,7 @@ const createRule = async (ruleData: CreateRuleData): Promise<Rule | null> => {
     actor_user_id: user.id, // exclude yourself
   });
 
-  void fetchRules();
+  void refetchWithCurrentRange();
   return data as Rule;
 };
 
@@ -516,7 +543,7 @@ const updateRule = async (id: string, updates: UpdateRuleData): Promise<Rule | n
       actor_user_id: user.id,   // exclude yourself
     });
 
-    void fetchRules();
+   void refetchWithCurrentRange();
     return data as Rule;
 };
 
@@ -558,7 +585,7 @@ const updateRule = async (id: string, updates: UpdateRuleData): Promise<Rule | n
     actor_user_id: user.id,
   });
 
-  void fetchRules();
+void refetchWithCurrentRange();
 };
 
 const recoverRule = async (id: string) => {
@@ -596,7 +623,7 @@ const recoverRule = async (id: string) => {
     actor_user_id: user.id,
   });
 
-  void fetchRules();
+  void refetchWithCurrentRange();
 };
 
 const permanentDeleteRule = async (id: string) => {
@@ -640,15 +667,47 @@ const permanentDeleteRule = async (id: string) => {
     });
   }
 
-  void fetchRules();
+  void refetchWithCurrentRange();
 };
 
-  const toggleRuleStatus = async (id: string) => {
-    const rule = rules.find((r) => r.id === id);
-    if (!rule) return;
-    const newStatus = rule.status === 'active' ? 'inactive' : 'active';
-    await updateRule(id, { status: newStatus });
-  };
+const toggleRuleStatus = async (id: string) => {
+  const currentRules = ruleManagementStore.rules || [];
+  const rule = currentRules.find((r) => r.id === id);
+
+  if (!rule) {
+    console.warn("Rule not found in store for id:", id);
+    return;
+  }
+
+  const newStatus = rule.status === "active" ? "inactive" : "active";
+
+  await updateRule(id, { status: newStatus });
+
+  // Update MobX store to reflect new status immediately
+  ruleManagementStore.updateRuleInStore({
+    ...rule,
+    status: newStatus,
+    updated_at: new Date().toISOString(),
+  });
+};
+
+// ✅ Helper: Refetch with current or default date range
+const refetchWithCurrentRange = async () => {
+
+  // check if valid range exists
+  if (ruleManagementStore.range?.from && ruleManagementStore.range?.to) {
+    const from = dayjs(ruleManagementStore.range.from);
+    const to = dayjs(ruleManagementStore.range.to);
+    // 🔄 use the actual stored ISO range
+    await searchByDateRange({
+      from,
+      to,
+    });
+  } else {
+    await fetchRules();
+  }
+};
+
 
   /* =========================
      Derived subsets

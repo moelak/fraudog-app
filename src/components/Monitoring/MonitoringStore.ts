@@ -1,170 +1,105 @@
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, runInAction } from "mobx";
+import { supabase } from "@/lib/supabase";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
-interface SystemMetric {
-  name: string;
-  value: string;
-  status: 'healthy' | 'warning' | 'critical';
-}
-
-interface Alert {
-  id: number;
-  title: string;
-  description: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  timestamp: string;
-  acknowledged: boolean;
-}
-
-interface SystemLog {
-  id: number;
-  level: 'info' | 'warning' | 'error' | 'debug';
-  message: string;
-  timestamp: string;
+interface TransactionLog {
+  transaction_id: string;
+  decision: string;
+  decision_changed?: string | null;
+  datetime: string;
+  false_positive: boolean | null;
 }
 
 export class MonitoringStore {
-  systemMetrics: SystemMetric[] = [
-    { name: 'System Uptime', value: '99.9%', status: 'healthy' },
-    { name: 'Response Time', value: '125ms', status: 'healthy' },
-    { name: 'Error Rate', value: '0.02%', status: 'healthy' },
-    { name: 'CPU Usage', value: '45%', status: 'warning' },
-  ];
-
-  activeAlerts: Alert[] = [
-    {
-      id: 1,
-      title: 'High CPU Usage',
-      description: 'CPU usage has exceeded 80% for the last 5 minutes',
-      severity: 'high',
-      timestamp: '2 min ago',
-      acknowledged: false
-    },
-    {
-      id: 2,
-      title: 'Unusual Transaction Pattern',
-      description: 'Detected unusual spike in transaction volume from IP 192.168.1.100',
-      severity: 'medium',
-      timestamp: '15 min ago',
-      acknowledged: false
-    },
-    {
-      id: 3,
-      title: 'Failed Login Attempts',
-      description: 'Multiple failed login attempts detected for user account',
-      severity: 'high',
-      timestamp: '1 hour ago',
-      acknowledged: false
-    }
-  ];
-
-  systemLogs: SystemLog[] = [
-    {
-      id: 1,
-      level: 'info',
-      message: 'Fraud detection rule "High Transaction Amount" triggered',
-      timestamp: '2024-01-15 14:30:25'
-    },
-    {
-      id: 2,
-      level: 'warning',
-      message: 'Database connection pool reaching capacity',
-      timestamp: '2024-01-15 14:28:15'
-    },
-    {
-      id: 3,
-      level: 'error',
-      message: 'Failed to process transaction ID: TXN-123456',
-      timestamp: '2024-01-15 14:25:10'
-    },
-    {
-      id: 4,
-      level: 'info',
-      message: 'User authentication successful for user ID: USR-789',
-      timestamp: '2024-01-15 14:22:05'
-    },
-    {
-      id: 5,
-      level: 'warning',
-      message: 'Rate limit exceeded for API endpoint /api/transactions',
-      timestamp: '2024-01-15 14:20:30'
-    }
-  ];
+  transactionLogs: TransactionLog[] = [];
+  filteredLogs: TransactionLog[] = [];
+  searchTerm = "";
+  channel: RealtimeChannel | null = null;
 
   constructor() {
     makeAutoObservable(this);
-    this.startRealTimeUpdates();
+    this.fetchThisWeekTransactions();
+    this.subscribeToTransactionUpdates();
   }
 
-  startRealTimeUpdates() {
-    // Simulate real-time updates
-    setInterval(() => {
-      this.updateMetrics();
-      this.addRandomLog();
-    }, 5000);
-  }
+  async fetchThisWeekTransactions() {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-  updateMetrics() {
-    // Simulate metric updates
-    this.systemMetrics.forEach(metric => {
-      if (metric.name === 'Response Time') {
-        const responseTime = Math.floor(Math.random() * 200) + 100;
-        metric.value = `${responseTime}ms`;
-        metric.status = responseTime > 300 ? 'critical' : responseTime > 200 ? 'warning' : 'healthy';
-      } else if (metric.name === 'CPU Usage') {
-        const cpuUsage = Math.floor(Math.random() * 100);
-        metric.value = `${cpuUsage}%`;
-        metric.status = cpuUsage > 80 ? 'critical' : cpuUsage > 60 ? 'warning' : 'healthy';
-      }
+    const { data, error } = await supabase
+      .from("transaction_evaluations")
+      .select("transaction_id, decision, decision_changed, decision_changed_at, created_at")
+      .or(`created_at.gte.${oneWeekAgo.toISOString()},decision_changed_at.gte.${oneWeekAgo.toISOString()}`)
+      .order("created_at", { ascending: false }); 
+
+    if (error) {
+      console.error("Error fetching transactions:", error);
+      return;
+    }
+
+    runInAction(() => {
+      this.transactionLogs = data.map((r) => ({
+        transaction_id: r.transaction_id,
+        decision: r.decision,
+        decision_changed: r.decision_changed,
+        decision_changed_at: r.decision_changed_at,
+        datetime: r.created_at,
+        false_positive: r.decision_changed === "chargeback",
+      }));
+      this.filteredLogs = this.transactionLogs;
     });
   }
 
-  addRandomLog() {
-    const levels: SystemLog['level'][] = ['info', 'warning', 'error', 'debug'];
-    const messages = [
-      'Transaction processed successfully',
-      'Database query executed',
-      'User session expired',
-      'Cache miss for key: user_data',
-      'API rate limit check passed',
-      'Fraud rule evaluation completed'
-    ];
+  subscribeToTransactionUpdates() {
+    this.channel = supabase
+      .channel("realtime:transaction_evaluations")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "transaction_evaluations" },
+        (payload) => {
+          const updated = payload.new;
 
-    const newLog: SystemLog = {
-      id: this.systemLogs.length + 1,
-      level: levels[Math.floor(Math.random() * levels.length)],
-      message: messages[Math.floor(Math.random() * messages.length)],
-      timestamp: new Date().toLocaleString()
-    };
+          runInAction(() => {
+        
+          const existingIndex = this.transactionLogs.findIndex(
+            // @ts-expect-error – suppress typing until Supabase payload type is defined
+            (t) => t.transaction_id === updated.transaction_id
+          );
 
-    this.systemLogs.unshift(newLog);
-    if (this.systemLogs.length > 50) {
-      this.systemLogs.pop();
-    }
+          const updatedTx: TransactionLog = {
+            // @ts-expect-error – Supabase realtime payload not typed yet
+            transaction_id: updated.transaction_id,
+           // @ts-expect-error – Supabase realtime payload not typed yet
+            decision: updated.decision,
+           // @ts-expect-error – Supabase realtime payload not typed yet
+            decision_changed: updated.decision_changed,
+            // @ts-expect-error – Supabase realtime payload not typed yet
+            datetime: updated.created_at,
+            // @ts-expect-error – Supabase realtime payload not typed yet
+            false_positive: updated.decision_changed === "chargeback",
+          };
+
+
+            // Remove the old one (if exists) and bring this to top
+            if (existingIndex >= 0) {
+              this.transactionLogs.splice(existingIndex, 1);
+            }
+            this.transactionLogs.unshift(updatedTx);
+            this.applySearch(this.searchTerm);
+          });
+        }
+      )
+      .subscribe();
   }
 
-  acknowledgeAlert(id: number) {
-    const alert = this.activeAlerts.find(a => a.id === id);
-    if (alert) {
-      alert.acknowledged = true;
-      // Remove acknowledged alerts after a delay
-      setTimeout(() => {
-        this.activeAlerts = this.activeAlerts.filter(a => a.id !== id);
-      }, 1000);
-    }
-  }
-
-  addAlert(alert: Omit<Alert, 'id' | 'timestamp' | 'acknowledged'>) {
-    const newAlert: Alert = {
-      ...alert,
-      id: Math.max(...this.activeAlerts.map(a => a.id)) + 1,
-      timestamp: 'Just now',
-      acknowledged: false
-    };
-    this.activeAlerts.unshift(newAlert);
-  }
-
-  clearAllAlerts() {
-    this.activeAlerts = [];
+  applySearch(term: string) {
+    this.searchTerm = term;
+    const lower = term.toLowerCase();
+    this.filteredLogs = this.transactionLogs.filter((tx) =>
+      tx.transaction_id.toLowerCase().includes(lower) ||
+      tx.decision.toLowerCase().includes(lower) ||
+      (tx.decision_changed?.toLowerCase().includes(lower) ?? false)
+    );
   }
 }
 
