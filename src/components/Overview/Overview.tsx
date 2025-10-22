@@ -105,6 +105,7 @@ type ExecutiveWidgetContext = {
   } | null;
   loading: boolean;
   error: string | null;
+  isUsingSampleData: boolean;
 };
 
 type OperationsWidgetContext = {
@@ -187,34 +188,34 @@ const BUILT_IN_VIEWS: DashboardView[] = [
 const DEFAULT_LAYOUTS_BY_VIEW: Record<string, Layouts> = {
   executive: {
     lg: [
-      { i: 'exec-loss-trend', x: 0, y: 0, w: 6, h: 12 },
-      { i: 'exec-loss-breakdown', x: 6, y: 0, w: 6, h: 12 },
-      { i: 'exec-friction-stack', x: 0, y: 12, w: 7, h: 12 },
-      { i: 'exec-friction-kpis', x: 7, y: 12, w: 5, h: 12 },
+      { i: 'exec-friction-stack', x: 0, y: 0, w: 7, h: 12 },
+      { i: 'exec-friction-kpis', x: 7, y: 0, w: 5, h: 12 },
+      { i: 'exec-loss-trend', x: 0, y: 12, w: 6, h: 12 },
+      { i: 'exec-loss-breakdown', x: 6, y: 12, w: 6, h: 12 },
     ],
     md: [
-      { i: 'exec-loss-trend', x: 0, y: 0, w: 10, h: 12 },
-      { i: 'exec-loss-breakdown', x: 0, y: 12, w: 10, h: 12 },
-      { i: 'exec-friction-stack', x: 0, y: 24, w: 10, h: 12 },
-      { i: 'exec-friction-kpis', x: 0, y: 36, w: 10, h: 12 },
+      { i: 'exec-friction-stack', x: 0, y: 0, w: 10, h: 12 },
+      { i: 'exec-friction-kpis', x: 0, y: 12, w: 10, h: 12 },
+      { i: 'exec-loss-trend', x: 0, y: 24, w: 10, h: 12 },
+      { i: 'exec-loss-breakdown', x: 0, y: 36, w: 10, h: 12 },
     ],
     sm: [
-      { i: 'exec-loss-trend', x: 0, y: 0, w: 6, h: 12 },
-      { i: 'exec-loss-breakdown', x: 0, y: 12, w: 6, h: 12 },
-      { i: 'exec-friction-stack', x: 0, y: 24, w: 6, h: 12 },
-      { i: 'exec-friction-kpis', x: 0, y: 36, w: 6, h: 12 },
+      { i: 'exec-friction-stack', x: 0, y: 0, w: 6, h: 12 },
+      { i: 'exec-friction-kpis', x: 0, y: 12, w: 6, h: 12 },
+      { i: 'exec-loss-trend', x: 0, y: 24, w: 6, h: 12 },
+      { i: 'exec-loss-breakdown', x: 0, y: 36, w: 6, h: 12 },
     ],
     xs: [
-      { i: 'exec-loss-trend', x: 0, y: 0, w: 4, h: 12 },
-      { i: 'exec-loss-breakdown', x: 0, y: 12, w: 4, h: 12 },
-      { i: 'exec-friction-stack', x: 0, y: 24, w: 4, h: 12 },
-      { i: 'exec-friction-kpis', x: 0, y: 36, w: 4, h: 12 },
+      { i: 'exec-friction-stack', x: 0, y: 0, w: 4, h: 12 },
+      { i: 'exec-friction-kpis', x: 0, y: 12, w: 4, h: 12 },
+      { i: 'exec-loss-trend', x: 0, y: 24, w: 4, h: 12 },
+      { i: 'exec-loss-breakdown', x: 0, y: 36, w: 4, h: 12 },
     ],
     xxs: [
-      { i: 'exec-loss-trend', x: 0, y: 0, w: 2, h: 12 },
-      { i: 'exec-loss-breakdown', x: 0, y: 12, w: 2, h: 12 },
-      { i: 'exec-friction-stack', x: 0, y: 24, w: 2, h: 12 },
-      { i: 'exec-friction-kpis', x: 0, y: 36, w: 2, h: 12 },
+      { i: 'exec-friction-stack', x: 0, y: 0, w: 2, h: 12 },
+      { i: 'exec-friction-kpis', x: 0, y: 12, w: 2, h: 12 },
+      { i: 'exec-loss-trend', x: 0, y: 24, w: 2, h: 12 },
+      { i: 'exec-loss-breakdown', x: 0, y: 36, w: 2, h: 12 },
     ],
   },
   operations: {
@@ -302,7 +303,18 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
     render: ({ executive }) => {
       if (executive.loading) return <LoadingState />;
       if (!executive.lossTrendChart) return <EmptyState message={executive.error ?? 'No fraud loss data for this range.'} />;
-      return <Line data={executive.lossTrendChart} options={defaultLineOptions} />;
+      return (
+        <div className="relative w-full h-[320px] sm:h-[360px] lg:h-[420px] flex-1 basis-0 min-w-0">
+          {executive.isUsingSampleData && (
+            <div className="absolute top-2 right-2 z-10">
+              <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded">
+                Sample Data
+              </span>
+            </div>
+          )}
+          <Line data={executive.lossTrendChart} options={defaultLineOptions} />
+        </div>
+      );
     },
   },
   'exec-loss-breakdown': {
@@ -316,7 +328,18 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
       if (!executive.lossBreakdownChart) {
         return <EmptyState message={executive.error ?? 'No loss breakdown available for this range.'} />;
       }
-      return <Doughnut data={executive.lossBreakdownChart} options={defaultDoughnutOptions} />;
+      return (
+        <div className="relative" style={{ height: '100%', minHeight: '300px' }}>
+          {executive.isUsingSampleData && (
+            <div className="absolute top-2 right-2 z-10">
+              <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded">
+                Sample Data
+              </span>
+            </div>
+          )}
+          <Doughnut data={executive.lossBreakdownChart} options={defaultDoughnutOptions} />
+        </div>
+      );
     },
   },
   'exec-friction-stack': {
@@ -525,14 +548,25 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
   },
   'shared-loss-trend': {
     id: 'shared-loss-trend',
-    title: 'Chargeback Loss Trend',
-    description: 'Shared lens on fraud losses.',
+    title: 'Fraud Loss Trend',
+    description: 'Week-over-week fraud and non-fraud loss trajectory.',
     icon: PresentationChartLineIcon,
     category: 'Shared',
     render: ({ executive }) => {
       if (executive.loading) return <LoadingState />;
       if (!executive.lossTrendChart) return <EmptyState message={executive.error ?? 'No loss data.'} />;
-      return <Line data={executive.lossTrendChart} options={defaultLineOptions} />;
+      return (
+        <div className="relative">
+          {executive.isUsingSampleData && (
+            <div className="absolute top-2 right-2 z-10">
+              <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded">
+                Sample Data
+              </span>
+            </div>
+          )}
+          <Line data={executive.lossTrendChart} options={defaultLineOptions} />
+        </div>
+      );
     },
   },
   'shared-friction-stack': {
@@ -655,6 +689,7 @@ const Overview = observer(() => {
     needsAttentionRules,
     loading: rulesLoading,
     fetchRules,
+    searchByDateRange,
   } = useRules();
 
   const { user } = useAuth();
@@ -753,10 +788,23 @@ const Overview = observer(() => {
   }, [activeViewId, layoutsByView]);
 
   useEffect(() => {
+    // Update rules data with the current date range
+    void searchByDateRange(dateRange);
     void refreshAll(user?.id ?? undefined).finally(() => {
       scheduleChartResize();
     });
-  }, [refreshAll, user?.id, dateRangeKey, scheduleChartResize]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, dateRangeKey]);
+
+  // Setup real-time subscriptions on mount
+  useEffect(() => {
+    void overviewStore.setupRealtimeSubscriptions(user?.id ?? undefined);
+
+    // Cleanup on unmount
+    return () => {
+      overviewStore.cleanupRealtimeSubscriptions();
+    };
+  }, [user?.id]);
 
   const monitoringAlerts = monitoringStore.activeAlerts.slice();
 
@@ -855,11 +903,13 @@ const Overview = observer(() => {
         : null,
       loading: executiveMetrics.loading,
       error: executiveMetrics.error,
+      isUsingSampleData: lossRows.length === 0 || lossRows.every(row => row.fraudLoss > 0 && row.nonFraudLoss > 0),
     };
   }, [executiveMetrics.metrics, executiveMetrics.loading, executiveMetrics.error]);
 
   const operationsContext: OperationsWidgetContext = useMemo(() => {
-    const activeRulesList = rules.filter((rule) => rule.status === 'active');
+    // Only include active, non-deleted rules for accurate metrics
+    const activeRulesList = rules.filter((rule) => rule.status === 'active' && !rule.is_deleted);
 
     const rulesTable = activeRulesList
       .map((rule) => {
@@ -988,7 +1038,8 @@ const Overview = observer(() => {
       to: pickerRange.to ? pickerRange.to.clone() : null,
     };
     setStoreDateRange(committedRange);
-    void fetchRules();
+    // Use searchByDateRange to ensure rules data respects the selected date range
+    void searchByDateRange(committedRange);
     void refreshAll(user?.id ?? undefined).finally(() => {
       scheduleChartResize();
     });
