@@ -62,7 +62,7 @@ const ResponsiveGridLayout = WidthProvider(Responsive);
 const BREAKPOINTS = { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 } as const;
 const COLS = { lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 } as const;
 
-const LAYOUT_STORAGE_KEY = 'overview-layouts-v3';
+const LAYOUT_STORAGE_KEY = 'overview-layouts-v4';
 const VIEW_STORAGE_KEY = 'overview-custom-views-v1';
 const ACTIVE_VIEW_STORAGE_KEY = 'overview-active-view';
 
@@ -105,6 +105,7 @@ type ExecutiveWidgetContext = {
   } | null;
   loading: boolean;
   error: string | null;
+  isUsingSampleData: boolean;
 };
 
 type OperationsWidgetContext = {
@@ -187,71 +188,71 @@ const BUILT_IN_VIEWS: DashboardView[] = [
 const DEFAULT_LAYOUTS_BY_VIEW: Record<string, Layouts> = {
   executive: {
     lg: [
-      { i: 'exec-loss-trend', x: 0, y: 0, w: 6, h: 12 },
-      { i: 'exec-loss-breakdown', x: 6, y: 0, w: 6, h: 12 },
-      { i: 'exec-friction-stack', x: 0, y: 12, w: 7, h: 12 },
-      { i: 'exec-friction-kpis', x: 7, y: 12, w: 5, h: 12 },
+      { i: 'exec-friction-stack', x: 0, y: 0, w: 7, h: 12 },
+      { i: 'exec-friction-kpis', x: 7, y: 0, w: 5, h: 12 },
+      { i: 'exec-loss-trend', x: 0, y: 12, w: 6, h: 12 },
+      { i: 'exec-loss-breakdown', x: 6, y: 12, w: 6, h: 12 },
     ],
     md: [
-      { i: 'exec-loss-trend', x: 0, y: 0, w: 10, h: 12 },
-      { i: 'exec-loss-breakdown', x: 0, y: 12, w: 10, h: 12 },
-      { i: 'exec-friction-stack', x: 0, y: 24, w: 10, h: 12 },
-      { i: 'exec-friction-kpis', x: 0, y: 36, w: 10, h: 12 },
+      { i: 'exec-friction-stack', x: 0, y: 0, w: 10, h: 12 },
+      { i: 'exec-friction-kpis', x: 0, y: 12, w: 10, h: 12 },
+      { i: 'exec-loss-trend', x: 0, y: 24, w: 10, h: 12 },
+      { i: 'exec-loss-breakdown', x: 0, y: 36, w: 10, h: 12 },
     ],
     sm: [
-      { i: 'exec-loss-trend', x: 0, y: 0, w: 6, h: 12 },
-      { i: 'exec-loss-breakdown', x: 0, y: 12, w: 6, h: 12 },
-      { i: 'exec-friction-stack', x: 0, y: 24, w: 6, h: 12 },
-      { i: 'exec-friction-kpis', x: 0, y: 36, w: 6, h: 12 },
+      { i: 'exec-friction-stack', x: 0, y: 0, w: 6, h: 12 },
+      { i: 'exec-friction-kpis', x: 0, y: 12, w: 6, h: 12 },
+      { i: 'exec-loss-trend', x: 0, y: 24, w: 6, h: 12 },
+      { i: 'exec-loss-breakdown', x: 0, y: 36, w: 6, h: 12 },
     ],
     xs: [
-      { i: 'exec-loss-trend', x: 0, y: 0, w: 4, h: 12 },
-      { i: 'exec-loss-breakdown', x: 0, y: 12, w: 4, h: 12 },
-      { i: 'exec-friction-stack', x: 0, y: 24, w: 4, h: 12 },
-      { i: 'exec-friction-kpis', x: 0, y: 36, w: 4, h: 12 },
+      { i: 'exec-friction-stack', x: 0, y: 0, w: 4, h: 12 },
+      { i: 'exec-friction-kpis', x: 0, y: 12, w: 4, h: 12 },
+      { i: 'exec-loss-trend', x: 0, y: 24, w: 4, h: 12 },
+      { i: 'exec-loss-breakdown', x: 0, y: 36, w: 4, h: 12 },
     ],
     xxs: [
-      { i: 'exec-loss-trend', x: 0, y: 0, w: 2, h: 12 },
-      { i: 'exec-loss-breakdown', x: 0, y: 12, w: 2, h: 12 },
-      { i: 'exec-friction-stack', x: 0, y: 24, w: 2, h: 12 },
-      { i: 'exec-friction-kpis', x: 0, y: 36, w: 2, h: 12 },
+      { i: 'exec-friction-stack', x: 0, y: 0, w: 2, h: 12 },
+      { i: 'exec-friction-kpis', x: 0, y: 12, w: 2, h: 12 },
+      { i: 'exec-loss-trend', x: 0, y: 24, w: 2, h: 12 },
+      { i: 'exec-loss-breakdown', x: 0, y: 36, w: 2, h: 12 },
     ],
   },
   operations: {
     lg: [
-      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 12, h: 8 },
-      { i: 'ops-rules-table', x: 0, y: 8, w: 7, h: 13 },
-      { i: 'ops-alert-list', x: 7, y: 8, w: 5, h: 13 },
-      { i: 'ops-ticket-trend', x: 0, y: 21, w: 6, h: 12 },
-      { i: 'shared-rule-performance', x: 6, y: 21, w: 6, h: 12 },
+      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 12, h: 4 },
+      { i: 'ops-rules-table', x: 0, y: 6, w: 7, h: 13 },
+      { i: 'ops-alert-list', x: 7, y: 6, w: 5, h: 13 },
+      { i: 'ops-ticket-trend', x: 0, y: 19, w: 6, h: 12 },
+      { i: 'shared-rule-performance', x: 6, y: 19, w: 6, h: 12 },
     ],
     md: [
-      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 10, h: 8 },
-      { i: 'ops-rules-table', x: 0, y: 8, w: 10, h: 13 },
-      { i: 'ops-alert-list', x: 0, y: 21, w: 10, h: 10 },
-      { i: 'ops-ticket-trend', x: 0, y: 31, w: 10, h: 12 },
-      { i: 'shared-rule-performance', x: 0, y: 43, w: 10, h: 12 },
+      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 10, h: 4 },
+      { i: 'ops-rules-table', x: 0, y: 6, w: 10, h: 13 },
+      { i: 'ops-alert-list', x: 0, y: 19, w: 10, h: 10 },
+      { i: 'ops-ticket-trend', x: 0, y: 29, w: 10, h: 12 },
+      { i: 'shared-rule-performance', x: 0, y: 41, w: 10, h: 12 },
     ],
     sm: [
-      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 6, h: 8 },
-      { i: 'ops-rules-table', x: 0, y: 8, w: 6, h: 13 },
-      { i: 'ops-alert-list', x: 0, y: 21, w: 6, h: 10 },
-      { i: 'ops-ticket-trend', x: 0, y: 31, w: 6, h: 12 },
-      { i: 'shared-rule-performance', x: 0, y: 43, w: 6, h: 12 },
+      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 6, h: 4 },
+      { i: 'ops-rules-table', x: 0, y: 6, w: 6, h: 13 },
+      { i: 'ops-alert-list', x: 0, y: 19, w: 6, h: 10 },
+      { i: 'ops-ticket-trend', x: 0, y: 29, w: 6, h: 12 },
+      { i: 'shared-rule-performance', x: 0, y: 41, w: 6, h: 12 },
     ],
     xs: [
-      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 4, h: 8 },
-      { i: 'ops-rules-table', x: 0, y: 8, w: 4, h: 13 },
-      { i: 'ops-alert-list', x: 0, y: 21, w: 4, h: 10 },
-      { i: 'ops-ticket-trend', x: 0, y: 31, w: 4, h: 12 },
-      { i: 'shared-rule-performance', x: 0, y: 43, w: 4, h: 12 },
+      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 4, h: 4 },
+      { i: 'ops-rules-table', x: 0, y: 6, w: 4, h: 13 },
+      { i: 'ops-alert-list', x: 0, y: 19, w: 4, h: 10 },
+      { i: 'ops-ticket-trend', x: 0, y: 29, w: 4, h: 12 },
+      { i: 'shared-rule-performance', x: 0, y: 41, w: 4, h: 12 },
     ],
     xxs: [
-      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 2, h: 8 },
-      { i: 'ops-rules-table', x: 0, y: 8, w: 2, h: 13 },
-      { i: 'ops-alert-list', x: 0, y: 21, w: 2, h: 10 },
-      { i: 'ops-ticket-trend', x: 0, y: 31, w: 2, h: 12 },
-      { i: 'shared-rule-performance', x: 0, y: 43, w: 2, h: 12 },
+      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 2, h: 4 },
+      { i: 'ops-rules-table', x: 0, y: 6, w: 2, h: 13 },
+      { i: 'ops-alert-list', x: 0, y: 19, w: 2, h: 10 },
+      { i: 'ops-ticket-trend', x: 0, y: 29, w: 2, h: 12 },
+      { i: 'shared-rule-performance', x: 0, y: 41, w: 2, h: 12 },
     ],
   },
 };
@@ -302,7 +303,18 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
     render: ({ executive }) => {
       if (executive.loading) return <LoadingState />;
       if (!executive.lossTrendChart) return <EmptyState message={executive.error ?? 'No fraud loss data for this range.'} />;
-      return <Line data={executive.lossTrendChart} options={defaultLineOptions} />;
+      return (
+        <div className="relative w-full h-[320px] sm:h-[360px] lg:h-[420px] flex-1 basis-0 min-w-0">
+          {executive.isUsingSampleData && (
+            <div className="absolute top-2 right-2 z-10">
+              <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded">
+                Sample Data
+              </span>
+            </div>
+          )}
+          <Line data={executive.lossTrendChart} options={defaultLineOptions} />
+        </div>
+      );
     },
   },
   'exec-loss-breakdown': {
@@ -316,7 +328,18 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
       if (!executive.lossBreakdownChart) {
         return <EmptyState message={executive.error ?? 'No loss breakdown available for this range.'} />;
       }
-      return <Doughnut data={executive.lossBreakdownChart} options={defaultDoughnutOptions} />;
+      return (
+        <div className="relative" style={{ height: '100%', minHeight: '300px' }}>
+          {executive.isUsingSampleData && (
+            <div className="absolute top-2 right-2 z-10">
+              <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded">
+                Sample Data
+              </span>
+            </div>
+          )}
+          <Doughnut data={executive.lossBreakdownChart} options={defaultDoughnutOptions} />
+        </div>
+      );
     },
   },
   'exec-friction-stack': {
@@ -419,14 +442,16 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
       ];
 
       return (
-        <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
-          {cards.map((card) => (
-            <div key={card.label} className={`rounded-2xl px-5 py-4 ${card.tone}`}>
-              <p className='text-xs font-semibold uppercase tracking-wide text-slate-500'>{card.label}</p>
-              <p className='mt-2 text-2xl font-semibold text-slate-900'>{card.value}</p>
-              <p className='mt-1 text-xs text-slate-500'>{card.helper}</p>
-            </div>
-          ))}
+        <div className='w-full'>
+          <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
+            {cards.map((card) => (
+              <div key={card.label} className={`rounded-xl px-4 py-3 ${card.tone}`}>
+                <p className='text-xs font-semibold uppercase tracking-wide text-slate-500'>{card.label}</p>
+                <p className='mt-1.5 text-2xl font-semibold text-slate-900'>{card.value}</p>
+                <p className='mt-1 text-xs text-slate-500'>{card.helper}</p>
+              </div>
+            ))}
+          </div>
         </div>
       );
     },
@@ -441,15 +466,14 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
       if (operations.rulesLoading) return <LoadingState />;
       if (!operations.rulesTable.length) return <EmptyState message='No rules available in this range.' />;
       return (
-        <div className='flex h-full flex-col'>
-          <div className='max-h-72 flex-1 overflow-auto rounded-xl border border-gray-100'>
+        <div className='flex-1 min-h-0 overflow-auto rounded-xl border border-gray-100'>
             <table className='min-w-full divide-y divide-gray-200'>
             <thead className='sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500'>
               <tr>
                 <th className='px-4 py-3 text-left font-semibold'>Rule</th>
                 <th className='px-4 py-3 text-left font-semibold'>Description</th>
                 <th className='px-4 py-3 text-right font-semibold'>Catches</th>
-                <th className='px-4 py-3 text-right font-semibold'>Effectiveness %</th>
+                <th className='px-4 py-3 text-right font-semibold'>Effectiveness</th>
               </tr>
             </thead>
             <tbody className='divide-y divide-gray-100 bg-white text-sm text-gray-600'>
@@ -465,7 +489,6 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
               ))}
             </tbody>
           </table>
-          </div>
         </div>
       );
     },
@@ -525,14 +548,25 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
   },
   'shared-loss-trend': {
     id: 'shared-loss-trend',
-    title: 'Chargeback Loss Trend',
-    description: 'Shared lens on fraud losses.',
+    title: 'Fraud Loss Trend',
+    description: 'Week-over-week fraud and non-fraud loss trajectory.',
     icon: PresentationChartLineIcon,
     category: 'Shared',
     render: ({ executive }) => {
       if (executive.loading) return <LoadingState />;
       if (!executive.lossTrendChart) return <EmptyState message={executive.error ?? 'No loss data.'} />;
-      return <Line data={executive.lossTrendChart} options={defaultLineOptions} />;
+      return (
+        <div className="relative">
+          {executive.isUsingSampleData && (
+            <div className="absolute top-2 right-2 z-10">
+              <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded">
+                Sample Data
+              </span>
+            </div>
+          )}
+          <Line data={executive.lossTrendChart} options={defaultLineOptions} />
+        </div>
+      );
     },
   },
   'shared-friction-stack': {
@@ -655,6 +689,7 @@ const Overview = observer(() => {
     needsAttentionRules,
     loading: rulesLoading,
     fetchRules,
+    searchByDateRange,
   } = useRules();
 
   const { user } = useAuth();
@@ -753,10 +788,23 @@ const Overview = observer(() => {
   }, [activeViewId, layoutsByView]);
 
   useEffect(() => {
+    // Update rules data with the current date range
+    void searchByDateRange(dateRange);
     void refreshAll(user?.id ?? undefined).finally(() => {
       scheduleChartResize();
     });
-  }, [refreshAll, user?.id, dateRangeKey, scheduleChartResize]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, dateRangeKey]);
+
+  // Setup real-time subscriptions on mount
+  useEffect(() => {
+    void overviewStore.setupRealtimeSubscriptions(user?.id ?? undefined);
+
+    // Cleanup on unmount
+    return () => {
+      overviewStore.cleanupRealtimeSubscriptions();
+    };
+  }, [user?.id]);
 
   const monitoringAlerts = monitoringStore.activeAlerts.slice();
 
@@ -855,11 +903,13 @@ const Overview = observer(() => {
         : null,
       loading: executiveMetrics.loading,
       error: executiveMetrics.error,
+      isUsingSampleData: lossRows.length === 0 || lossRows.every(row => row.fraudLoss > 0 && row.nonFraudLoss > 0),
     };
   }, [executiveMetrics.metrics, executiveMetrics.loading, executiveMetrics.error]);
 
   const operationsContext: OperationsWidgetContext = useMemo(() => {
-    const activeRulesList = rules.filter((rule) => rule.status === 'active');
+    // Only include active, non-deleted rules for accurate metrics
+    const activeRulesList = rules.filter((rule) => rule.status === 'active' && !rule.is_deleted);
 
     const rulesTable = activeRulesList
       .map((rule) => {
@@ -988,7 +1038,8 @@ const Overview = observer(() => {
       to: pickerRange.to ? pickerRange.to.clone() : null,
     };
     setStoreDateRange(committedRange);
-    void fetchRules();
+    // Use searchByDateRange to ensure rules data respects the selected date range
+    void searchByDateRange(committedRange);
     void refreshAll(user?.id ?? undefined).finally(() => {
       scheduleChartResize();
     });

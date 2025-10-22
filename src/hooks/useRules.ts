@@ -236,15 +236,8 @@ async function fetchAllMetrics(orgId: string, ruleIds: string[], window: TimeWin
     // ✅ Decide whether to continue
     hasNext = data.length > batchSize;
     offset += batchSize;
-
-    console.log(
-      `Fetched ${currentBatch.length} rows at offset ${offset - batchSize}. Next page: ${
-        hasNext ? "✅ yes" : "❌ no"
-      }`
-    );
   }
 
-  console.log(`✅ Total metrics fetched: ${allMetrics.length}`);
   return allMetrics;
 }
 

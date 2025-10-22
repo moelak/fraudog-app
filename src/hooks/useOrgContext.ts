@@ -20,7 +20,6 @@ export function useOrgContext() {
         setOrgId(data.organization_id);
         ruleManagementStore.setOrganizationId(data.organization_id);
       }
-        console.log("I am here2", data)
     };
 
     fetchOrg();
