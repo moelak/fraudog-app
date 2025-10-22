@@ -140,7 +140,6 @@ subscribeToNotifications(organizationId: string): void {
       }
     )
     .subscribe((status) => {
-      console.log("📡 Supabase channel status:", status);
     });
 }
 
@@ -148,7 +147,6 @@ subscribeToNotifications(organizationId: string): void {
     if (this.channel) {
       this.channel.unsubscribe();
       this.channel = null;
-      console.log("🔌 Supabase realtime subscription cleared");
     }
   }
 
