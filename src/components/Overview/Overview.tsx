@@ -62,7 +62,7 @@ const ResponsiveGridLayout = WidthProvider(Responsive);
 const BREAKPOINTS = { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 } as const;
 const COLS = { lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 } as const;
 
-const LAYOUT_STORAGE_KEY = 'overview-layouts-v3';
+const LAYOUT_STORAGE_KEY = 'overview-layouts-v4';
 const VIEW_STORAGE_KEY = 'overview-custom-views-v1';
 const ACTIVE_VIEW_STORAGE_KEY = 'overview-active-view';
 
@@ -220,39 +220,39 @@ const DEFAULT_LAYOUTS_BY_VIEW: Record<string, Layouts> = {
   },
   operations: {
     lg: [
-      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 12, h: 8 },
-      { i: 'ops-rules-table', x: 0, y: 8, w: 7, h: 13 },
-      { i: 'ops-alert-list', x: 7, y: 8, w: 5, h: 13 },
-      { i: 'ops-ticket-trend', x: 0, y: 21, w: 6, h: 12 },
-      { i: 'shared-rule-performance', x: 6, y: 21, w: 6, h: 12 },
+      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 12, h: 4 },
+      { i: 'ops-rules-table', x: 0, y: 6, w: 7, h: 13 },
+      { i: 'ops-alert-list', x: 7, y: 6, w: 5, h: 13 },
+      { i: 'ops-ticket-trend', x: 0, y: 19, w: 6, h: 12 },
+      { i: 'shared-rule-performance', x: 6, y: 19, w: 6, h: 12 },
     ],
     md: [
-      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 10, h: 8 },
-      { i: 'ops-rules-table', x: 0, y: 8, w: 10, h: 13 },
-      { i: 'ops-alert-list', x: 0, y: 21, w: 10, h: 10 },
-      { i: 'ops-ticket-trend', x: 0, y: 31, w: 10, h: 12 },
-      { i: 'shared-rule-performance', x: 0, y: 43, w: 10, h: 12 },
+      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 10, h: 4 },
+      { i: 'ops-rules-table', x: 0, y: 6, w: 10, h: 13 },
+      { i: 'ops-alert-list', x: 0, y: 19, w: 10, h: 10 },
+      { i: 'ops-ticket-trend', x: 0, y: 29, w: 10, h: 12 },
+      { i: 'shared-rule-performance', x: 0, y: 41, w: 10, h: 12 },
     ],
     sm: [
-      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 6, h: 8 },
-      { i: 'ops-rules-table', x: 0, y: 8, w: 6, h: 13 },
-      { i: 'ops-alert-list', x: 0, y: 21, w: 6, h: 10 },
-      { i: 'ops-ticket-trend', x: 0, y: 31, w: 6, h: 12 },
-      { i: 'shared-rule-performance', x: 0, y: 43, w: 6, h: 12 },
+      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 6, h: 4 },
+      { i: 'ops-rules-table', x: 0, y: 6, w: 6, h: 13 },
+      { i: 'ops-alert-list', x: 0, y: 19, w: 6, h: 10 },
+      { i: 'ops-ticket-trend', x: 0, y: 29, w: 6, h: 12 },
+      { i: 'shared-rule-performance', x: 0, y: 41, w: 6, h: 12 },
     ],
     xs: [
-      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 4, h: 8 },
-      { i: 'ops-rules-table', x: 0, y: 8, w: 4, h: 13 },
-      { i: 'ops-alert-list', x: 0, y: 21, w: 4, h: 10 },
-      { i: 'ops-ticket-trend', x: 0, y: 31, w: 4, h: 12 },
-      { i: 'shared-rule-performance', x: 0, y: 43, w: 4, h: 12 },
+      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 4, h: 4 },
+      { i: 'ops-rules-table', x: 0, y: 6, w: 4, h: 13 },
+      { i: 'ops-alert-list', x: 0, y: 19, w: 4, h: 10 },
+      { i: 'ops-ticket-trend', x: 0, y: 29, w: 4, h: 12 },
+      { i: 'shared-rule-performance', x: 0, y: 41, w: 4, h: 12 },
     ],
     xxs: [
-      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 2, h: 8 },
-      { i: 'ops-rules-table', x: 0, y: 8, w: 2, h: 13 },
-      { i: 'ops-alert-list', x: 0, y: 21, w: 2, h: 10 },
-      { i: 'ops-ticket-trend', x: 0, y: 31, w: 2, h: 12 },
-      { i: 'shared-rule-performance', x: 0, y: 43, w: 2, h: 12 },
+      { i: 'ops-rule-monitoring', x: 0, y: 0, w: 2, h: 4 },
+      { i: 'ops-rules-table', x: 0, y: 6, w: 2, h: 13 },
+      { i: 'ops-alert-list', x: 0, y: 19, w: 2, h: 10 },
+      { i: 'ops-ticket-trend', x: 0, y: 29, w: 2, h: 12 },
+      { i: 'shared-rule-performance', x: 0, y: 41, w: 2, h: 12 },
     ],
   },
 };
@@ -442,14 +442,16 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
       ];
 
       return (
-        <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
-          {cards.map((card) => (
-            <div key={card.label} className={`rounded-2xl px-5 py-4 ${card.tone}`}>
-              <p className='text-xs font-semibold uppercase tracking-wide text-slate-500'>{card.label}</p>
-              <p className='mt-2 text-2xl font-semibold text-slate-900'>{card.value}</p>
-              <p className='mt-1 text-xs text-slate-500'>{card.helper}</p>
-            </div>
-          ))}
+        <div className='w-full'>
+          <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
+            {cards.map((card) => (
+              <div key={card.label} className={`rounded-xl px-4 py-3 ${card.tone}`}>
+                <p className='text-xs font-semibold uppercase tracking-wide text-slate-500'>{card.label}</p>
+                <p className='mt-1.5 text-2xl font-semibold text-slate-900'>{card.value}</p>
+                <p className='mt-1 text-xs text-slate-500'>{card.helper}</p>
+              </div>
+            ))}
+          </div>
         </div>
       );
     },
@@ -464,15 +466,14 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
       if (operations.rulesLoading) return <LoadingState />;
       if (!operations.rulesTable.length) return <EmptyState message='No rules available in this range.' />;
       return (
-        <div className='flex h-full flex-col'>
-          <div className='max-h-72 flex-1 overflow-auto rounded-xl border border-gray-100'>
+        <div className='flex-1 min-h-0 overflow-auto rounded-xl border border-gray-100'>
             <table className='min-w-full divide-y divide-gray-200'>
             <thead className='sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500'>
               <tr>
                 <th className='px-4 py-3 text-left font-semibold'>Rule</th>
                 <th className='px-4 py-3 text-left font-semibold'>Description</th>
                 <th className='px-4 py-3 text-right font-semibold'>Catches</th>
-                <th className='px-4 py-3 text-right font-semibold'>Effectiveness %</th>
+                <th className='px-4 py-3 text-right font-semibold'>Effectiveness</th>
               </tr>
             </thead>
             <tbody className='divide-y divide-gray-100 bg-white text-sm text-gray-600'>
@@ -488,7 +489,6 @@ const widgetDefinitions: Record<WidgetId, WidgetDefinition> = {
               ))}
             </tbody>
           </table>
-          </div>
         </div>
       );
     },
