@@ -442,7 +442,6 @@ useEffect(() => {
 
   hasFetchedRef.current = true;
 
-  console.log("🚀 Initializing once with range:", rangeSnapshot);
   if (rangeSnapshot?.from && rangeSnapshot?.to) {
     void refetchWithCurrentRange();
   } else {
@@ -681,7 +680,6 @@ const toggleRuleStatus = async (id: string) => {
   }
 
   const newStatus = rule.status === "active" ? "inactive" : "active";
-  console.log(`Toggling rule "${rule.name}" → ${newStatus}`);
 
   await updateRule(id, { status: newStatus });
 
@@ -695,27 +693,17 @@ const toggleRuleStatus = async (id: string) => {
 
 // ✅ Helper: Refetch with current or default date range
 const refetchWithCurrentRange = async () => {
-  console.log("🔄 Refetching with saved date range:", ruleManagementStore.range);
 
   // check if valid range exists
   if (ruleManagementStore.range?.from && ruleManagementStore.range?.to) {
-    // format in UTC for display or queries
-    const formatUTC = (d: dayjs.Dayjs) => d.utc().format("YYYY-MM-DD HH:mm:ss[+00]");
-
     const from = dayjs(ruleManagementStore.range.from);
     const to = dayjs(ruleManagementStore.range.to);
-
-    console.log(
-      `timestamp\ngte.${formatUTC(from)}\ntimestamp\nlte.${formatUTC(to)}`
-    );
-
     // 🔄 use the actual stored ISO range
     await searchByDateRange({
       from,
       to,
     });
   } else {
-    console.log("🔄 Refetching with default range");
     await fetchRules();
   }
 };

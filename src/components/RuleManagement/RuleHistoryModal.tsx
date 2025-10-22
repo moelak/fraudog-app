@@ -6,7 +6,6 @@ import { XMarkIcon, ClockIcon } from '@heroicons/react/24/outline';
 
 const RuleHistoryModal = observer(() => {
 	const { showHistoryModal, ruleHistory, setShowHistoryModal } = ruleManagementStore;
-	console.log('ruleHistory', ruleHistory);
 	return (
 		<Dialog
 			open={showHistoryModal}
