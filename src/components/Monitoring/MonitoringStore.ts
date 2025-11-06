@@ -2,7 +2,7 @@ import { makeAutoObservable, runInAction } from "mobx";
 import { supabase } from "@/lib/supabase";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
-interface TransactionLog {
+export interface TransactionLog {
   transaction_id: string;
   decision: string;
   decision_changed?: string | null;
@@ -22,75 +22,83 @@ export class MonitoringStore {
     this.subscribeToTransactionUpdates();
   }
 
-  async fetchThisWeekTransactions() {
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+async fetchThisWeekTransactions() {
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    const { data, error } = await supabase
-      .from("transaction_evaluations")
-      .select("transaction_id, decision, decision_changed, decision_changed_at, created_at")
-      .or(`created_at.gte.${oneWeekAgo.toISOString()},decision_changed_at.gte.${oneWeekAgo.toISOString()}`)
-      .order("created_at", { ascending: false }); 
+  const { data, error } = await supabase
+    .from("transaction_evaluations")
+    .select("transaction_id, decision, decision_changed, decision_changed_at, created_at")
+    .or(`created_at.gte.${oneWeekAgo.toISOString()},decision_changed_at.gte.${oneWeekAgo.toISOString()}`)
+    .order("created_at", { ascending: false }); // temporary order; we'll re-sort below
 
-    if (error) {
-      console.error("Error fetching transactions:", error);
-      return;
-    }
+  if (error) {
+    console.error("Error fetching transactions:", error);
+    return;
+  }
 
-    runInAction(() => {
-      this.transactionLogs = data.map((r) => ({
+  runInAction(() => {
+    // Map and sort transactions by decision_changed_at (if exists) or created_at
+    const processed = data
+      .map((r) => ({
         transaction_id: r.transaction_id,
         decision: r.decision,
         decision_changed: r.decision_changed,
         decision_changed_at: r.decision_changed_at,
-        datetime: r.created_at,
+        created_at: r.created_at,
+        datetime: r.decision_changed_at || r.created_at, // 👈 effective timestamp for sorting
         false_positive: r.decision_changed === "chargeback",
-      }));
-      this.filteredLogs = this.transactionLogs;
-    });
-  }
+      }))
+      .sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime()); // 👈 descending
 
-  subscribeToTransactionUpdates() {
-    this.channel = supabase
-      .channel("realtime:transaction_evaluations")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "transaction_evaluations" },
-        (payload) => {
-          const updated = payload.new;
+    this.transactionLogs = processed;
+    this.filteredLogs = processed;
+  });
+}
 
-          runInAction(() => {
-        
-          const existingIndex = this.transactionLogs.findIndex(
-            // @ts-expect-error – suppress typing until Supabase payload type is defined
-            (t) => t.transaction_id === updated.transaction_id
-          );
+subscribeToTransactionUpdates() {
+  this.channel = supabase
+    .channel("realtime:transaction_evaluations")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "transaction_evaluations" },
+      (payload) => {
+        // 👇 Explicitly cast payload.new to your TransactionLog-like type
+        const updated = payload.new as {
+          transaction_id: string;
+          decision: string;
+          decision_changed?: string | null;
+          decision_changed_at?: string | null;
+          created_at?: string | null;
+        };
 
+        runInAction(() => {
           const updatedTx: TransactionLog = {
-            // @ts-expect-error – Supabase realtime payload not typed yet
             transaction_id: updated.transaction_id,
-           // @ts-expect-error – Supabase realtime payload not typed yet
             decision: updated.decision,
-           // @ts-expect-error – Supabase realtime payload not typed yet
             decision_changed: updated.decision_changed,
-            // @ts-expect-error – Supabase realtime payload not typed yet
-            datetime: updated.created_at,
-            // @ts-expect-error – Supabase realtime payload not typed yet
+            datetime: updated.decision_changed_at || updated.created_at || new Date().toISOString(),
             false_positive: updated.decision_changed === "chargeback",
           };
 
+          // Remove existing transaction if present
+          const existingIndex = this.transactionLogs.findIndex(
+            (t) => t.transaction_id === updated.transaction_id
+          );
+          if (existingIndex >= 0) {
+            this.transactionLogs.splice(existingIndex, 1);
+          }
 
-            // Remove the old one (if exists) and bring this to top
-            if (existingIndex >= 0) {
-              this.transactionLogs.splice(existingIndex, 1);
-            }
-            this.transactionLogs.unshift(updatedTx);
-            this.applySearch(this.searchTerm);
-          });
-        }
-      )
-      .subscribe();
-  }
+          // Add updated transaction to top
+          this.transactionLogs.unshift(updatedTx);
+          this.filteredLogs = [...this.transactionLogs];
+        });
+      }
+    )
+    .subscribe();
+}
+
+
 
   applySearch(term: string) {
     this.searchTerm = term;

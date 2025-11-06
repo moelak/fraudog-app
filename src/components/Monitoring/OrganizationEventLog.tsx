@@ -1,3 +1,4 @@
+// OrganizationEventLog.tsx
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 import { ChevronDownIcon, ChevronRightIcon, UserCircleIcon, ClockIcon, ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
@@ -14,22 +15,30 @@ interface MetadataChanges {
 
 const OrganizationEventLog = observer(() => {
 	const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
-
-	const toggleExpand = (id: number) => {
+	const toggleExpand = (id: number) =>
 		setExpandedIds((prev) => {
 			const next = new Set(prev);
 			if (next.has(id)) next.delete(id);
 			else next.add(id);
 			return next;
 		});
-	};
 
 	return (
 		<section className='bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden transition-all duration-300'>
-			{/* Header */}
-			<div className='px-6 py-4 border-b border-gray-100 flex items-center gap-2 bg-gradient-to-r from-gray-50 to-white'>
-				<ClockIcon className='h-5 w-5 text-blue-600' />
-				<h3 className='text-lg font-semibold text-gray-900'>Organization Event Log (7 Days)</h3>
+			{/* Header with its own search */}
+			<div className='px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4 bg-gradient-to-r from-gray-50 to-white'>
+				<div className='flex items-center gap-2'>
+					<ClockIcon className='h-5 w-5 text-blue-600' />
+					<h3 className='text-lg font-semibold text-gray-900'>Organization Event Log (7 Days)</h3>
+				</div>
+
+				<input
+					type='text'
+					placeholder='Search organization events (type / actor / subject / change)…'
+					value={notificationStore.searchTerm}
+					onChange={(e) => notificationStore.applySearch(e.target.value)}
+					className='w-full md:w-80 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+				/>
 			</div>
 
 			{/* Body */}
@@ -40,8 +49,8 @@ const OrganizationEventLog = observer(() => {
 					notificationStore.filteredNotifications.map((log) => {
 						const isExpanded = expandedIds.has(log.id);
 						const ruleName = log.subject_type === 'rule' ? notificationStore.ruleNameCache[log.subject_id] || log.subject_id : null;
+						const ruleData = log.metadata?.rule as Record<string, unknown> | undefined;
 
-						// ✅ Type-safe extraction for metadata.changes
 						const changes = (log.metadata?.changes ?? null) as MetadataChanges | null;
 
 						return (
@@ -51,16 +60,14 @@ const OrganizationEventLog = observer(() => {
 									isExpanded ? 'border-blue-500 bg-blue-50/30' : 'border-transparent hover:border-blue-300 hover:bg-gray-50'
 								}`}
 							>
-								{/* Header Row */}
+								{/* Row Header */}
 								<div className='flex justify-between items-center cursor-pointer' onClick={() => toggleExpand(log.id)}>
-									{/* LEFT SIDE */}
 									<div className='flex items-start gap-3'>
 										{isExpanded ? (
 											<ChevronDownIcon className='h-5 w-5 text-gray-500 mt-[2px]' />
 										) : (
 											<ChevronRightIcon className='h-5 w-5 text-gray-500 mt-[2px]' />
 										)}
-
 										<div>
 											<div className='flex items-center gap-2'>
 												<UserCircleIcon className='h-4 w-4 text-gray-500' />
@@ -69,12 +76,10 @@ const OrganizationEventLog = observer(() => {
 											</div>
 										</div>
 									</div>
-
-									{/* RIGHT SIDE (TIME) */}
 									<div className='text-xs text-gray-500 whitespace-nowrap ml-4'>{dayjs(log.created_at).format('MMM D, YYYY • h:mm A')}</div>
 								</div>
 
-								{/* Expandable Content */}
+								{/* Expandable */}
 								<AnimatePresence>
 									{isExpanded && (
 										<motion.div
@@ -100,17 +105,31 @@ const OrganizationEventLog = observer(() => {
 											</div>
 
 											{/* Metadata */}
-											{changes && Object.keys(changes).length > 0 ? (
+											{(changes && Object.keys(changes).length > 0) || (log.metadata?.rule && Object.keys(log.metadata.rule).length > 0) ? (
 												<div className='space-y-1.5'>
 													<div className='font-semibold text-gray-800 mt-4 mb-2'>Metadata:</div>
 
-													{Object.entries(changes).map(([key, val]) => (
-														<div key={key} className='text-sm text-gray-700'>
-															<span className='font-medium capitalize'>{key}</span> <span className='text-gray-500'>changed from</span>{' '}
-															<span className='text-red-500'>“{val.old || '-'}”</span> <span className='text-gray-500'>to</span>{' '}
-															<span className='text-green-600 font-medium'>“{val.new || '-'}”</span>
-														</div>
-													))}
+													{changes && Object.keys(changes).length > 0 && (
+														<>
+															{Object.entries(changes).map(([key, val]) => (
+																<div key={key} className='text-sm text-gray-700'>
+																	<span className='font-medium capitalize'>{key}</span> <span className='text-gray-500'>changed from</span>{' '}
+																	<span className='text-red-500'>“{val.old ?? '-'}”</span> <span className='text-gray-500'>to</span>{' '}
+																	<span className='text-green-600 font-medium'>“{val.new ?? '-'}”</span>
+																</div>
+															))}
+														</>
+													)}
+
+													{ruleData && Object.keys(ruleData).length > 0 && (
+														<>
+															{Object.entries(ruleData).map(([key, val]) => (
+																<div key={key} className='text-sm text-gray-700'>
+																	<span className='font-medium capitalize'>{key}:</span> <span className='text-gray-600'>{String(val)}</span>
+																</div>
+															))}
+														</>
+													)}
 												</div>
 											) : (
 												<div className='text-gray-500 italic ml-1'>No metadata provided.</div>

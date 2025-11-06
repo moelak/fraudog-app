@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import { useEffect } from 'react';
 import dayjs from 'dayjs';
-import { monitoringStore } from './MonitoringStore';
+import { monitoringStore, type TransactionLog } from './MonitoringStore';
 import { notificationStore } from './NotificationStore';
 import { ruleManagementStore } from '../RuleManagement/RuleManagementStore';
 import OrganizationEventLog from './OrganizationEventLog';
@@ -17,13 +17,11 @@ const Monitoring = observer(() => {
 			notificationStore.fetchOrganizationNotifications(orgId);
 			notificationStore.subscribeToNotifications(orgId);
 		}
-
 		return () => {
 			notificationStore.clearSubscription();
 		};
 	}, [ruleManagementStore.organizationId]);
 
-	/* ✅ Group items by a date-based key */
 	const groupByDate = <T, K extends keyof T>(items: T[], key: K): GroupedData<T> => {
 		return items.reduce((acc: GroupedData<T>, item: T) => {
 			const dateKey = dayjs(String(item[key])).format('YYYY-MM-DD');
@@ -33,7 +31,32 @@ const Monitoring = observer(() => {
 		}, {});
 	};
 
-	const groupedTx = groupByDate(monitoringStore.filteredLogs, 'datetime');
+	const isFalsePositive = (tx: TransactionLog): boolean => {
+		const decision = tx.decision?.toLowerCase();
+		const changed = tx.decision_changed?.toLowerCase();
+
+		if (!changed || changed === decision) return false;
+		if (decision === 'review' && ['manual_review_approved', 'chargeback'].includes(changed)) return true;
+		if (decision === 'deny' && ['manual_deny_approved', 'friction_throttle'].includes(changed)) return true;
+		if (decision === 'allow' && changed === 'chargeback') return true;
+		if (decision !== changed && changed !== 'review') return true;
+
+		return false;
+	};
+
+	// 🔹 Create enhanced transactions list including searchable text
+	const enhancedLogs = monitoringStore.filteredLogs.map((tx) => ({
+		...tx,
+		isFalsePositive: isFalsePositive(tx),
+		searchableText: `${tx.transaction_id ?? ''} ${tx.decision ?? ''} ${tx.decision_changed ?? ''} ${isFalsePositive(tx) ? 'false positive' : ''}`.toLowerCase(),
+	}));
+
+	// 🔹 Use only the local searchTerm for filtering
+	const searchTerm = monitoringStore.searchTerm.trim().toLowerCase();
+	const filteredLogs = searchTerm ? enhancedLogs.filter((tx) => tx.searchableText.includes(searchTerm)) : enhancedLogs;
+
+	const groupedTx = groupByDate(filteredLogs, 'datetime');
+
 	return (
 		<div className='space-y-8'>
 			{/* Header */}
@@ -42,22 +65,19 @@ const Monitoring = observer(() => {
 				<p className='mt-2 text-gray-600'>Real-time monitoring of transactions and organization activity</p>
 			</div>
 
-			{/* Search */}
-			<input
-				type='text'
-				placeholder='Search transactions or notifications...'
-				value={monitoringStore.searchTerm || notificationStore.searchTerm}
-				onChange={(e) => {
-					monitoringStore.applySearch(e.target.value);
-					notificationStore.applySearch(e.target.value);
-				}}
-				className='w-full md:w-1/2 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500'
-			/>
-
 			{/* ✅ Transactions Section */}
 			<section className='bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300'>
-				<div className='px-6 py-4 border-b border-gray-100'>
+				<div className='px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4'>
 					<h3 className='text-lg font-medium text-gray-900'>Transaction Decisions (7 Days)</h3>
+
+					{/* Local search bar */}
+					<input
+						type='text'
+						placeholder='Search transactions (id / decision / changed / false positive)…'
+						value={monitoringStore.searchTerm}
+						onChange={(e) => (monitoringStore.searchTerm = e.target.value)}
+						className='w-full md:w-80 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+					/>
 				</div>
 
 				<div className='divide-y divide-gray-100 max-h-96 overflow-y-auto'>
@@ -68,12 +88,12 @@ const Monitoring = observer(() => {
 							.sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
 							.map(([date, transactions]) => (
 								<div key={date}>
-									{/* 🔹 Date Header */}
+									{/* Date Header */}
 									<div className='sticky top-0 bg-gray-50 text-gray-700 text-sm font-semibold px-6 py-2 border-b border-gray-100 shadow-sm'>
 										{dayjs(date).format('dddd, MMM D, YYYY')}
 									</div>
 
-									{/* 🔹 Transactions */}
+									{/* Transactions */}
 									{transactions.map((tx) => (
 										<div key={tx.transaction_id} className='px-6 py-3 hover:bg-gray-50 transition-colors duration-150'>
 											<div className='flex justify-between items-center'>
@@ -87,10 +107,14 @@ const Monitoring = observer(() => {
 																<span className='font-semibold text-yellow-700'>{tx.decision_changed}</span>
 															</>
 														)}
+														{/* 🔹 False Positive Tag */}
+														{isFalsePositive(tx) && (
+															<span className='ml-2 inline-block bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5 rounded-full'>
+																False Positive
+															</span>
+														)}
 													</div>
 												</div>
-
-												{/* ✅ Time per row */}
 												<span className='text-sm text-gray-500'>{dayjs(tx.datetime).format('h:mm A')}</span>
 											</div>
 										</div>

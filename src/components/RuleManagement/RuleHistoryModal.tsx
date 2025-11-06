@@ -40,22 +40,42 @@ const RuleHistoryModal = observer(() => {
 								{/* Header */}
 								<div className='flex items-center justify-between mb-2'>
 									<div className='text-sm text-gray-700 font-medium'>
-										<strong>{log.actor_name || 'Unknown User'}</strong> {log.event_type === 'rule.created' ? 'created this rule' : 'updated this rule'}
+										<strong>{log.actor_name || 'Unknown User'}</strong>- {log.event_type}
 									</div>
 									<span className='text-xs text-gray-400'>{formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}</span>
 								</div>
 
-								{/* Changes */}
-								{log.metadata?.changes && (
-									<div className='mt-2 border-t border-gray-100 pt-2 space-y-1.5'>
-										{Object.entries(log.metadata.changes).map(([key, val]) => (
-											<div key={key} className='text-sm text-gray-700'>
-												<span className='font-medium capitalize'>{key}</span> <span className='text-gray-500'>changed from</span>{' '}
-												<span className='text-red-500'>" {val.old || '-'} "</span> <span className='text-gray-500'>to</span>{' '}
-												<span className='text-green-600 font-medium'>" {val.new || '-'} "</span>
-											</div>
-										))}
+								{/* Metadata section */}
+								{(log.metadata?.changes && Object.keys(log.metadata.changes).length > 0) || (log.metadata?.rule && Object.keys(log.metadata.rule).length > 0) ? (
+									<div className='space-y-1.5'>
+										<div className='font-semibold text-gray-800 mt-4 mb-2'>Metadata:</div>
+
+										{/* 🟢 Field changes (old → new) */}
+										{log.metadata?.changes && Object.keys(log.metadata.changes).length > 0 && (
+											<>
+												{Object.entries(log.metadata.changes).map(([key, val]) => (
+													<div key={key} className='text-sm text-gray-700'>
+														<span className='font-medium capitalize'>{key}</span> <span className='text-gray-500'>changed from</span>{' '}
+														<span className='text-red-500'>“{val.old ?? '-'}”</span> <span className='text-gray-500'>to</span>{' '}
+														<span className='text-green-600 font-medium'>“{val.new ?? '-'}”</span>
+													</div>
+												))}
+											</>
+										)}
+
+										{/* 🟢 Full rule info (for create/delete/recover/etc.) */}
+										{log.metadata?.rule && Object.keys(log.metadata.rule).length > 0 && (
+											<>
+												{Object.entries(log.metadata.rule).map(([key, val]) => (
+													<div key={key} className='text-sm text-gray-700'>
+														<span className='font-medium capitalize'>{key}:</span> <span className='text-gray-600'>{String(val)}</span>
+													</div>
+												))}
+											</>
+										)}
 									</div>
+								) : (
+									<div className='text-gray-500 italic ml-1'>No metadata provided.</div>
 								)}
 							</div>
 						))}

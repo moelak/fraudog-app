@@ -5,6 +5,7 @@ import { showSuccessToast, showErrorToast } from '../../utils/toast';
 import { EllipsisVerticalIcon, PencilIcon, ClockIcon, TrashIcon, ArrowUturnLeftIcon, PowerIcon } from '@heroicons/react/24/outline';
 import { ruleManagementStore } from './RuleManagementStore';
 import { useAuth } from '@/hooks/useAuth';
+import { useEventLog } from '@/hooks/useEventLog';
 
 interface RuleActionsMenuProps {
 	rule: {
@@ -37,6 +38,7 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
 	const [isTogglingStatus, setIsTogglingStatus] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
 	const { user } = useAuth(); // ✅ get logged-in user
+	const { logEvent } = useEventLog();
 
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
@@ -77,6 +79,9 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
 					showErrorToast('Failed to recover rule');
 				} finally {
 					setIsRecovering(false);
+					await logEvent(ruleManagementStore?.organizationId ?? 'unknown', `rule.recoverd`, 'rule', rule.id || 'unknown', {
+						rule: { status: `The rule has been recoverd from the deleted Rules tab.` },
+					});
 				}
 				break;
 
@@ -88,6 +93,20 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
 					const updatedRule = { ...rule, status: toggledStatus, updated_at: new Date().toISOString() };
 					ruleManagementStore.updateRuleInStore(updatedRule);
 					showSuccessToast(`Rule ${toggledStatus === 'active' ? 'activated' : 'deactivated'} successfully.`);
+					await logEvent(
+						ruleManagementStore?.organizationId ?? 'unknown',
+						`rule.${toggledStatus === 'active' ? 'activated' : 'deactivated'}`,
+						'rule',
+						rule.id || 'unknown',
+						{
+							changes: {
+								status: {
+									new: toggledStatus,
+									old: toggledStatus === 'active' ? 'inactive' : 'active',
+								},
+							},
+						}
+					);
 				} catch (error) {
 					console.error('Error toggling rule status:', error);
 					showErrorToast('Failed to update rule status');

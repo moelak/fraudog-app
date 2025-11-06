@@ -89,7 +89,7 @@ type TimeWindow = {
    Hook
    ========================= */
 export function useRules() {
-  const { user } = useAuth();
+const { user, loading: authLoading  } = useAuth();
 const orgId = toJS(ruleManagementStore.organizationId);
 const rangeSnapshot = toJS(ruleManagementStore.range);
   // Local state (MobX store holds table-rendering state)
@@ -437,6 +437,8 @@ const orgId= ruleManagementStore.organizationId
 const hasFetchedRef = useRef(false);
 
 useEffect(() => {
+if (authLoading) return; // Wait until auth is ready
+
   if (hasFetchedRef.current) return;
   if (!user?.id || !orgId) return;
 
@@ -447,7 +449,7 @@ useEffect(() => {
   } else {
     void fetchRules();
   }
-}, [orgId]);
+}, [orgId, authLoading, user?.id]);
 
 
   /* =========================
@@ -517,8 +519,8 @@ const updateRule = async (id: string, updates: UpdateRuleData): Promise<Rule | n
     .select()
     .single();
   if (error) throw error;
-
   // 1️⃣ Insert notification
+  
   const { data: notif, error: notifErr } = await supabase
     .from('notifications')
     .insert({
@@ -546,6 +548,70 @@ const updateRule = async (id: string, updates: UpdateRuleData): Promise<Rule | n
    void refetchWithCurrentRange();
     return data as Rule;
 };
+
+
+
+// const updateRule = async (id: string, updates: UpdateRuleData): Promise<Rule | null> => {
+//   if (!user) throw new Error('User not authenticated');
+
+//   const { data, error } = await supabase
+//     .from('rules')
+//     .update({
+//       ...updates,
+//       ...(updates.decision ? { decision: updates.decision.toLowerCase() } : {})
+//     })
+//     .eq('id', id)
+//     .select()
+//     .single();
+//   if (error) throw error;
+//   // 1️⃣ Insert notification
+
+//   // 🧠 Determine if only the status was updated
+//   const updatedKeys = Object.keys(updates);
+//   const onlyStatusChanged = updatedKeys.length === 1 && updatedKeys.includes("status");
+
+//   // 💬 Choose the right title & body
+//   const isActivated = updates.status === "active";
+//   const title = onlyStatusChanged
+//     ? `Rule status has been changed to ${isActivated ? "activated" : "deactivated"}: ${data.name}`
+//     : `Rule updated: ${data.name}`;
+
+//   const body = onlyStatusChanged
+//     ? `Rule "${data.name}" has been ${isActivated ? "activated" : "deactivated"}.`
+//     : updates.description || data.description;
+
+
+//   const { data: notif, error: notifErr } = await supabase
+//     .from('notifications')
+//     .insert({
+//       organization_id: data.organization_id,
+//       type: onlyStatusChanged
+//         ? isActivated
+//           ? "rule.activated"
+//           : "rule.deactivated"
+//         : "rule.updated",
+//       title,
+//       body,
+//       data: { ...data},
+//       source_type: 'rule',
+//       source_id: data.id,
+//       created_by: user.id,
+//     })
+//     .select()
+//     .single();
+
+//     if (notifErr) throw notifErr;
+
+//     // 2️⃣ Fan out to user_notification_states
+//     await supabase.rpc('fan_out_notification', {
+//       notif_id: notif.id,
+//       org_id: data.organization_id,
+//       actor_user_id: user.id,   // exclude yourself
+//     });
+
+//    void refetchWithCurrentRange();
+//     return data as Rule;
+// };
 
 
   const implementRule = async (id: string) => await updateRule(id, { status: 'active' });

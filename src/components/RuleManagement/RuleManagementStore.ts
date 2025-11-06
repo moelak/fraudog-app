@@ -49,6 +49,7 @@ export interface RuleHistoryItem {
   created_at: string;
   metadata?: {
     changes?: Record<string, { old: string | null; new: string | null }>;
+    rule?: Record<string, unknown>; 
   };
 }
 

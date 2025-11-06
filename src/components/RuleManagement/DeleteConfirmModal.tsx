@@ -4,6 +4,7 @@ import { ruleManagementStore } from './RuleManagementStore';
 import { useRules } from '../../hooks/useRules';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 import { XMarkIcon, ExclamationTriangleIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
+import { useEventLog } from '@/hooks/useEventLog';
 
 const DeleteConfirmModal = observer(() => {
 	const { softDeleteRule, permanentDeleteRule } = useRules();
@@ -11,6 +12,7 @@ const DeleteConfirmModal = observer(() => {
 	const [confirmText, setConfirmText] = useState('');
 	const deleteType = ruleManagementStore.activeTab === 'deleted' ? 'permanent' : 'soft';
 	const rule = ruleManagementStore.deletingRule;
+	const { logEvent } = useEventLog();
 
 	const handleDelete = async () => {
 		setConfirmText('');
@@ -35,6 +37,10 @@ const DeleteConfirmModal = observer(() => {
 				ruleManagementStore.updateRuleInStore(updatedRule);
 
 				showSuccessToast('Rule moved to deleted rules successfully.');
+
+				await logEvent(ruleManagementStore?.organizationId ?? 'unknown', `rule.soft_deleted`, 'rule', rule.id || 'unknown', {
+					rule: { status: `The rule has been moved to the deleted Rules tab` },
+				});
 			} else {
 				await permanentDeleteRule(rule.id);
 
@@ -43,6 +49,10 @@ const DeleteConfirmModal = observer(() => {
 				ruleManagementStore.inProgressRules = ruleManagementStore.inProgressRules.filter((r) => r.id !== rule.id);
 
 				showSuccessToast('Rule permanently deleted.');
+
+				await logEvent(ruleManagementStore?.organizationId ?? 'unknown', `rule.permanently_deleted`, 'rule', rule.id || 'unknown', {
+					rule: { status: `The rule has been permanently deleted.` },
+				});
 			}
 
 			ruleManagementStore.closeDeleteConfirmModal();
