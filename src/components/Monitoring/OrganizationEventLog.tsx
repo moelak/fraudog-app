@@ -29,7 +29,7 @@ const OrganizationEventLog = observer(() => {
 			<div className='px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4 bg-gradient-to-r from-gray-50 to-white'>
 				<div className='flex items-center gap-2'>
 					<ClockIcon className='h-5 w-5 text-blue-600' />
-					<h3 className='text-lg font-semibold text-gray-900'>Organization Event Log (7 Days)</h3>
+					<h3 className='text-lg font-semibold text-gray-900'>Organization Event Log (14 Days)</h3>
 				</div>
 
 				<input

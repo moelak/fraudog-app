@@ -88,25 +88,20 @@ const RuleActionsMenu = observer(({ rule }: RuleActionsMenuProps) => {
 			case 'toggle-status':
 				setIsTogglingStatus(true);
 				try {
-					await toggleRuleStatus(rule.id);
 					const toggledStatus = (rule.status === 'active' ? 'inactive' : 'active') as 'active' | 'inactive';
+					const ruleToggleType = `rule.${toggledStatus === 'active' ? 'activated' : 'deactivated'}`;
+					await toggleRuleStatus(rule.id, ruleToggleType);
 					const updatedRule = { ...rule, status: toggledStatus, updated_at: new Date().toISOString() };
 					ruleManagementStore.updateRuleInStore(updatedRule);
 					showSuccessToast(`Rule ${toggledStatus === 'active' ? 'activated' : 'deactivated'} successfully.`);
-					await logEvent(
-						ruleManagementStore?.organizationId ?? 'unknown',
-						`rule.${toggledStatus === 'active' ? 'activated' : 'deactivated'}`,
-						'rule',
-						rule.id || 'unknown',
-						{
-							changes: {
-								status: {
-									new: toggledStatus,
-									old: toggledStatus === 'active' ? 'inactive' : 'active',
-								},
+					await logEvent(ruleManagementStore?.organizationId ?? 'unknown', ruleToggleType, 'rule', rule.id || 'unknown', {
+						changes: {
+							status: {
+								new: toggledStatus,
+								old: toggledStatus === 'active' ? 'inactive' : 'active',
 							},
-						}
-					);
+						},
+					});
 				} catch (error) {
 					console.error('Error toggling rule status:', error);
 					showErrorToast('Failed to update rule status');

@@ -22,15 +22,22 @@ export class MonitoringStore {
     this.subscribeToTransactionUpdates();
   }
 
-async fetchThisWeekTransactions() {
+  
+async fetchThisWeekTransactions(organizationId?: string) {
+  if (!organizationId) {
+    console.warn("No organizationId provided to fetchThisWeekTransactions()");
+    return;
+  }
+
   const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 14);
 
   const { data, error } = await supabase
     .from("transaction_evaluations")
     .select("transaction_id, decision, decision_changed, decision_changed_at, created_at")
+    .eq("organization_id", organizationId) // 👈 filter by org
     .or(`created_at.gte.${oneWeekAgo.toISOString()},decision_changed_at.gte.${oneWeekAgo.toISOString()}`)
-    .order("created_at", { ascending: false }); // temporary order; we'll re-sort below
+    .order("created_at", { ascending: false });
 
   if (error) {
     console.error("Error fetching transactions:", error);
@@ -38,23 +45,23 @@ async fetchThisWeekTransactions() {
   }
 
   runInAction(() => {
-    // Map and sort transactions by decision_changed_at (if exists) or created_at
-    const processed = data
+    const processed = (data || [])
       .map((r) => ({
         transaction_id: r.transaction_id,
         decision: r.decision,
         decision_changed: r.decision_changed,
         decision_changed_at: r.decision_changed_at,
         created_at: r.created_at,
-        datetime: r.decision_changed_at || r.created_at, // 👈 effective timestamp for sorting
+        datetime: r.decision_changed_at || r.created_at,
         false_positive: r.decision_changed === "chargeback",
       }))
-      .sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime()); // 👈 descending
+      .sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
 
     this.transactionLogs = processed;
     this.filteredLogs = processed;
   });
 }
+
 
 subscribeToTransactionUpdates() {
   this.channel = supabase

@@ -335,11 +335,14 @@ openCreateModal = () => {
   closeDeleteConfirmModal = () => { this.isDeleteConfirmModalOpen = false; this.deletingRule = null; };
 
   editRule = (rule: Rule) => { this.openEditModal(rule); };
+  
   viewRuleHistory = async (ruleId: string) => {
+    console.log("organizationId",  this.organizationId)
     const { data, error } = await supabase
       .from('app_event_log')
       .select('*')
       .eq('subject_id', ruleId)
+      .eq('organization_id',  this.organizationId) 
       .order('created_at', { ascending: false });
 
     if (error) {

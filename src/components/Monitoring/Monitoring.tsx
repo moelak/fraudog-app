@@ -11,7 +11,7 @@ type GroupedData<T> = Record<string, T[]>;
 const Monitoring = observer(() => {
 	useEffect(() => {
 		const orgId = ruleManagementStore.organizationId;
-		monitoringStore.fetchThisWeekTransactions();
+		monitoringStore.fetchThisWeekTransactions(orgId!);
 
 		if (orgId) {
 			notificationStore.fetchOrganizationNotifications(orgId);
@@ -51,9 +51,20 @@ const Monitoring = observer(() => {
 		searchableText: `${tx.transaction_id ?? ''} ${tx.decision ?? ''} ${tx.decision_changed ?? ''} ${isFalsePositive(tx) ? 'false positive' : ''}`.toLowerCase(),
 	}));
 
-	// 🔹 Use only the local searchTerm for filtering
 	const searchTerm = monitoringStore.searchTerm.trim().toLowerCase();
-	const filteredLogs = searchTerm ? enhancedLogs.filter((tx) => tx.searchableText.includes(searchTerm)) : enhancedLogs;
+
+	const filteredLogs = searchTerm
+		? enhancedLogs.filter((tx) => {
+				// Normalize both sides
+				const searchable = tx.searchableText.replace(/\s+/g, ''); // remove spaces
+				const normalizedTerm = searchTerm.replace(/\s+/g, '');
+
+				// Match any form: "false", "falsepositive", or "false positive"
+				const isFalseSearch = normalizedTerm.includes('false') || normalizedTerm.includes('positive');
+
+				return tx.searchableText.includes(searchTerm) || searchable.includes(normalizedTerm) || (isFalseSearch && tx.isFalsePositive);
+		  })
+		: enhancedLogs;
 
 	const groupedTx = groupByDate(filteredLogs, 'datetime');
 
@@ -68,7 +79,7 @@ const Monitoring = observer(() => {
 			{/* ✅ Transactions Section */}
 			<section className='bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300'>
 				<div className='px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4'>
-					<h3 className='text-lg font-medium text-gray-900'>Transaction Decisions (7 Days)</h3>
+					<h3 className='text-lg font-medium text-gray-900'>Transaction Decisions (14 Days)</h3>
 
 					{/* Local search bar */}
 					<input

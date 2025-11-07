@@ -30,7 +30,7 @@ export class NotificationStore {
 
   async fetchOrganizationNotifications(organizationId: string) {
     const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 14);
 
     const { data, error } = await supabase
       .from("app_event_log")
@@ -50,39 +50,51 @@ export class NotificationStore {
     });
 
     // ✅ fetch all rule names once after loading events
-    await this.fetchRuleNamesOnce();
+    await this.fetchRuleNamesOnce(organizationId);
   }
 
-  // 🔹 Fetch all rule names for unique rule IDs
-  async fetchRuleNamesOnce() {
-    const ruleIds = [
-      ...new Set(
-        this.notifications
-          .filter((n) => n.subject_type === "rule")
-          .map((n) => n.subject_id)
-      ),
-    ];
+async fetchRuleNamesOnce(organizationId: string) {
+  if (!organizationId) {
+    console.warn("⚠️ No organizationId provided to fetchRuleNamesOnce()");
+    return;
+  }
 
-    // Only fetch ones we don't already have cached
-    const missingIds = ruleIds.filter((id) => !this.ruleNameCache[id]);
-    if (missingIds.length === 0) return;
+  const ruleIds = [
+    ...new Set(
+      this.notifications
+        .filter(
+          (n) =>
+            n.subject_type === "rule" &&
+            n.organization_id === organizationId
+        )
+        .map((n) => n.subject_id)
+    ),
+  ];
 
-    const { data, error } = await supabase
-      .from("rules")
-      .select("id, name")
-      .in("id", missingIds);
+  const missingIds = ruleIds.filter(
+    (id) => !this.ruleNameCache[`${organizationId}_${id}`]
+  );
+  if (missingIds.length === 0) return;
 
-    if (error) {
-      console.error("Error fetching rule names:", error);
-      return;
-    }
+  const { data, error } = await supabase
+    .from("rules")
+    .select("id, name, organization_id")
+    .in("id", missingIds)
+    .eq("organization_id", organizationId);
 
-    runInAction(() => {
-      data?.forEach((rule) => {
-        this.ruleNameCache[rule.id] = rule.name;
-      });
+  if (error) {
+    console.error("Error fetching rule names:", error);
+    return;
+  }
+
+  runInAction(() => {
+    (data || []).forEach((rule) => {
+      const cacheKey = `${rule.organization_id}_${rule.id}`;
+      this.ruleNameCache[cacheKey] = rule.name;
     });
-  }
+  });
+}
+
 
 subscribeToNotifications(organizationId: string): void {
   if (this.channel) {
@@ -107,7 +119,7 @@ subscribeToNotifications(organizationId: string): void {
         if (!newEvent) return;
 
         runInAction(() => {
-          // ✅ Type is now fully known (NotificationLog)
+          // Replace or prepend new event
           this.notifications = [
             newEvent,
             ...this.notifications.filter((n) => n.id !== newEvent.id),
@@ -120,27 +132,27 @@ subscribeToNotifications(organizationId: string): void {
           this.applySearch(this.searchTerm);
         });
 
-        // ✅ fetch rule name only if it's a rule event
-        if (
-          newEvent.subject_type === "rule" &&
-          !this.ruleNameCache[newEvent.subject_id]
-        ) {
-          const { data, error } = await supabase
-            .from("rules")
-            .select("id, name")
-            .eq("id", newEvent.subject_id)
-            .single();
+        // ✅ fetch rule name safely scoped by org
+        if (newEvent.subject_type === "rule") {
+          const cacheKey = `${organizationId}_${newEvent.subject_id}`;
+          if (!this.ruleNameCache[cacheKey]) {
+            const { data, error } = await supabase
+              .from("rules")
+              .select("id, name, organization_id")
+              .eq("id", newEvent.subject_id)
+              .eq("organization_id", organizationId) // 👈 important
+              .single();
 
-          if (!error && data) {
-            runInAction(() => {
-              this.ruleNameCache[newEvent.subject_id] = data.name;
-            });
+            if (!error && data) {
+              runInAction(() => {
+                this.ruleNameCache[cacheKey] = data.name;
+              });
+            }
           }
         }
       }
     )
-    .subscribe((status) => {
-    });
+    .subscribe();
 }
 
     clearSubscription() {
