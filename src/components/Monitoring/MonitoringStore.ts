@@ -15,6 +15,7 @@ export class MonitoringStore {
   filteredLogs: TransactionLog[] = [];
   searchTerm = "";
   channel: RealtimeChannel | null = null;
+  isLoading = false;
 
   constructor() {
     makeAutoObservable(this);
@@ -29,37 +30,49 @@ async fetchThisWeekTransactions(organizationId?: string) {
     return;
   }
 
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 14);
-
-  const { data, error } = await supabase
-    .from("transaction_evaluations")
-    .select("transaction_id, decision, decision_changed, decision_changed_at, created_at")
-    .eq("organization_id", organizationId) // 👈 filter by org
-    .or(`created_at.gte.${oneWeekAgo.toISOString()},decision_changed_at.gte.${oneWeekAgo.toISOString()}`)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Error fetching transactions:", error);
-    return;
-  }
-
   runInAction(() => {
-    const processed = (data || [])
-      .map((r) => ({
-        transaction_id: r.transaction_id,
-        decision: r.decision,
-        decision_changed: r.decision_changed,
-        decision_changed_at: r.decision_changed_at,
-        created_at: r.created_at,
-        datetime: r.decision_changed_at || r.created_at,
-        false_positive: r.decision_changed === "chargeback",
-      }))
-      .sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
-
-    this.transactionLogs = processed;
-    this.filteredLogs = processed;
+    this.isLoading = true; // 🔵 show spinner
   });
+
+  try {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 14);
+
+    const { data, error } = await supabase
+      .from("transaction_evaluations")
+      .select("transaction_id, decision, decision_changed, decision_changed_at, created_at")
+      .eq("organization_id", organizationId)
+      .or(`created_at.gte.${oneWeekAgo.toISOString()},decision_changed_at.gte.${oneWeekAgo.toISOString()}`)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching transactions:", error);
+      return;
+    }
+
+    runInAction(() => {
+      const processed = (data || [])
+        .map((r) => ({
+          transaction_id: r.transaction_id,
+          decision: r.decision,
+          decision_changed: r.decision_changed,
+          decision_changed_at: r.decision_changed_at,
+          created_at: r.created_at,
+          datetime: r.decision_changed_at || r.created_at,
+          false_positive: r.decision_changed === "chargeback",
+        }))
+        .sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
+
+      this.transactionLogs = processed;
+      this.filteredLogs = processed;
+    });
+  } catch (err) {
+    console.error("Error fetching transactions:", err);
+  } finally {
+    runInAction(() => {
+      this.isLoading = false; // 🟢 hide spinner
+    });
+  }
 }
 
 

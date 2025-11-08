@@ -20,6 +20,7 @@ export class NotificationStore {
   filteredNotifications: NotificationLog[] = [];
   searchTerm = "";
   channel: RealtimeChannel | null = null;
+isLoading = false;
 
   // ✅ cache rule names here
   ruleNameCache: Record<string, string> = {};
@@ -28,7 +29,12 @@ export class NotificationStore {
     makeAutoObservable(this);
   }
 
-  async fetchOrganizationNotifications(organizationId: string) {
+async fetchOrganizationNotifications(organizationId: string) {
+  runInAction(() => {
+    this.isLoading = true; // 🔵 Start loading
+  });
+
+  try {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 14);
 
@@ -39,10 +45,7 @@ export class NotificationStore {
       .gte("created_at", oneWeekAgo.toISOString())
       .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching organization notifications:", error);
-      return;
-    }
+    if (error) throw error;
 
     runInAction(() => {
       this.notifications = data || [];
@@ -51,7 +54,15 @@ export class NotificationStore {
 
     // ✅ fetch all rule names once after loading events
     await this.fetchRuleNamesOnce(organizationId);
+  } catch (err) {
+    console.error("Error fetching organization notifications:", err);
+  } finally {
+    runInAction(() => {
+      this.isLoading = false; 
+    });
   }
+}
+
 
 async fetchRuleNamesOnce(organizationId: string) {
   if (!organizationId) {
@@ -140,7 +151,7 @@ subscribeToNotifications(organizationId: string): void {
               .from("rules")
               .select("id, name, organization_id")
               .eq("id", newEvent.subject_id)
-              .eq("organization_id", organizationId) // 👈 important
+              //.eq("organization_id", organizationId) // 👈 important
               .single();
 
             if (!error && data) {

@@ -72,7 +72,7 @@ export class RuleManagementStore {
   expandedRows = new Set<string>();
   displayManualRuleStepper:boolean = false;
   displayAIRuleStepper: boolean = false
-
+isLoading = false;
   rules: Rule[] = [];
   inProgressRules: Rule[] = [];
 

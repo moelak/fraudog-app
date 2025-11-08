@@ -277,7 +277,7 @@ const aggregateAndApplyMetrics = async (
       const ratio = displayFalsePositives / catches;
       effectiveness = Math.round((1 - ratio) * 1000) / 10; // 1 decimal
     }
-
+ruleManagementStore.isLoading = false
     // ✅ check if the rule has any metrics
     const hasMetrics = sums.has(rule.id);
 

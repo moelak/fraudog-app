@@ -19,7 +19,6 @@ import Settings from '../Settings/Settings';
 // TODO: see comment below
 // import Visualization from '../Visualization/Visualization';
 // import TestOpenAI from '../RuleManagement/TestOpenAI';
-import Monitoring from '../Monitoring/Monitoring';
 import Chargebacks from '../Chargebacks/Chargebacks';
 import ChatAssistant from '../ChatAssistant/ChatAssistant';
 import UserManagement from '../UserManagement/UserManagement';
@@ -31,6 +30,7 @@ import { menuStore } from './MenuStore';
 import { settingsStore } from '../Settings/SettingsStore';
 import RuleManagementContainer from '../RuleManagement/RuleManagementContainer';
 import { useNotifications } from '@/hooks/useNotifications';
+import MonitoringContainer from '../Monitoring/MonitoringContainer';
 
 const Menu = observer(() => {
 	const location = useLocation();
@@ -258,7 +258,7 @@ const Menu = observer(() => {
 								<Route path='/rules' element={<RuleManagementContainer />} />
 								{/*<Route path='/test-rulegeneration' element={<TestOpenAI />} />*/}
 								{/* <Route path='/visualization' element={<Visualization />} /> */}
-								<Route path='/monitoring' element={<Monitoring />} />
+								<Route path='/monitoring' element={<MonitoringContainer />} />
 								<Route path='/chargebacks' element={<Chargebacks />} />
 								<Route path='/reports' element={<Reports />} />
 								<Route path='/assistant' element={<ChatAssistant />} />

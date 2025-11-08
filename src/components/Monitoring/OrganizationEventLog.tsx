@@ -1,10 +1,11 @@
 // OrganizationEventLog.tsx
 import { observer } from 'mobx-react-lite';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronDownIcon, ChevronRightIcon, UserCircleIcon, ClockIcon, ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
 import dayjs from 'dayjs';
 import { notificationStore } from './NotificationStore';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ruleManagementStore } from '../RuleManagement/RuleManagementStore';
 
 interface MetadataChanges {
 	[key: string]: {
@@ -23,8 +24,31 @@ const OrganizationEventLog = observer(() => {
 			return next;
 		});
 
+	useEffect(() => {
+		const orgId = ruleManagementStore.organizationId;
+
+		if (orgId) {
+			notificationStore.fetchOrganizationNotifications(orgId);
+			notificationStore.subscribeToNotifications(orgId);
+		}
+		return () => {
+			notificationStore.clearSubscription();
+		};
+	}, [ruleManagementStore.organizationId]);
+
 	return (
-		<section className='bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden transition-all duration-300'>
+		<section className='relative bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300'>
+			{notificationStore.isLoading && (
+				<div className='absolute inset-0 flex items-center justify-center bg-white/70 z-20'>
+					<div className='flex flex-col items-center space-y-3'>
+						<svg className='animate-spin h-8 w-8 text-blue-600' xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'>
+							<circle className='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' strokeWidth='4'></circle>
+							<path className='opacity-75' fill='currentColor' d='M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z'></path>
+						</svg>
+						<p className='text-gray-700 text-sm font-medium'>Loading notifications...</p>
+					</div>
+				</div>
+			)}
 			{/* Header with its own search */}
 			<div className='px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4 bg-gradient-to-r from-gray-50 to-white'>
 				<div className='flex items-center gap-2'>
@@ -48,7 +72,8 @@ const OrganizationEventLog = observer(() => {
 				) : (
 					notificationStore.filteredNotifications.map((log) => {
 						const isExpanded = expandedIds.has(log.id);
-						const ruleName = log.subject_type === 'rule' ? notificationStore.ruleNameCache[log.subject_id] || log.subject_id : null;
+
+						const ruleName = log.subject_type === 'rule' ? notificationStore.ruleNameCache[`${log.organization_id}_${log.subject_id}`] || log.subject_id : null;
 						const ruleData = log.metadata?.rule as Record<string, unknown> | undefined;
 
 						const changes = (log.metadata?.changes ?? null) as MetadataChanges | null;
