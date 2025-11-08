@@ -89,7 +89,7 @@ type TimeWindow = {
    Hook
    ========================= */
 export function useRules() {
-  const { user } = useAuth();
+const { user, loading: authLoading  } = useAuth();
 const orgId = toJS(ruleManagementStore.organizationId);
 const rangeSnapshot = toJS(ruleManagementStore.range);
   // Local state (MobX store holds table-rendering state)
@@ -277,7 +277,7 @@ const aggregateAndApplyMetrics = async (
       const ratio = displayFalsePositives / catches;
       effectiveness = Math.round((1 - ratio) * 1000) / 10; // 1 decimal
     }
-
+ruleManagementStore.isLoading = false
     // ✅ check if the rule has any metrics
     const hasMetrics = sums.has(rule.id);
 
@@ -437,6 +437,8 @@ const orgId= ruleManagementStore.organizationId
 const hasFetchedRef = useRef(false);
 
 useEffect(() => {
+if (authLoading) return; // Wait until auth is ready
+
   if (hasFetchedRef.current) return;
   if (!user?.id || !orgId) return;
 
@@ -447,7 +449,7 @@ useEffect(() => {
   } else {
     void fetchRules();
   }
-}, [orgId]);
+}, [orgId, authLoading, user?.id]);
 
 
   /* =========================
@@ -483,7 +485,7 @@ const createRule = async (ruleData: CreateRuleData): Promise<Rule | null> => {
     .insert({
       organization_id: orgId,
       type: 'rule.created',
-      title: `Rule created: ${ruleData.name}`,
+      title: `rule.created: ${ruleData.name}`,
       body: ruleData.description,
       data: { ...data},
       source_type: 'rule',
@@ -504,8 +506,10 @@ const createRule = async (ruleData: CreateRuleData): Promise<Rule | null> => {
   return data as Rule;
 };
 
-const updateRule = async (id: string, updates: UpdateRuleData): Promise<Rule | null> => {
+const updateRule = async (id: string, updates: UpdateRuleData, ruleType:string): Promise<Rule | null> => {
   if (!user) throw new Error('User not authenticated');
+
+
 
   const { data, error } = await supabase
     .from('rules')
@@ -517,14 +521,14 @@ const updateRule = async (id: string, updates: UpdateRuleData): Promise<Rule | n
     .select()
     .single();
   if (error) throw error;
-
   // 1️⃣ Insert notification
+  
   const { data: notif, error: notifErr } = await supabase
     .from('notifications')
     .insert({
       organization_id: data.organization_id,
-      type: 'rule.updated',
-      title: `Rule updated: ${data.name}`,
+      type: ruleType,
+      title: `${ruleType}: ${data.name}`,
       body: updates.description || data.description,
       data: { ...data},
       source_type: 'rule',
@@ -548,7 +552,7 @@ const updateRule = async (id: string, updates: UpdateRuleData): Promise<Rule | n
 };
 
 
-  const implementRule = async (id: string) => await updateRule(id, { status: 'active' });
+  const implementRule = async (id: string) => await updateRule(id, { status: 'active' }, "");
 
  const softDeleteRule = async (id: string) => {
   if (!user) throw new Error('User not authenticated');
@@ -567,8 +571,8 @@ const updateRule = async (id: string, updates: UpdateRuleData): Promise<Rule | n
     .from('notifications')
     .insert({
       organization_id: data.organization_id,
-      type: 'rule.deleted',
-      title: `Rule deleted: ${data.name}`,
+      type: 'rule.soft_deleted',
+      title: `rule.soft_deleted: ${data.name}`,
       body: `Rule "${data.name}" was marked inactive.`,
       data: { rule_id: data.id },
       source_type: 'rule',
@@ -606,7 +610,7 @@ const recoverRule = async (id: string) => {
     .insert({
       organization_id: data.organization_id,
       type: 'rule.recovered',
-      title: `Rule recovered: ${data.name}`,
+      title: `rule.recovered: ${data.name}`,
       body: `Rule "${data.name}" was recovered.`,
       data: { rule_id: data.id },
       source_type: 'rule',
@@ -649,7 +653,7 @@ const permanentDeleteRule = async (id: string) => {
       .insert({
         organization_id: existingRule.organization_id,
         type: 'rule.permanently_deleted',
-        title: `Rule permanently deleted: ${existingRule.name}`,
+        title: `rule.permanently_deleted: ${existingRule.name}`,
         body: `Rule "${existingRule.name}" was permanently removed.`,
         data: { rule_id: existingRule.id },
         source_type: 'rule',
@@ -670,7 +674,7 @@ const permanentDeleteRule = async (id: string) => {
   void refetchWithCurrentRange();
 };
 
-const toggleRuleStatus = async (id: string) => {
+const toggleRuleStatus = async (id: string, ruleToggleType:string) => {
   const currentRules = ruleManagementStore.rules || [];
   const rule = currentRules.find((r) => r.id === id);
 
@@ -681,7 +685,7 @@ const toggleRuleStatus = async (id: string) => {
 
   const newStatus = rule.status === "active" ? "inactive" : "active";
 
-  await updateRule(id, { status: newStatus });
+  await updateRule(id, { status: newStatus }, ruleToggleType);
 
   // Update MobX store to reflect new status immediately
   ruleManagementStore.updateRuleInStore({

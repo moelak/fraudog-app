@@ -354,10 +354,12 @@ export default function CreateManualRule() {
 
 				// ✅ Get diffs between old and new form
 				const changes = getChanges(initialData, formData);
+				const updatedKeys = Object.keys(changes);
+				const onlyStatusChanged = updatedKeys.includes('status');
+				const ruleType = onlyStatusChanged ? (formData.status === 'active' ? 'rule.activated' : 'rule.deactivated') : 'rule.updated';
+				await updateRule(ruleManagementStore.editingRule.id, updates, ruleType);
 
-				await updateRule(ruleManagementStore.editingRule.id, updates);
-
-				await logEvent(ruleManagementStore.organizationId ?? 'unknown', 'rule.updated', 'rule', ruleManagementStore.editingRule.id, { changes });
+				await logEvent(ruleManagementStore.organizationId ?? 'unknown', ruleType, 'rule', ruleManagementStore.editingRule.id, { changes });
 
 				// Merge with existing rule
 				const updatedRule = {

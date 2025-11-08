@@ -67,28 +67,40 @@ export function useEventLog() {
   /**
    * Fetch recent audit events for a given organization or subject
    */
-  const fetchEventLogs = async (options: {
-    organizationId?: string;
-    subjectType?: string;
-    subjectId?: string;
-    limit?: number;
-  }): Promise<AppEventLog[]> => {
-    let query = supabase.from('app_event_log').select('*').order('created_at', { ascending: false });
+/**
+ * Fetch recent audit events ONLY for the user's organization
+ */
+const fetchEventLogs = async (options: {
+  organizationId: string; // 👈 make it required
+  subjectType?: string;
+  subjectId?: string;
+  limit?: number;
+}): Promise<AppEventLog[]> => {
+  // Always start with org filter
+  let query = supabase
+    .from('app_event_log')
+    .select('*')
+    .eq('organization_id', options.organizationId) // 👈 enforce org filter
+    .order('created_at', { ascending: false });
 
-    if (options.organizationId) query = query.eq('organization_id', options.organizationId);
-    if (options.subjectType) query = query.eq('subject_type', options.subjectType);
-    if (options.subjectId) query = query.eq('subject_id', options.subjectId);
-    if (options.limit) query = query.limit(options.limit);
+  if (options.subjectType)
+    query = query.eq('subject_type', options.subjectType);
 
-    const { data, error } = await query;
+  if (options.subjectId)
+    query = query.eq('subject_id', options.subjectId);
 
-    if (error) {
-      console.error('Failed to fetch event logs:', error);
-      return [];
-    }
+  if (options.limit)
+    query = query.limit(options.limit);
 
-    return data as AppEventLog[];
-  };
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Failed to fetch event logs:', error);
+    return [];
+  }
+
+  return data as AppEventLog[];
+};
 
   return {
     logEvent,
